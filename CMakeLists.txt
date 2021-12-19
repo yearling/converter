@@ -5,7 +5,7 @@ SET(THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 SET(FBX_BIN ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64)
 SET(THIRD_PARTY_INCLUDE ${THIRD_PARTY}/fbxsdk/include)
 # cpp files
-file(GLOB_RECURSE SRC_LIST "src/*.cpp" "src/*.h" )
+file(GLOB_RECURSE SRC_LIST "src/*.cpp" "src/*.h" "src/RHI/DirectX11/*.cpp" )
 #message( "${SRC_LIST}" )
 #include
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${THIRD_PARTY_INCLUDE})
@@ -27,6 +27,18 @@ target_link_libraries(
     demo debug  ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/debug/libfbxsdk.lib   optimized ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/release/libfbxsdk.lib 
 )
 # target_link_libraries(demo $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/../editor/3rdlib/Debug/LinearMath.lib> $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/../editor/3rdlib/Release/LinearMath.lib>)
+set_target_properties(
+		demo
+		PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:WINDOWS /ignore:4099"
+				   LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ignore:4099"
+	)
+set_target_properties(demo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Debug)
+set_property (DIRECTORY PROPERTY VS_STARTUP_PROJECT demo)
+target_link_libraries(demo d3d11)
+target_link_libraries(demo dxgi)
+target_link_libraries(demo dxguid)	
+target_link_libraries(demo d3dcompiler)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
 # post build
 add_custom_command(
