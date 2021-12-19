@@ -1,6 +1,6 @@
 #pragma once
-#include "YMath.h"
-#include "YVector.h"
+#include "Math/YMath.h"
+#include "Math/YVector.h"
 struct YVector4;
 struct YMatrix3x3
 {

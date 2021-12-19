@@ -1,7 +1,7 @@
-#include "YQuaterion.h"
-#include "YRotator.h"
+#include "Math/YQuaterion.h"
+#include "Math/YRotator.h"
+#include "Math/YVector.h"
 #include<cassert>
-#include "YVector.h"
 YQuat::YQuat(float in_x, float in_y, float in_z, float in_w)
 	:x(in_x),
 	y(in_y),

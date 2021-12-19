@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <memory>
 #include "YMath.h"
-#include "YVector.h"
+#include "math/YVector.h"
 
 const int INVALID_ID = -1;
 struct YMeshVertex

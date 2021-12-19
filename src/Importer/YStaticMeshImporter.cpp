@@ -1,11 +1,11 @@
-#include "YFbxImporter.h"
 #include <cassert>
-#include "YRawMesh.h"
-#include "YMath.h"
-#include "YFbxUtility.h"
-#include "YMaterial.h"
-#include "YLog.h"
 #include "fbxsdk/scene/geometry/fbxlayer.h"
+#include "importer/YFbxImporter.h"
+#include "Engine/YRawMesh.h"
+#include "Math/YMath.h"
+#include "Importer/YFbxUtility.h"
+#include "Engine/YMaterial.h"
+#include "Engine/YLog.h"
 
 bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh, std::vector<YMaterial*>& existing_materials)
 {

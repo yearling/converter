@@ -1,6 +1,6 @@
-#include "YMath.h"
-#include "YVector.h"
-#include "YMatrix.h"
+#include "Math/YMath.h"
+#include "Math/YVector.h"
+#include "Math/YMatrix.h"
 float YMath::Atan2(float y, float x)
 {
 	//return atan2f(Y,X);

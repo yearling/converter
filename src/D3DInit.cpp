@@ -4,7 +4,8 @@
 #include <windowsx.h>
 #include "RHI/DirectX11/D3D11Device.h"
 #include "RHI/DirectX11/ComPtr.h"
-#include "YLog.h"
+#include "Engine/YLog.h"
+#include "Importer/YFbxImporter.h"
 HINSTANCE	g_hInstance(nullptr);
 HWND		g_hWnd(nullptr);
 
@@ -25,6 +26,44 @@ std::unique_ptr<D3D11Device> device = nullptr;
 bool CreateWindows();
 bool InitD3D();
 
+
+bool InitD3D()
+{
+	device = D3D11Device::CreateD3D11Device();
+	if (!device->CreateSwapChain((void*)&g_hWnd))
+	{
+		ERROR_INFO("create swap chain failed!");
+	}
+	device->OnResize(g_winWidth, g_winHeight);
+	return true;
+}
+
+bool OpenFbx()
+{
+	std::unique_ptr<YFbxImporter> importer = std::make_unique<YFbxImporter>();
+	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\cube\maya_tube4.fbx)";
+	const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\nija\nija_head_low.FBX)";
+	if (!importer->ImportFile(file_path))
+	{
+		return 0;
+	}
+	const FbxImportSceneInfo* scene_info = importer->GetImportedSceneInfo();
+	FbxImportParam import_param;
+	if (!scene_info->has_skin)
+	{
+		import_param.import_as_skelton = false;
+	}
+	else if (scene_info->has_skin)
+	{
+
+	}
+	else if (scene_info->has_animation)
+	{
+
+	}
+	importer->ParseFile(import_param);
+	return true;
+}
 void Render();
 int	 Run();
 void Release();
@@ -37,7 +76,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 
 	if(!CreateWindows())
 		return -1;
-	
+	if (!InitD3D())
+	{
+		return -1;
+	}
+	if (!OpenFbx())
+	{
+		return -1;
+	}
 	return Run();
 }
 
@@ -123,15 +169,6 @@ int Run()
 		}
 		else
 		{
-			if (!device)
-			{
-				device = D3D11Device::CreateD3D11Device();
-				if (!device->CreateSwapChain((void*)&g_hWnd))
-				{
-					ERROR_INFO("create swap chain failed!");
-				}
-				device->OnResize(g_winWidth, g_winHeight);
-			}
 			Render();
 		}
 	}
@@ -155,17 +192,4 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	}
 
 	return DefWindowProc(hwnd,msg,wParam,lParam);
-}
-
-
-void PerfTimeFunc(const char* log_msg, double time_now) {
-
-}
-
-void PerGroupTimeFunc(const char* log_msg, const char* group_name, double time_now) {
-
-}
-
-void PerfErrorLogFunc(const char* log_msg, const char* err_msg) {
-
 }

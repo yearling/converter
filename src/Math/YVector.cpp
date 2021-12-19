@@ -1,5 +1,5 @@
 #include <cassert>
-#include "YVector.h"
+#include "Math/YVector.h"
 
 YVector2::YVector2(float in_x, float in_y)
 :x(in_x), y(in_y){

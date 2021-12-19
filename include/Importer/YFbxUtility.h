@@ -1,17 +1,17 @@
 #pragma once
-#include "YMath.h"
-#include "YVector.h"
-#include "YQuaterion.h"
-#include "YRotator.h"
-#include "YMatrix.h"
+#include "Math/YMath.h"
+#include <vector>
+#include <unordered_map>
+#include <set>
+#include <string>
 #include "fbxsdk.h"
 #include "fbxsdk/core/math/fbxquaternion.h"
 #include "fbxsdk/core/math/fbxaffinematrix.h"
-#include <vector>
-#include <unordered_map>
-#include "YMaterial.h"
-#include <set>
-#include <string>
+#include "Math/YVector.h"
+#include "Math/YQuaterion.h"
+#include "Math/YRotator.h"
+#include "Math/YMatrix.h"
+#include "Engine/YMaterial.h"
 class FbxDataConverter
 {
 public:

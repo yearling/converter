@@ -1,5 +1,5 @@
-#include "YMatrix.h"
-#include "YVector.h"
+#include "Math/YMatrix.h"
+#include "Math/YVector.h"
 #include <cassert>
 #include <cstring>
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "YMath.h"
+#include "Math/YMath.h"
 struct YQuat
 {
 public:

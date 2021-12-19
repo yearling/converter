@@ -1,16 +1,16 @@
-#include "YFbxImporter.h"
-#include "YLog.h"
-#include "fbxsdk/core/fbxmanager.h"
-#include "fbxsdk/fileio/fbxiosettings.h"
 #include <set>
 #include <vector>
 #include <cassert>
+#include "fbxsdk/core/fbxmanager.h"
+#include "fbxsdk/fileio/fbxiosettings.h"
 #include "fbxsdk/scene/fbxaxissystem.h"
 #include "fbxsdk/core/math/fbxaffinematrix.h"
 #include "fbxsdk/scene/geometry/fbxlayer.h"
-#include "YRawMesh.h"
-#include "YMaterial.h"
-#include "YFbxUtility.h"
+#include "Importer/YFbxImporter.h"
+#include "Engine/YLog.h"
+#include "Engine/YRawMesh.h"
+#include "Engine/YMaterial.h"
+#include "Importer/YFbxUtility.h"
 
 YFbxImporter::YFbxImporter()
 {

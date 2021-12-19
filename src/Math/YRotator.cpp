@@ -1,7 +1,7 @@
-#include "YRotator.h"
-#include "YVector.h"
-#include "YMatrix.h"
-#include "YQuaterion.h"
+#include "Math/YRotator.h"
+#include "Math/YVector.h"
+#include "Math/YMatrix.h"
+#include "Math/YQuaterion.h"
 YRotator::YRotator(float in_x, float in_y, float in_z)
 	:pitch(in_x),
 	yaw(in_y),

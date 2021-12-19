@@ -1,5 +1,5 @@
-#include "YRawMesh.h"
-#include "YVector.h"
+#include "Engine/YRawMesh.h"
+#include "Math/YVector.h"
 #include <cassert>
 YLODMesh::YLODMesh()
 {
