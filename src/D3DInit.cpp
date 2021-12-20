@@ -15,14 +15,13 @@ std::string		g_wndTitle("1_D3DInit");
 UINT		g_winWidth(1920);
 UINT		g_winHeight(1080);
 
-ID3D11Device		*g_device(nullptr);
 ID3D11DeviceContext	*g_deviceContext(nullptr);
 IDXGISwapChain		*g_swapChain(nullptr);
 
 ID3D11DepthStencilView	*g_depthStencilView(nullptr);
 ID3D11RenderTargetView	*g_renderTargetView(nullptr);
 std::unique_ptr<D3D11Device> device = nullptr;
-
+std::vector<std::unique_ptr<YStaticMesh>> g_test_mesh;
 bool CreateWindows();
 bool InitD3D();
 
@@ -42,7 +41,8 @@ bool OpenFbx()
 {
 	std::unique_ptr<YFbxImporter> importer = std::make_unique<YFbxImporter>();
 	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\cube\maya_tube4.fbx)";
-	const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\nija\nija_head_low.FBX)";
+	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\nija\nija_head_low.FBX)";
+	const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\plane\plane.FBX)";
 	if (!importer->ImportFile(file_path))
 	{
 		return 0;
@@ -61,7 +61,15 @@ bool OpenFbx()
 	{
 
 	}
-	importer->ParseFile(import_param);
+	ConvertedResult result;
+	if (!importer->ParseFile(import_param, result))
+	{
+		
+	}
+	else
+	{
+		g_test_mesh = std::move(result.static_meshes);
+	}
 	return true;
 }
 void Render();
@@ -83,6 +91,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 	if (!OpenFbx())
 	{
 		return -1;
+	}
+	for (std::unique_ptr<YStaticMesh>& mesh : g_test_mesh)
+	{
+		if (!mesh->AllocGpuResource())
+		{
+			return -1;
+		}
 	}
 	return Run();
 }
@@ -152,7 +167,14 @@ void Render()
         float color[4] = {0.f, 1.f, 1.f, 1.0f};
         raw_dc->ClearRenderTargetView(main_rtv, reinterpret_cast<float *>(color));
         raw_dc->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	
+		for (std::unique_ptr<YStaticMesh>& mesh : g_test_mesh)
+		{
+			if (mesh)
+			{
+				mesh->Render();
+			}
+		}
+
         device->Present();
 }
 

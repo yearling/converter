@@ -2,12 +2,26 @@
 #include "RHI/DirectX11/D3D11Device.h"
 #include <string>
 #include <vector>
-class RenderMesh;
-struct ProgramRes;
+#include "RHI/DirectX11/D3D11Shader.h"
 class D3DTextureSampler;
-struct VertexAttribute
+struct YLODMesh;
+enum VertexAttribute
 {
-    
+    VA_POSITION,
+    VA_UV0,
+    VA_UV1,
+    VA_NORMAL,
+    VA_TANGENT,
+    VA_BITANGENT,
+    VA_COLOR,
+    VA_ATTRIBUTE0,
+    VA_ATTRIBUTE1,
+    VA_ATTRIBUTE2,
+    VA_ATTRIBUTE3,
+    VA_ATTRIBUTE4,
+    VA_ATTRIBUTE5,
+    VA_ATTRIBUTE6,
+    VA_ATTRIBUTE7
 };
 enum DataType
 {
@@ -15,9 +29,11 @@ enum DataType
     Uint8
 };
 struct VertexStreamDescription {
+    VertexStreamDescription();
+    VertexStreamDescription(VertexAttribute in_vertex_attribe,const std::string& in_name,DataType in_type, int in_cpu_data_index,int in_com_num,int in_buffer_size,int in_slot,int in_stride,bool in_normalized,bool in_release,bool in_dynamic);
     VertexAttribute vertex_attribute;
     std::string name;
-    DataType type;
+    DataType data_type;
     int cpu_data_index;
     int com_num;
     int buffer_size;
@@ -32,7 +48,7 @@ class IVertexFactory {
     IVertexFactory();
     virtual ~IVertexFactory();
     virtual bool SetVertexStreamDescriptions(std::vector<VertexStreamDescription>&& descriptions);
-    virtual bool AllocGPUResource(RenderMesh* mesh) = 0;
+    virtual bool AllocGPUResource(YLODMesh* mesh) = 0;
     virtual bool ReleaseGPUResource();
     virtual bool UpdateVertexStreamBuffer(VertexAttribute vertex_attribute, unsigned char* buffer_data, unsigned int buffer_in_byte)=0; 
     const std::vector<VertexStreamDescription>& GetVertexDescription() const;
@@ -53,23 +69,25 @@ class IVertexFactory {
 
 class DXVertexFactory:public IVertexFactory {
   public:
-    DXVertexFactory(D3D11Device* device);
+    DXVertexFactory();
     ~DXVertexFactory() override;
-    bool AllocGPUResource(RenderMesh* mesh) override;
+    bool AllocGPUResource(YLODMesh* mesh) override;
     bool ReleaseGPUResource() override;
     bool SetVertexStreamDescriptions(std::vector<VertexStreamDescription>&& descriptions) override;
     bool UpdateVertexStreamBuffer(VertexAttribute vertex_attribute, unsigned char* buffer_data, unsigned int buffer_in_byte) override; 
     virtual bool SetupVertexStreams() override;
     void SetInputLayout(const TComPtr<ID3D11InputLayout>& input_layout);
     void SetRenderState();
-    void DrawCall(ProgramRes* program_ptr,RenderMesh* mesh);
+    void DrawCall();
   private:
     std::vector<TComPtr<ID3D11Buffer>> vertex_buffers_;
-    TComPtr<ID3D11Buffer> index_buffers_;
+    TComPtr<ID3D11Buffer> index_buffer_;
     TComPtr<ID3D11InputLayout> vertex_input_layout_;
-    D3D11Device* device_;
     TComPtr<ID3D11BlendState> bs_;
     TComPtr<ID3D11DepthStencilState> ds_;
     TComPtr<ID3D11RasterizerState> rs_;
     D3DTextureSampler* sampler_state_ = {nullptr};
+    std::vector<int> polygon_group_offsets;
+    std::unique_ptr<D3DVertexShader> vertex_shader_;
+    std::unique_ptr<D3DPixelShader> pixel_shader_;
 };

@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <cassert>
 enum LogType {
 	EVerbos = 0,
 	EWarning = 1,

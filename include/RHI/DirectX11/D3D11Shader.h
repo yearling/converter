@@ -23,7 +23,7 @@ struct D3DShaderResourceView {
 
 class ID3DShader {
   public:
-    ID3DShader(D3D11Device* device);
+    ID3DShader();
     ID3DShader(const ID3DShader &) = delete;
     ID3DShader(ID3DShader &&) = delete;
     ID3DShader &operator=(const ID3DShader &) = delete;
@@ -55,12 +55,11 @@ class ID3DShader {
 
   protected:
     virtual TComPtr<ID3D11DeviceChild> GetInternalResource() const = 0;
-    D3D11Device *device_=nullptr;
-};
+ };
  
 
 struct D3DConstantBuffer {
-    D3DConstantBuffer(unsigned int BufferSizeInBytes, D3D11Device *device);
+    D3DConstantBuffer(unsigned int BufferSizeInBytes);
     bool AllocResource();
     enum class eCBType { Scalar, Texture, Interface, BindInfo, Num };
     std::string CBName;
@@ -113,14 +112,13 @@ struct D3DConstantBuffer {
     //};
 
     TComPtr<ID3D11Buffer> D3DBuffer;
-    D3D11Device *device_ = nullptr;
 };
 
 //class ID3D11ShaderReflection;
 
 class ID3DShaderBind : public ID3DShader {
   public:
-    ID3DShaderBind(D3D11Device *device);
+    ID3DShaderBind();
     virtual ~ID3DShaderBind();
     //virtual bool PostReflection(TComPtr<ID3DBlob> &Blob, TComPtr<ID3D11ShaderReflection> &ShaderReflector);
     virtual void AddShaderMacros(const std::vector<ShaderMacroEntry> &InShaderMacroEntrys) override;
@@ -172,7 +170,7 @@ class ID3DShaderBind : public ID3DShader {
 
 class D3DVertexShader : public ID3DShaderBind {
   public:
-    D3DVertexShader(D3D11Device *device);
+    D3DVertexShader();
     virtual ~D3DVertexShader();
     virtual bool CreateShader(const std::string &FileName, const std::string &MainPoint) override;
     bool CreateShaderFromSource(const std::string &FileName, const std::string &MainPoint, IVertexFactory *vertex_factory) ; 
@@ -193,7 +191,7 @@ class D3DVertexShader : public ID3DShaderBind {
 
 class D3DPixelShader : public ID3DShaderBind {
   public:
-    D3DPixelShader(D3D11Device *device);
+    D3DPixelShader();
     virtual ~D3DPixelShader();
     virtual bool CreateShader(const std::string &FileName, const std::string &MainPoint) override;
     bool CreateShaderFromSource(const std::string &FileName, const std::string &MainPoint) ; 

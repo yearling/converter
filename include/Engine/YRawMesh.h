@@ -28,10 +28,10 @@ struct YMeshVertexInstance
 	/** List of connected triangles */
 	std::vector<int> connected_triangles;
 
-	YVector vertex_instance_normals{ 0.0,0.0,1.0 };
-	YVector vertex_instance_tangents{ 0.0,0.0,1.0 };
-	float vertex_instance_binormal_signs{ 0.0 };
-	YVector4 vertex_instance_colors{ 0.0,0.0,0.0,0.0 };
+	YVector vertex_instance_normal{ 0.0,0.0,1.0 };
+	YVector vertex_instance_tangent{ 0.0,0.0,1.0 };
+	float vertex_instance_binormal_sign{ 0.0 };
+	YVector4 vertex_instance_color{ 0.0,0.0,0.0,0.0 };
 	std::vector<YVector2> vertex_instance_uvs;
 	void AddTriangleID(int triangle_id);
 };
@@ -87,9 +87,3 @@ public:
 };
 
 
-struct YStaticMesh
-{
-public:
-	YStaticMesh();
-	std::vector<std::unique_ptr<YLODMesh>> raw_meshes;
-};

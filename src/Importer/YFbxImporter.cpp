@@ -11,6 +11,8 @@
 #include "Engine/YRawMesh.h"
 #include "Engine/YMaterial.h"
 #include "Importer/YFbxUtility.h"
+#include "RHI/DirectX11/D3D11VertexFactory.h"
+#include "engine/YStaticMesh.h"
 
 YFbxImporter::YFbxImporter()
 {
@@ -102,7 +104,7 @@ const FbxImportSceneInfo* YFbxImporter::GetImportedSceneInfo() const
 	return scene_info_.get();
 }
 
-bool YFbxImporter::ParseFile(const FbxImportParam& import_param)
+bool YFbxImporter::ParseFile(const FbxImportParam& import_param, ConvertedResult& out_result)
 {
 	import_param_ = std::make_unique<FbxImportParam>();
 	*import_param_ = import_param;
@@ -119,7 +121,7 @@ bool YFbxImporter::ParseFile(const FbxImportParam& import_param)
 			// todo LOD
 			std::vector<FbxNode*> mesh_nodes;
 			GetMeshArray(root_node,mesh_nodes);
-			ImportStaticMeshAsSingle(mesh_nodes, "test", 0);
+			out_result.static_meshes.emplace_back(ImportStaticMeshAsSingle(mesh_nodes, "test", 0));
 		}
 	}
 	return true;
@@ -348,11 +350,11 @@ void YFbxImporter::GetMeshArray(FbxNode* root,std::vector<FbxNode*>& fbx_mesh_no
 	}
 }
 
-void YFbxImporter::ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index /*= 0*/)
+std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index /*= 0*/)
 {
 	if (mesh_nodes.empty())
 	{
-		return;
+		return nullptr;
 	}
 
 	int num_vertes = 0;
@@ -416,6 +418,7 @@ void YFbxImporter::ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, c
 			}
 		}
 	}
+	return std::move(static_mesh);
 }
 
 void YFbxImporter::CheckSmoothingInfo(FbxMesh* fbx_mesh)
@@ -531,4 +534,9 @@ bool YFbxImporter::InitSDK() {
 
 	fbx_geometry_converter_ = new FbxGeometryConverter(fbx_manager_);
 	return true;
+}
+
+ConvertedResult::ConvertedResult()
+{
+
 }

@@ -4,6 +4,7 @@
 #include <cassert>
 #include "Engine/YLog.h"
 #include "RHI/DirectX11/D3D11Texture.h"
+D3D11Device* g_device = nullptr;
 D3D11Device::D3D11Device() {}
 D3D11Device::~D3D11Device() {}
 std::unique_ptr<D3D11Device>D3D11Device::CreateD3D11Device() {
@@ -26,6 +27,7 @@ std::unique_ptr<D3D11Device>D3D11Device::CreateD3D11Device() {
     device->d3d_dc_.Attach(d3d_dc);
 
     device->sample_state_mamager_ = std::make_unique<D3DTextureSamplerManager>(device.get());
+    g_device = device.get();
     return std::move(device);
 }
 

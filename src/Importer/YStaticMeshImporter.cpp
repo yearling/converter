@@ -220,7 +220,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 			int polygon_vertex_count = fbx_mesh->GetPolygonSize(polygon_index);
 			//Verify if the polygon is degenerate, in this case do not add them
 			{
-				float comparision_threshold = import_param_->remove_degenerate_triangles ? SMALL_NUMBER : 0.0;
+				float comparision_threshold = (float)import_param_->remove_degenerate_triangles ? SMALL_NUMBER : 0.0;
 				P.clear();
 				P.resize(polygon_vertex_count);
 				for (int corner_index = 0; corner_index < polygon_vertex_count; ++corner_index)
@@ -286,7 +286,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 					int vertex_color_mapping_index = vertex_color_reference_mode == FbxLayerElement::eByControlPoint ? control_point_index : real_fbx_vertex_index;
 					int vertex_color_index = vertex_color_reference_mode == FbxLayerElement::eDirect ? vertex_color_mapping_index : vertex_color->GetIndexArray().GetAt(vertex_color_mapping_index);
 					FbxColor vertex_color_value = vertex_color->GetDirectArray().GetAt(vertex_color_index);
-					cur_vertex_instance.vertex_instance_colors = YVector4(vertex_color_value.mRed, vertex_color_value.mGreen, vertex_color_value.mBlue, vertex_color_value.mAlpha);
+					cur_vertex_instance.vertex_instance_color = YVector4((float)vertex_color_value.mRed, (float)vertex_color_value.mGreen, (float)vertex_color_value.mBlue, (float)vertex_color_value.mAlpha);
 				}
 
 				// normal
@@ -299,7 +299,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 					FbxVector4 temp_value = normal_layer->GetDirectArray().GetAt(normal_value_index);
 					temp_value = total_matrix_for_normal.MultT(temp_value);
 					YVector tangent_z = converter_.ConvertDir(temp_value);
-					cur_vertex_instance.vertex_instance_normals = tangent_z;
+					cur_vertex_instance.vertex_instance_normal = tangent_z;
 
 					if (has_NTB_information)
 					{
@@ -308,7 +308,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 						FbxVector4 tangent_value = tangent_layer->GetDirectArray().GetAt(tangent_value_index);
 						tangent_value = total_matrix_for_normal.MultT(tangent_value);
 						YVector tangent_x = converter_.ConvertDir(tangent_value);
-						cur_vertex_instance.vertex_instance_tangents = tangent_x;
+						cur_vertex_instance.vertex_instance_tangent = tangent_x;
 
 						int binormal_map_index = (binormal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : real_fbx_vertex_index;
 						int binormal_value_index = (binormal_reference_mode == FbxLayerElement::eDirect) ? binormal_map_index : binormal_layer->GetIndexArray().GetAt(binormal_map_index);
@@ -316,7 +316,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 						binormal_value = total_matrix_for_normal.MultT(binormal_value);
 						// 保持手性
 						YVector tanget_y = -converter_.ConvertDir(binormal_value);
-						cur_vertex_instance.vertex_instance_binormal_signs = YMath::GetBasisDeterminantSign(tangent_x, tanget_y, tangent_z);
+						cur_vertex_instance.vertex_instance_binormal_sign = YMath::GetBasisDeterminantSign(tangent_x, tanget_y, tangent_z);
 					}
 				}
 			}
@@ -324,7 +324,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 			//TODO check all polygon vertex, not just the first 3 vertex
 			if (!has_no_degenerated_polygons)
 			{
-				float triagnle_comparsion_threshold = import_param_->remove_degenerate_triangles ? THRESH_POINTS_ARE_SAME : 0.0;
+				float triagnle_comparsion_threshold = (float)import_param_->remove_degenerate_triangles ? THRESH_POINTS_ARE_SAME : 0.0;
 				YVector vertex_position[3];
 				vertex_position[0] = raw_mesh->vertex_position[corner_vertices_ids[0]].position;
 				vertex_position[1] = raw_mesh->vertex_position[corner_vertices_ids[1]].position;
@@ -383,7 +383,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 				if (existing_polygon_group_id == INVALID_ID)
 				{
 					YMeshPolygonGroup tmp_group;
-					existing_polygon_group_id = raw_mesh->polygon_groups.size();
+					existing_polygon_group_id = (int)raw_mesh->polygon_groups.size();
 					raw_mesh->polygon_groups.push_back(tmp_group);
 					raw_mesh->polygon_group_imported_material_slot_name[existing_polygon_group_id] = material_name;
 				}

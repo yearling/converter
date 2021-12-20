@@ -10,6 +10,8 @@
 #include "fbxsdk/scene/shading/fbxsurfacematerial.h"
 #include "Engine/YRawMesh.h"
 #include "Engine/YMaterial.h"
+
+#include "Engine/YStaticMesh.h"
 struct FbxImportParam 
 {
 	bool import_as_skelton = false;
@@ -45,6 +47,11 @@ struct FbxImportSceneInfo
 	std::vector<FbxMeshInfo> mesh_infos;
 };
 
+struct ConvertedResult
+{
+	ConvertedResult();
+	std::vector<std::unique_ptr<YStaticMesh>> static_meshes;
+};
 enum DCCSoftware {
 	E3dsMax,
 	EMaya,
@@ -59,7 +66,7 @@ public:
 	~YFbxImporter();
 	bool ImportFile(const std::string& file_path);
 	const FbxImportSceneInfo* GetImportedSceneInfo() const;
-	bool ParseFile(const FbxImportParam& import_param);
+	bool ParseFile(const FbxImportParam& import_param, ConvertedResult& out_result);
 protected:
 	void RenameNodeName();
 	void RenameMaterialName();
@@ -69,7 +76,7 @@ protected:
 	void ApplyTransformSettingsToFbxNode(FbxNode* node);
 	void BuildFbxMatrixForImportTransform(FbxAMatrix & out_matrix);
 	void GetMeshArray(FbxNode* root,std::vector<FbxNode*>& fbx_mesh_nodes);
-	void ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string&  mesh_name,int lod_index = 0);
+	std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string&  mesh_name,int lod_index = 0);
 	void CheckSmoothingInfo(FbxMesh* fbx_mesh);
 	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<YMaterial*>& existing_materials);
 	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<YMaterial*>& out_materials, std::vector<std::string>& us_sets);

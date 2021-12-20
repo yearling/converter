@@ -129,7 +129,7 @@ bool ComplieShaderFromSource(const std::string& ShaderString, const std::string&
     return true;
 }
 
- ID3DShaderBind::ID3DShaderBind(D3D11Device* device) : ID3DShader(device){}
+ ID3DShaderBind::ID3DShaderBind(){}
 
 ID3DShaderBind::~ID3DShaderBind() {}
 
@@ -164,7 +164,7 @@ bool ID3DShaderBind::AddAlias(const std::string& AliasName) {
 }
 
 bool ID3DShaderBind::Update() {
-    ID3D11DeviceContext* device_context = device_->GetDC();
+    ID3D11DeviceContext* device_context = g_device->GetDC();
     for (std::unique_ptr<D3DConstantBuffer>& ConstantBuffer : ConstantBuffers) {
         if (!ConstantBuffer->AllocResource()) return false;
         D3D11_MAPPED_SUBRESOURCE MapResource;
@@ -365,7 +365,7 @@ bool ID3DShaderBind::ReflectShader(TComPtr<ID3DBlob> Blob) {
 
             ID3D11ShaderReflectionConstantBuffer* pConstBuffer = ShaderReflector->GetConstantBufferByName(BindDesc.Name);
             pConstBuffer->GetDesc(&ShaderBufferDesc);
-            ConstantBuffers.push_back(std::make_unique<D3DConstantBuffer>(ShaderBufferDesc.Size,device_));
+            ConstantBuffers.push_back(std::make_unique<D3DConstantBuffer>(ShaderBufferDesc.Size));
             std::unique_ptr<D3DConstantBuffer>& ConstantBuffer = ConstantBuffers.back();
             ConstantBuffer->CBName = ShaderBufferDesc.Name;
             ConstantBuffer->CBType = (D3DConstantBuffer::eCBType)ShaderBufferDesc.Type;
@@ -459,7 +459,7 @@ void ID3DShaderBind::AddScalarVariable(const std::string& Name, unsigned int InC
 }
 
 
- D3DVertexShader::D3DVertexShader(D3D11Device* device) : ID3DShaderBind(device){}
+ D3DVertexShader::D3DVertexShader(){}
 
 D3DVertexShader::~D3DVertexShader() {}
 
@@ -502,15 +502,18 @@ bool D3DVertexShader::CreateShader(const std::string& FileName, const std::strin
 }
 
 bool D3DVertexShader::CreateShaderFromSource(const std::string& FileName, const std::string& MainPoint, IVertexFactory* vertex_factory) {
-    assert(device_) ;
+    assert(g_device) ;
 
     HRESULT hr = S_OK;
     TComPtr<ID3DBlob> VSBlob;
     std::string ErrorMsg;
     if (!ComplieShaderFromSource(FileName, MainPoint, "vs_5_0", ShaderMacroEntrys, ShaderIncludePath, VSBlob, ErrorMsg)) {
+        ERROR_INFO("compile shader error\n");
+        ERROR_INFO(FileName);
+        ERROR_INFO(ErrorMsg);
         return false;
     }
-    ID3D11Device* d3d_device = device_->GetDevice();
+    ID3D11Device* d3d_device = g_device->GetDevice();
     if (FAILED(hr = d3d_device->CreateVertexShader(VSBlob->GetBufferPointer(), VSBlob->GetBufferSize(), NULL, &VertexShader))) {
         ERROR_INFO("Create Vertex Shader failed!");
         return false;
@@ -531,7 +534,7 @@ bool D3DVertexShader::CreateShaderFromSource(const std::string& FileName, const 
 
 bool D3DVertexShader::Update() {
     ID3DShaderBind::Update();
-    ID3D11DeviceContext* device_context = device_->GetDC();
+    ID3D11DeviceContext* device_context = g_device->GetDC();
     if (VertexShader) {
         device_context->VSSetShader(VertexShader, nullptr, 0);
         //device_context->IASetInputLayout(InputLayout);
@@ -565,7 +568,7 @@ bool D3DVertexShader::BindInputLayout(std::vector<D3D11_INPUT_ELEMENT_DESC> InIn
 
 bool D3DVertexShader::ClearSlot() {
     //TComPtr<ID3D11DeviceContext>& DeviceContext = YYUTDXManager::GetInstance().GetD3DDC();
-    ID3D11DeviceContext* device_context = device_->GetDC();
+    ID3D11DeviceContext* device_context = g_device->GetDC();
     for (auto& SRVItem : MapSRV) {
         const D3DShaderResourceView& SRVValue = SRVItem.second;
         std::vector<ID3D11ShaderResourceView*> tmp(SRVValue.BindCount,nullptr);
@@ -580,7 +583,7 @@ bool D3DVertexShader::BindSRV(int slot, D3DTexture* texture) {
     }
     D3DTexture2D* texture_2d = dynamic_cast<D3DTexture2D*>(texture);
     ID3D11ShaderResourceView* loc_srv = texture_2d->srv_;
-    device_->GetDC()->VSSetShaderResources(slot,1,&loc_srv);
+    g_device->GetDC()->VSSetShaderResources(slot,1,&loc_srv);
     return true;
 }
 
@@ -663,7 +666,7 @@ bool D3DVertexShader::PostReflection(TComPtr<ID3DBlob>& Blob, TComPtr<ID3D11Shad
         //UE_LOG(ShaderLog, Error, TEXT("InputLayout is not compatible with shader reflection"));
         return false;
     }
-    ID3D11Device* d3d_device = device_->GetDevice();
+    ID3D11Device* d3d_device = g_device->GetDevice();
     if (FAILED(d3d_device->CreateInputLayout(&InputLayoutDesc[0], ShaderDesc.InputParameters, Blob->GetBufferPointer(),
                                              Blob->GetBufferSize(),
                                          &InputLayout))) {
@@ -760,7 +763,7 @@ bool D3DVertexShader::ReflectShader(TComPtr<ID3DBlob> Blob) {
    //     // UE_LOG(ShaderLog, Error, TEXT("InputLayout is not compatible with shader reflection"));
    //     return false;
    // }
-    //ID3D11Device* d3d_device = device_->GetDevice();
+    //ID3D11Device* d3d_device = g_device->GetDevice();
     //if (FAILED(d3d_device->CreateInputLayout(&InputLayoutDesc[0], ShaderDesc.InputParameters, Blob->GetBufferPointer(),
     //                                         Blob->GetBufferSize(), &InputLayout))) {
     //    // UE_LOG(ShaderLog, Error, TEXT("VS Shader create layout failed!! FileName %s "), *ShaderPath);
@@ -831,18 +834,18 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
     std::vector<VertexStreamDescription>& vertex_stream_descs = vertex_factory->GetVertexDescription();
 
     auto tell_desc_the_same = [](const VertexStreamDescription& vertex_stream_desc, const D3D11_INPUT_ELEMENT_DESC& reflected_desc) {
-        if (reflected_desc.Format == DXGI_FORMAT_R32G32_FLOAT && vertex_stream_desc.type == DataType::Float32 &&
+        if (reflected_desc.Format == DXGI_FORMAT_R32G32_FLOAT && vertex_stream_desc.data_type == DataType::Float32 &&
             vertex_stream_desc.com_num == 2) {
             return true;
         }
-        if (reflected_desc.Format == DXGI_FORMAT_R32G32B32_FLOAT && vertex_stream_desc.type == DataType::Float32 && vertex_stream_desc.com_num ==3) {
+        if (reflected_desc.Format == DXGI_FORMAT_R32G32B32_FLOAT && vertex_stream_desc.data_type == DataType::Float32 && vertex_stream_desc.com_num ==3) {
             return true; 
         }
-        if (reflected_desc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT && vertex_stream_desc.type == DataType::Float32 &&
+        if (reflected_desc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT && vertex_stream_desc.data_type == DataType::Float32 &&
             vertex_stream_desc.com_num == 4) {
             return true;
         }
-        if (reflected_desc.Format == DXGI_FORMAT_R32_UINT && vertex_stream_desc.type == DataType::Uint8 &&
+        if (reflected_desc.Format == DXGI_FORMAT_R32_UINT && vertex_stream_desc.data_type == DataType::Uint8 &&
             vertex_stream_desc.com_num == 4) {
             return true;
         }
@@ -873,7 +876,7 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
         ERROR_INFO("InputLayout is not compatible with shader reflection");
         return false;
     }
-    ID3D11Device* d3d_device = device_->GetDevice();
+    ID3D11Device* d3d_device = g_device->GetDevice();
     TComPtr<ID3D11InputLayout> d3d_input_layout;
     if (FAILED(d3d_device->CreateInputLayout(&reflected_input_layout_desc[0], shader_desc.InputParameters, blob->GetBufferPointer(),
                                              blob->GetBufferSize(), &d3d_input_layout))) {
@@ -893,12 +896,12 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
 
 TComPtr<ID3D11DeviceChild> D3DVertexShader::GetInternalResource() const { return TComPtr<ID3D11DeviceChild>(VertexShader); }
 
- ID3DShader::ID3DShader(D3D11Device* device):device_(device) {}
+ ID3DShader::ID3DShader(){}
 
 ID3DShader::~ID3DShader() {}
 
- D3DConstantBuffer::D3DConstantBuffer(unsigned int BufferSizeInBytes, D3D11Device* device)
-    : CBSize(BufferSizeInBytes), CBType(eCBType::Num), BindSlotIndex(-1), BindSlotNum(-1), device_(device) {
+ D3DConstantBuffer::D3DConstantBuffer(unsigned int BufferSizeInBytes)
+    : CBSize(BufferSizeInBytes), CBType(eCBType::Num), BindSlotIndex(-1), BindSlotNum(-1) {
     ShadowBuffer.resize(BufferSizeInBytes, 0);
  }
 
@@ -907,7 +910,7 @@ bool D3DConstantBuffer::AllocResource() {
         return true;
     else {
         HRESULT hr = S_OK;
-        ID3D11Device* d3d_device = device_->GetDevice();
+        ID3D11Device* d3d_device = g_device->GetDevice();
         D3D11_BUFFER_DESC desc;
         memset(&desc, 0, sizeof(desc));
         desc.ByteWidth = CBSize;
@@ -923,28 +926,20 @@ bool D3DConstantBuffer::AllocResource() {
 }
 
 
- D3DPixelShader::D3DPixelShader(D3D11Device* device) : ID3DShaderBind(device){}
+ D3DPixelShader::D3DPixelShader() {}
 
 D3DPixelShader::~D3DPixelShader() {}
 
 bool D3DPixelShader::CreateShader(const std::string& FileName, const std::string& MainPoint) {
     assert(!PixShader);
-    ID3D11Device* d3d_device = device_->GetDevice();
+    ID3D11Device* d3d_device = g_device->GetDevice();
     HRESULT hr = S_OK;
     TComPtr<ID3DBlob> VSBlob;
     std::string ErrorMsg;
     if (!ComplieShaderFromFile(FileName, MainPoint, "ps_5_0", ShaderMacroEntrys, ShaderIncludePath, VSBlob, ErrorMsg)) {
-        std::cout << "VS Shader file compile failed!! \n FileName: " << FileName << std::endl;
-        std::cout << "Error msg is :" << ErrorMsg << std::endl;
-        if (ShaderMacroEntrys.size()) {
-            std::cout << "ShaderMacroEntrys:" << std::endl;
-            for (ShaderMacroEntry& Entry : ShaderMacroEntrys) {
-                std::cout << "\"" << Entry.MacroName << "\"" << '[' << Entry.Value << ']' << std::endl;
-            }
-        }
-        if (!ShaderIncludePath.empty()) {
-            std::cout << "ShaderInclude:" << ShaderIncludePath << std::endl;
-        }
+		ERROR_INFO("compile shader error\n");
+		ERROR_INFO(FileName);
+		ERROR_INFO(ErrorMsg);
         return false;
     }
     ShaderPath = FileName;
@@ -965,7 +960,7 @@ bool D3DPixelShader::CreateShader(const std::string& FileName, const std::string
 }
 
 bool D3DPixelShader::CreateShaderFromSource(const std::string& FileName, const std::string& MainPoint) {
-    assert(device_);
+    assert(g_device);
 
     HRESULT hr = S_OK;
     TComPtr<ID3DBlob> VSBlob;
@@ -973,7 +968,7 @@ bool D3DPixelShader::CreateShaderFromSource(const std::string& FileName, const s
     if (!ComplieShaderFromSource(FileName, MainPoint, "ps_5_0", ShaderMacroEntrys, ShaderIncludePath, VSBlob, ErrorMsg)) {
         return false;
     }
-    ID3D11Device* d3d_device = device_->GetDevice();
+    ID3D11Device* d3d_device = g_device->GetDevice();
     if (FAILED(hr = d3d_device->CreatePixelShader(VSBlob->GetBufferPointer(), VSBlob->GetBufferSize(), NULL, &PixShader))) {
         ERROR_INFO("Create Vertex Shader failed!");
         return false;
@@ -989,7 +984,7 @@ bool D3DPixelShader::CreateShaderFromSource(const std::string& FileName, const s
 }
 
 bool D3DPixelShader::Update() {
-    ID3D11DeviceContext* d3d_dc = device_->GetDC();
+    ID3D11DeviceContext* d3d_dc = g_device->GetDC();
     if (ID3DShaderBind::Update() && PixShader) {
         d3d_dc->PSSetShader(PixShader, nullptr, 0);
         for (std::unique_ptr<D3DConstantBuffer>& ConstantBuffer : ConstantBuffers) {
@@ -1017,7 +1012,7 @@ bool D3DPixelShader::Update() {
 }
 
 bool D3DPixelShader::ClearSlot() {
-    ID3D11DeviceContext* d3d_dc = device_->GetDC();
+    ID3D11DeviceContext* d3d_dc = g_device->GetDC();
     for (auto& SRVItem : MapSRV) {
         const D3DShaderResourceView& SRVValue = SRVItem.second;
         std::vector<ID3D11ShaderResourceView*> tmp;
@@ -1033,7 +1028,7 @@ bool D3DPixelShader::BindSRV(int slot, D3DTexture* texture) {
     }
     D3DTexture2D* texture_2d = dynamic_cast<D3DTexture2D*>(texture);
     ID3D11ShaderResourceView* loc_srv = texture_2d->srv_;
-    device_->GetDC()->PSSetShaderResources(slot, 1, &loc_srv);
+    g_device->GetDC()->PSSetShaderResources(slot, 1, &loc_srv);
     return true;
 }
 

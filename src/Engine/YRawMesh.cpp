@@ -74,10 +74,7 @@ int YLODMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_id
 	return polygon_id;
 }
 
-YStaticMesh::YStaticMesh()
-{
 
-}
 
 YMeshEdge::YMeshEdge()
 {

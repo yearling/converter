@@ -117,3 +117,5 @@ private:
 	TComPtr<ID3D11Texture2D> main_depth_buffer_;
 	std::unique_ptr <D3DTextureSamplerManager> sample_state_mamager_;
 };
+
+extern D3D11Device* g_device;
