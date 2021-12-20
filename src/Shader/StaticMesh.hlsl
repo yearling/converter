@@ -27,7 +27,8 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
-	Output.vPosition = float4(Input.vPosition,1.0);
+	matrix vp= mul(g_view,g_projection);
+	Output.vPosition = mul(float4(Input.vPosition,1.0), vp);
 	Output.vTexcoord = Input.vTexCoord;
 	Output.vColor = float4(1.0,1.0,1.0,1.0);
 	Output.vNormal = Input.vNormal;

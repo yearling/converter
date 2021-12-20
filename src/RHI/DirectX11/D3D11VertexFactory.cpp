@@ -227,7 +227,7 @@ void DXVertexFactory::SetRenderState() {
     }
 }
 
-void DXVertexFactory::DrawCall() {
+void DXVertexFactory::DrawCall(CameraBase* camera) {
     ID3D11Device* device = g_device->GetDevice();
     ID3D11DeviceContext* dc = g_device->GetDC();
     float BlendColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -248,6 +248,8 @@ void DXVertexFactory::DrawCall() {
     }
     //bind ib
     dc->IASetIndexBuffer(index_buffer_, DXGI_FORMAT_R32_UINT, 0);
+    vertex_shader_->BindResource("g_projection", camera->GetProjectionMatrix());
+    vertex_shader_->BindResource("g_view", camera->GetViewMatrix());
     vertex_shader_->Update();
     pixel_shader_->Update();
     

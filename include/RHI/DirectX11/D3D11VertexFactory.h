@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include "RHI/DirectX11/D3D11Shader.h"
+#include "Engine/YCamera.h"
+
 class D3DTextureSampler;
 struct YLODMesh;
 enum VertexAttribute
@@ -78,7 +80,7 @@ class DXVertexFactory:public IVertexFactory {
     virtual bool SetupVertexStreams() override;
     void SetInputLayout(const TComPtr<ID3D11InputLayout>& input_layout);
     void SetRenderState();
-    void DrawCall();
+    void DrawCall(CameraBase* camera);
   private:
     std::vector<TComPtr<ID3D11Buffer>> vertex_buffers_;
     TComPtr<ID3D11Buffer> index_buffer_;

@@ -1,5 +1,6 @@
 #pragma once
 #include "Math/YMath.h"
+#include "Math/YMatrix.h"
 struct YRotator
 {
 	// rotation pitch yaw roll order
@@ -24,4 +25,6 @@ public:
 	static float ClampAxis(float Angle); //return [0,360)
 	static float NormalizeAxis(float Angle);//return (-180,180]
 	YVector Euler() const;
+	YMatrix ToMatrix() const;
+	YQuat ToQuat() const;
 };

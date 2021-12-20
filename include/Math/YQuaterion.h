@@ -18,5 +18,11 @@ public:
 
 	YRotator Rotator() const;
 	YVector Euler() const;
+	YMatrix ToMatrix() const;
+	static YQuat Identity;
+	 void Normalize(float Tolerance = SMALL_NUMBER);
+	 YQuat GetNormalized(float Tolerance = SMALL_NUMBER) const;
 
+	// Return true if this quaternion is normalized
+	bool IsNormalized() const;
 };

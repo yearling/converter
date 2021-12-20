@@ -1,5 +1,6 @@
 #include "Math/YMatrix.h"
 #include "Math/YVector.h"
+#include "Math/YRotator.h"
 #include <cassert>
 #include <cstring>
 
@@ -19,6 +20,15 @@ YMatrix::YMatrix(const YVector4& row0, const YVector4& row1, const YVector4& row
 	m[1][0] = row1.x; m[1][1] = row1.y; m[1][2] = row1.z; m[1][3] = row1.w;
 	m[2][0] = row2.x; m[2][1] = row2.y; m[2][2] = row2.z; m[2][3] = row2.w;
 	m[3][0] = row3.x; m[3][1] = row3.y; m[3][2] = row3.z; m[3][3] = row3.w;
+}
+
+YMatrix::YMatrix(const YRotator& rotator, const YVector& translation)
+{
+	*this = rotator.ToMatrix();
+	this->m[3][0] = translation.x;
+	this->m[3][1] = translation.y;
+	this->m[3][2] = translation.z;
+	this->m[3][3] = 1.f;
 }
 
 YMatrix YMatrix::operator*(const YMatrix& other)

@@ -3,13 +3,13 @@
 #include "Engine/YRawMesh.h"
 #include <memory>
 #include "RHI/DirectX11/D3D11VertexFactory.h"
-
+#include "Engine/YCamera.h"
 class YStaticMesh
 {
 public:
 	YStaticMesh();
 	bool AllocGpuResource();
-	void	Render();
+	void	Render(CameraBase* camera);
 	std::vector<std::unique_ptr<YLODMesh>> raw_meshes;
 
 private:

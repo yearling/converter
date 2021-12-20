@@ -217,6 +217,20 @@ bool ID3DShaderBind::BindResource(int slot, const char* c, int Num) {
     return false;
 }
 
+bool ID3DShaderBind::BindResource(const std::string& ParaName, const YMatrix& Mat)
+{
+	ScalarIndex Index;
+   if (BindResourceHelp(ParaName, Index)) {
+        if (Index.Type != ScalarIndex::eType::MATRIX4X4) {
+	            assert(0);
+	            return false;
+        }
+        D3DConstantBuffer::YCBMatrix4X4::SetValue(ConstantBuffers[Index.ConstantBufferIndex].get(), Index.ValueIndex, Mat);
+	        return true;
+	    }
+    return false;
+}
+
 bool ID3DShaderBind::BindSRV(const std::string& ParamName, const D3DShaderResourceView& InSRV) {
     auto find_result  = MapSRV.find(ParamName);
     if (find_result!=MapSRV.end()) {
@@ -239,7 +253,7 @@ bool ID3DShaderBind::BindTextureSampler(const std::string& sample_name, D3DTextu
 
 bool ID3DShaderBind::BindResourceHelp(const std::string& ParaName, ScalarIndex& Index) {
     auto FindResult = MapShaderVariableToScalar.find(ParaName);
-    if (FindResult!=MapShaderVariableToScalar.end()) {
+    if (FindResult==MapShaderVariableToScalar.end()) {
         std::cout << "Bind [" << ParaName << "] Shader Failed!!" << std::endl;
         return false;
     }

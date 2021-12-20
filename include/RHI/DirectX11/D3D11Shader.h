@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include"RHI/DirectX11/D3D11Device.h"
+#include "Math/YMatrix.h"
 
 class IVertexFactory;
 struct CommonUniformLocation;
@@ -37,6 +38,7 @@ class ID3DShader {
     virtual bool BindResource(const std::string &ParaName, int n) = 0;
     virtual bool BindResource(const std::string &ParaName, float f) = 0;
     virtual bool BindResource(const std::string &ParaName, const float *f, int Num) = 0;
+    virtual bool BindResource(const std::string& ParaName, const YMatrix& Mat)=0;
     virtual bool BindResource(int slot, int n) = 0;
     virtual bool BindResource(int slot, float f) = 0;
     virtual bool BindResource(int slot, const float *f, int Num) = 0;
@@ -102,14 +104,14 @@ struct D3DConstantBuffer {
             memcpy_s((ConstantBuffer->ShadowBuffer.data() + Offset), elem_num * sizeof(T), Value, elem_num * sizeof(T));
         }
     };
-    //struct YCBMatrix4X4 {
-    //    static glm::matrix44 &GetValue(YConstantBuffer *ConstantBuffer, unsigned int Offset) {
-    //        return *((FMatrix *)(ConstantBuffer->ShadowBuffer.Get() + Offset));
-    //    }
-    //    static void SetValue(YConstantBuffer *ConstantBuffer, unsigned int Offset, const glm::matrix44 &Value) {
-    //        //*((glm::matrix44 *)(ConstantBuffer->ShadowBuffer.Get() + Offset)) = Value.GetTransposed();
-    //    }
-    //};
+    struct YCBMatrix4X4 {
+        static YMatrix &GetValue(D3DConstantBuffer*ConstantBuffer, unsigned int Offset) {
+            return *((YMatrix*)(ConstantBuffer->ShadowBuffer.data() + Offset));
+        }
+        static void SetValue(D3DConstantBuffer*ConstantBuffer, unsigned int Offset, const YMatrix &Value) {
+            *((YMatrix *)(ConstantBuffer->ShadowBuffer.data() + Offset)) = Value.GetTransposed();
+        }
+    };
 
     TComPtr<ID3D11Buffer> D3DBuffer;
 };
@@ -128,6 +130,7 @@ class ID3DShaderBind : public ID3DShader {
     virtual bool BindResource(const std::string &ParaName, int n) override;
     virtual bool BindResource(const std::string &ParaName, float f) override;
     virtual bool BindResource(const std::string &ParaName,const  float *f, int Num) override;
+    bool BindResource(const std::string &ParaName, const YMatrix &Mat) override;
     virtual bool BindResource(int slot, int n) override;
     virtual bool BindResource(int slot, float f) override;
     virtual bool BindResource(int slot, const float *f, int Num) override;

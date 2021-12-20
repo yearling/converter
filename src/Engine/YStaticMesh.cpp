@@ -1,11 +1,11 @@
 #include "Engine/YStaticMesh.h"
 #include <cassert>
 #include "RHI/DirectX11/D3D11VertexFactory.h"
-void YStaticMesh::Render()
+void YStaticMesh::Render(CameraBase* camera)
 {
 	if (vertex_factory_)
 	{
-		vertex_factory_->DrawCall();
+		vertex_factory_->DrawCall(camera);
 	}
 }
 YStaticMesh::YStaticMesh()
