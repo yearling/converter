@@ -80,6 +80,7 @@ bool OpenFbx()
 	return true;
 }
 void Render();
+void Update();
 int	 Run();
 void Release();
 
@@ -157,9 +158,15 @@ bool CreateWindows()
 
 	return TRUE;
 }
+void Update()
+{
+	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(30, 0, 0), YVector4(0.0, 0.0, 1.0, 1.0));
+}
 void Render()
 {
+	Update();
 	main_camera->Update();
+	g_Canvas->Update();
 	// 正式的场景绘制工作
 		//device->PreRender();
 	TComPtr<ID3D11RenderTargetView> main_rtv = device->GetMainRTV();
@@ -175,6 +182,9 @@ void Render()
 	float color[4] = { 0.f, 0.f, 0.f, 1.0f };
 	raw_dc->ClearRenderTargetView(main_rtv, reinterpret_cast<float*>(color));
 	raw_dc->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+
+	g_Canvas->Render(main_camera.get());
+
 	for (std::unique_ptr<YStaticMesh>& mesh : g_test_mesh)
 	{
 		if (mesh)
@@ -182,7 +192,7 @@ void Render()
 			mesh->Render(main_camera.get());
 		}
 	}
-
+	
 	device->Present();
 }
 

@@ -540,6 +540,7 @@ bool D3DVertexShader::CreateShaderFromSource(const std::string& FileName, const 
     }
     if (!CreateInputLayout(VSBlob, vertex_factory)) {
         ERROR_INFO("Create Vertex Shader failed!");
+        return false;
     
     }
    
@@ -855,8 +856,9 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
         if (reflected_desc.Format == DXGI_FORMAT_R32G32B32_FLOAT && vertex_stream_desc.data_type == DataType::Float32 && vertex_stream_desc.com_num ==3) {
             return true; 
         }
-        if (reflected_desc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT && vertex_stream_desc.data_type == DataType::Float32 &&
+        if (reflected_desc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT && (vertex_stream_desc.data_type == DataType::Float32  || vertex_stream_desc.data_type == DataType::Uint8)&&
             vertex_stream_desc.com_num == 4) {
+           
             return true;
         }
         if (reflected_desc.Format == DXGI_FORMAT_R32_UINT && vertex_stream_desc.data_type == DataType::Uint8 &&
@@ -875,7 +877,10 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
                 if (tell_desc_the_same(vertex_stream_descs[j], reflected_input_layout_desc[i])) {
                     find_same_name = true;
                     vertex_stream_descs[j].slot = reflected_input_layout_desc[i].InputSlot;
-                  
+                    if (reflected_input_layout_desc[i].Format == DXGI_FORMAT_R32G32B32A32_FLOAT && vertex_stream_descs[j].data_type == DataType::Uint8)
+                    {
+                        reflected_input_layout_desc[i].Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                    }
                 }
                 break;
             }

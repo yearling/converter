@@ -183,7 +183,7 @@ bool D3D11Device::OnResize(int width, int height) {
     return true;
 }
 
-TComPtr<ID3D11RenderTargetView> D3D11Device::GetMainRTV() const { return main_RTVs_; }
+ID3D11RenderTargetView* D3D11Device::GetMainRTV() const { return main_RTVs_; }
 
 int D3D11Device::GetDeviceWidth() const { return width_; }
 
@@ -674,7 +674,7 @@ bool D3D11Device::Create2DTextureArrayDSV_SRV(UINT width, UINT height, DXGI_FORM
     return true;
 }
 
-bool D3D11Device::SetRenderTarget(TComPtr<ID3D11RenderTargetView>& rtv, TComPtr<ID3D11DepthStencilView>& dsv) { 
+bool D3D11Device::SetRenderTarget(ID3D11RenderTargetView* rtv, TComPtr<ID3D11DepthStencilView>& dsv) { 
     assert(d3d_dc_); 
     d3d_dc_->OMSetRenderTargets(1, &rtv, dsv);
     return true;
@@ -704,4 +704,16 @@ bool D3D11Device::Present() {
     }
     return true;
  }
+
+bool D3D11Device::UpdateVBDynaimc(ID3D11Buffer* buffer, int start, void* p_data, int bytes_num)
+{
+	D3D11_MAPPED_SUBRESOURCE MapResource;
+	HRESULT hr = d3d_dc_->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MapResource);
+	if (p_data)
+	{
+		memcpy(MapResource.pData, p_data, bytes_num);
+	}
+    d3d_dc_->Unmap(buffer, 0);
+    return true;
+}
 

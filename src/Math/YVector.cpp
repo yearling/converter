@@ -27,6 +27,7 @@ float& YVector::operator[](int index)
 	{
 		return z;
 	}
+	assert(0);
 }
 
 float YVector::operator[](int index) const
@@ -44,6 +45,7 @@ float YVector::operator[](int index) const
 	{
 		return z;
 	}
+	assert(0);
 }
 
 bool YVector::IsNearlyZero(float tolerance /*= KINDA_SMALL_NUMBER*/) const

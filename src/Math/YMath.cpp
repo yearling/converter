@@ -57,3 +57,12 @@ float YMath::GetBasisDeterminantSign(const YVector& x_axis, const YVector& y_axi
 	return (basis.Determinant() < 0) ? -1.0f : +1.0f;
 }
 
+unsigned int YMath::GetIntColor(const YVector4& color)
+{
+	uint8_t x = (uint8_t)YMath::TruncToInt(color.x * 255.0f);
+	uint8_t y = (uint8_t)YMath::TruncToInt(color.y * 255.0f);
+	uint8_t z = (uint8_t)YMath::TruncToInt(color.z * 255.0f);
+	uint8_t w = (uint8_t)YMath::TruncToInt(color.w * 255.0f);
+	return (w << 24) | (z << 16) | (y << 8) | x;
+}
+

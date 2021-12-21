@@ -56,6 +56,13 @@ void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...
 	std::cout << stream.str();
 #endif
 
+# if defined(DEBUG) | defined(_DEBUG)
+	if (log_type == LogType::EError)
+	{
+		assert(0);
+	}
+#endif
+
 }
 
 #define LOG_INFO(...) MyTraceImplTmp(LogType::EVerbos,__LINE__, __FILE__, __VA_ARGS__)

@@ -235,5 +235,6 @@ struct YMath
 	}
 
 	static float GetBasisDeterminantSign(const YVector& x_axis, const YVector& y_axis, const YVector& z_xis);
+	static unsigned int GetIntColor(const YVector4& color);
 
 };

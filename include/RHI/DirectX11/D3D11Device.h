@@ -29,10 +29,10 @@ public:
 	bool CreateSwapChain(void* wnd);
 	bool OnResize(int width, int height);
 	//for debug
-	TComPtr<ID3D11Device> GetDevice() const { return d3d_device_; }
-	TComPtr<ID3D11DeviceContext> GetDC() const { return d3d_dc_; }
-	TComPtr<ID3D11RenderTargetView> GetMainRTV() const;
-	TComPtr<ID3D11DepthStencilView> GetMainDSV() const { return main_DSV_; }
+	ID3D11Device* GetDevice() const { return d3d_device_; }
+	ID3D11DeviceContext* GetDC() const { return d3d_dc_; }
+	ID3D11RenderTargetView* GetMainRTV() const;
+	ID3D11DepthStencilView* GetMainDSV() const { return main_DSV_; }
 	int GetDeviceWidth() const;
 	int GetDeviceHeight() const;
 	void PreRender();
@@ -97,14 +97,15 @@ public:
 	bool Create2DTextureArrayDSV_SRV(UINT width, UINT height, DXGI_FORMAT format, UINT ArraySize, TComPtr<ID3D11Texture2D>& tex2D,
 		const std::string& alias /*= ""*/);
 	// SetRT
-	bool SetRenderTarget(TComPtr<ID3D11RenderTargetView>& rtv, TComPtr<ID3D11DepthStencilView>& dsv);
+	bool SetRenderTarget(ID3D11RenderTargetView *rtv, TComPtr<ID3D11DepthStencilView>& dsv);
 
 	// SetViewPort
 	bool SetViewPort(int top_left_x, int top_left_y, int width, int height);
 
 	// present
 	bool Present();
-
+	//update
+	bool UpdateVBDynaimc(ID3D11Buffer* buffer, int start, void* p_data, int bytes_num);
 private:
 	TComPtr<ID3D11Device> d3d_device_;
 	TComPtr<ID3D11DeviceContext> d3d_dc_;

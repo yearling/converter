@@ -1,29 +1,17 @@
-cbuffer ChangePerFrame :register(b0)
-{
-	matrix g_view;
-	matrix g_projection;
-	matrix g_VP;
-	matrix g_InvVP;
-	float3 g_lightDir;
-	float  g_pad;
-}
-
-cbuffer ChangePerMesh :register(b1)
-{
-	matrix g_world;
-}
+matrix g_view;
+matrix g_projection;
+matrix g_VP;
+matrix g_InvVP;
+float3 g_lightDir;
+float  g_pad;
 
 struct VS_INPUT
 {
-	float3 vPosition	: POSITION;
-	float3 vNormal		: NORMAL;
-	float2 vTexcoord	: TEXCOORD0;
-	float4 vColor		: COLOR0;
+	float3 vPosition	: position;
+	float4 vColor		: color;
 };
 struct VS_OUTPUT
 {
-	float3 vNormal		: NORMAL;
-	float2 vTexcoord	: TEXCOORD0;
 	float4 vPosition	: SV_POSITION;
 	float4 vColor		: COLOR0;
 };
@@ -31,16 +19,13 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
-	matrix matWVP = mul(g_world, g_VP);
-	//matrix matWVP = mul(g_VP, g_world);
-	Output.vPosition = mul(float4(Input.vPosition,1.0f), matWVP);
-	Output.vNormal = normalize(mul(Input.vNormal, (float3x3) g_world));
-	Output.vTexcoord = Input.vTexcoord;
+	matrix vp= mul(g_view,g_projection);
+	Output.vPosition = mul(float4(Input.vPosition,1.0), vp);
 	Output.vColor = Input.vColor;
 	return Output;
 }
 
-float4 PSColor(VS_OUTPUT Input) :SV_Target
+float4 PSMain(VS_OUTPUT Input) :SV_Target
 {
 	return Input.vColor;
 }

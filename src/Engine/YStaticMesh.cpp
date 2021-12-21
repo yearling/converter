@@ -41,6 +41,7 @@ public:
 protected:
 	YStaticMesh* mesh_ = nullptr;
 };
+
 void YStaticMesh::Render(CameraBase* camera)
 {
 	ID3D11Device* device = g_device->GetDevice();
@@ -50,8 +51,7 @@ void YStaticMesh::Render(CameraBase* camera)
 	dc->RSSetState(rs_);
 	dc->OMSetDepthStencilState(ds_, 0);
 	dc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	dc->ClearDepthStencilView(g_device->GetMainDSV(), D3D11_CLEAR_DEPTH, 1, 0xFF);
-	//bind ib
+	//bind im
 	vertex_factory_->SetupStreams();
 	//bind ib
 	dc->IASetIndexBuffer(index_buffer_, DXGI_FORMAT_R32_UINT, 0);
@@ -223,7 +223,7 @@ bool YStaticMesh::AllocGpuResource()
 	if (!sampler_state_) {
 		sampler_state_ = g_device->GetSamplerState(SF_MIN_MAG_MIP_LINEAR, AM_WRAP);
 	}
-	vertex_factory_.reset(static_mesh_vertex_factory.release());
+	vertex_factory_ = std::move(static_mesh_vertex_factory);
 	allocated_gpu_resource = true;
 	return true;
 }
