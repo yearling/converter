@@ -7,6 +7,7 @@
 #include "Engine/YLog.h"
 #include "Importer/YFbxImporter.h"
 #include "Engine/YCamera.h"
+#include "Engine/YCanvas.h"
 HINSTANCE	g_hInstance(nullptr);
 HWND		g_hWnd(nullptr);
 
@@ -36,9 +37,10 @@ bool InitD3D()
 		ERROR_INFO("create swap chain failed!");
 	}
 	device->OnResize(g_winWidth, g_winHeight);
-	main_camera = std::make_unique<PerspectiveCamera>(60.f, (float)g_winWidth / (float)g_winHeight, 2.0, 10000.0f);
+	main_camera = std::make_unique<PerspectiveCamera>(60.f, (float)g_winWidth / (float)g_winHeight, 2.f, 10000.0f);
 	main_camera->SetPosition(YVector(0.0, 0.0, -20.f));
 	main_camera->SetRotation(YRotator(0.0, 0.0, 0.f));
+	g_Canvas = new YCamvas();
 	return true;
 }
 
@@ -170,7 +172,7 @@ void Render()
 	TComPtr<ID3D11Device> raw_device = device->GetDevice();
 	TComPtr<ID3D11DeviceContext> raw_dc = device->GetDC();
 	// 绘制青色背景
-	float color[4] = { 0.f, 1.f, 1.f, 1.0f };
+	float color[4] = { 0.f, 0.f, 0.f, 1.0f };
 	raw_dc->ClearRenderTargetView(main_rtv, reinterpret_cast<float*>(color));
 	raw_dc->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 	for (std::unique_ptr<YStaticMesh>& mesh : g_test_mesh)
@@ -203,11 +205,13 @@ int Run()
 
 	Release();
 
-	return msg.wParam;
+	return (int)msg.wParam;
 }
 
 void Release()
 {
+	delete g_Canvas;
+	g_Canvas = nullptr;
 }
 
 LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)

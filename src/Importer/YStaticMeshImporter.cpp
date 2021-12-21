@@ -220,7 +220,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 			int polygon_vertex_count = fbx_mesh->GetPolygonSize(polygon_index);
 			//Verify if the polygon is degenerate, in this case do not add them
 			{
-				float comparision_threshold = (float)import_param_->remove_degenerate_triangles ? SMALL_NUMBER : 0.0;
+				float comparision_threshold = (float)import_param_->remove_degenerate_triangles ? SMALL_NUMBER : 0.f;
 				P.clear();
 				P.resize(polygon_vertex_count);
 				for (int corner_index = 0; corner_index < polygon_vertex_count; ++corner_index)
@@ -324,7 +324,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 			//TODO check all polygon vertex, not just the first 3 vertex
 			if (!has_no_degenerated_polygons)
 			{
-				float triagnle_comparsion_threshold = (float)import_param_->remove_degenerate_triangles ? THRESH_POINTS_ARE_SAME : 0.0;
+				float triagnle_comparsion_threshold = (float)import_param_->remove_degenerate_triangles ? THRESH_POINTS_ARE_SAME : 0.f;
 				YVector vertex_position[3];
 				vertex_position[0] = raw_mesh->vertex_position[corner_vertices_ids[0]].position;
 				vertex_position[1] = raw_mesh->vertex_position[corner_vertices_ids[1]].position;
