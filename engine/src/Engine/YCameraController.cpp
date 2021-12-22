@@ -147,6 +147,5 @@ void FPSCameraController::OnMouseMove(int x, int y)
 
 void FPSCameraController::OnMouseWheel(int x, int y, float z)
 {
-	LOG_INFO("wheel value ", z);
 	wheel_speed = z;
 }

@@ -168,7 +168,7 @@ FbxUVs::FbxUVs(YFbxImporter* importer, FbxMesh* mesh)
 void FbxUVs::Phase2(YFbxImporter* importer, FbxMesh* mesh)
 {
 //	store the UVs in arrays for fast access in the later looping of triangles
-	unique_count = uv_set.size();
+	unique_count =(int) uv_set.size();
 	if (unique_count > 0)
 	{
 		layer_element_uv.resize(unique_count);
