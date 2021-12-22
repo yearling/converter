@@ -11,6 +11,7 @@
 #include "Engine/YCanvas.h"
 #include "Engine/YInputManager.h"
 #include "Engine/YCameraController.h"
+#include "Engine/YCanvasUtility.h"
 HINSTANCE	g_hInstance(nullptr);
 HWND		g_hWnd(nullptr);
 
@@ -95,6 +96,7 @@ void Update(double delta_time)
 	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(30, 0, 0), YVector4(0.0, 0.0, 1.0, 1.0));
 	g_Canvas->DrawCube(YVector(0.0, 5.0, 0.0), YVector4(1.0, 0.0, 0.0, 1.0));
 	DrawUtility::DrawGrid();
+	DrawUtility::DrawWorldCoordinate(main_camera.get());
 	main_camera->Update();
 	camera_controller->Update(delta_time);
 	g_Canvas->Update();
@@ -104,7 +106,7 @@ void Update(double delta_time)
 void Render()
 {
 	std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
-	double delta_time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time).count();
+	double delta_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time).count();
 	delta_time *= 0.000001; // to second
 	last_frame_time = current_time;
 	//LOG_INFO("fps: ", 1.0 / delta_time);
@@ -273,6 +275,13 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_KEYUP:
 		g_input_manager->OnEventKeyUp((char)wParam);
 		break;
+	case WM_MOUSEWHEEL:
+	{
+		int z_delta =(int) GET_WHEEL_DELTA_WPARAM(wParam);
+		float z_normal = (float)z_delta / (float)WHEEL_DELTA;
+		g_input_manager->OnMouseWheel(x, y, z_normal);
+		break;
+	}
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;

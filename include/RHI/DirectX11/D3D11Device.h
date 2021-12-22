@@ -105,7 +105,7 @@ public:
 	// present
 	bool Present();
 	//update
-	bool UpdateVBDynaimc(ID3D11Buffer* buffer, int start, void* p_data, int bytes_num);
+	bool UpdateVBDynaimc(ID3D11Buffer* buffer, int start, void* p_data, unsigned int bytes_num);
 private:
 	TComPtr<ID3D11Device> d3d_device_;
 	TComPtr<ID3D11DeviceContext> d3d_dc_;

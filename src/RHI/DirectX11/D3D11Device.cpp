@@ -705,7 +705,7 @@ bool D3D11Device::Present() {
     return true;
  }
 
-bool D3D11Device::UpdateVBDynaimc(ID3D11Buffer* buffer, int start, void* p_data, int bytes_num)
+bool D3D11Device::UpdateVBDynaimc(ID3D11Buffer* buffer, int start, void* p_data, unsigned int bytes_num)
 {
 	D3D11_MAPPED_SUBRESOURCE MapResource;
 	HRESULT hr = d3d_dc_->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MapResource);

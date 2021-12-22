@@ -95,8 +95,8 @@ void YCamvas::Update()
 	//update
 	if (points_tmp.size())
 	{
-		g_device->UpdateVBDynaimc(vertex_buffers_[0], 0, &points_tmp[0], points_tmp.size() * sizeof(YVector));
-		g_device->UpdateVBDynaimc(vertex_buffers_[1], 0, &color_tmp[0], color_tmp.size() * sizeof(int));
+		g_device->UpdateVBDynaimc(vertex_buffers_[0], 0, &points_tmp[0],(unsigned int) points_tmp.size() * sizeof(YVector));
+		g_device->UpdateVBDynaimc(vertex_buffers_[1], 0, &color_tmp[0], (unsigned int) color_tmp.size() * sizeof(int));
 	}
 	
 }
@@ -121,7 +121,7 @@ void YCamvas::Render(CameraBase* camera)
 	vertex_shader_->BindResource("g_view", camera->GetViewMatrix());
 	vertex_shader_->Update();
 	pixel_shader_->Update();
-	dc->Draw(lines_.size() * 2,0);
+	dc->Draw((unsigned int)lines_.size() * 2,0);
 
 	lines_.clear();
 }
@@ -235,28 +235,3 @@ bool YCamvas::AllocGPUResource()
 }
 
 YCamvas* g_Canvas = nullptr;
-
-
-void DrawUtility::DrawGrid()
-{
-	// DrawGrids
-	float xStart = -100.0f;
-	float xEnd = 100.0f;
-	float zStart = -100.0f;
-	float zEnd = 100.0f;
-	float Grid = 10.0f;
-
-	for (float xCurrent = xStart; xCurrent < xEnd + 1.0f; xCurrent += Grid)
-	{
-		g_Canvas->DrawLine(YVector(xCurrent, 0, zStart), YVector(xCurrent, 0, zEnd), YVector4(1.0f, 1.0f, 1.0f, 0.3f));
-	}
-	for (float zCurrent = zStart; zCurrent < zEnd + 1.0f; zCurrent += Grid)
-	{
-		g_Canvas->DrawLine(YVector(xStart, 0, zCurrent), YVector(xEnd, 0, zCurrent), YVector4(1.0f, 1.0f, 1.0f, 0.3f));
-	}
-
-	// Draw Coordinate
-	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(5, 0, 0), YVector4(1, 0, 0, 1));
-	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(0, 5, 0), YVector4(0, 1, 0, 1));
-	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(0, 0, 5), YVector4(0, 0, 1, 1));
-}

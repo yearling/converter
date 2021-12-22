@@ -156,3 +156,13 @@ YVector4::YVector4(const float* v)
 	z = v[2];
 	w = v[3];
 }
+
+YVector YVector4::AffineTransform() const
+{
+	if (YMath::Abs(w) < SMALL_NUMBER) 
+	{
+		return YVector::zero_vector;
+	}
+
+	return YVector(x / w, y / w, z / w);
+}

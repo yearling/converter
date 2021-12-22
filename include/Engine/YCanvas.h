@@ -36,9 +36,4 @@ protected:
 	std::unique_ptr<D3DPixelShader> pixel_shader_;
 };
 
-class DrawUtility
-{
-public:
-	static void DrawGrid();
-};
 extern YCamvas* g_Canvas;

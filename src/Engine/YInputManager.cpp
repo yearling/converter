@@ -47,3 +47,11 @@ void InputManger::OnMouseMove(int x, int y)
 	}
 }
 
+void InputManger::OnMouseWheel(int x, int y, float z_delta)
+{
+	for (auto& func : mouse_wheel_functions_)
+	{
+		func(x, y, z_delta);
+	}
+}
+
