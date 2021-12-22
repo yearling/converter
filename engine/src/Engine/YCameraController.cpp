@@ -71,6 +71,8 @@ void FPSCameraController::Update(double delta_time)
 	final_rotator.yaw += yaw_delta;
 	camera_->SetRotation(final_rotator);
 	wheel_speed = 0.0;
+	delta_pitch_screen = 0.0;
+	delta_yaw_screen = 0.0;
 }
 
 void FPSCameraController::OnKeyDown(char c)
