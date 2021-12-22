@@ -6,7 +6,7 @@
 #include "Math/YVector.h"
 #include <set>
 #include "fbxsdk/core/math/fbxaffinematrix.h"
-#include "Importer/YFbxUtility.h"
+#include "YFbxUtility.h"
 #include "fbxsdk/scene/shading/fbxsurfacematerial.h"
 #include "Engine/YRawMesh.h"
 #include "Engine/YMaterial.h"
@@ -78,9 +78,9 @@ protected:
 	void GetMeshArray(FbxNode* root,std::vector<FbxNode*>& fbx_mesh_nodes);
 	std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string&  mesh_name,int lod_index = 0);
 	void CheckSmoothingInfo(FbxMesh* fbx_mesh);
-	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<YMaterial*>& existing_materials);
-	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<YMaterial*>& out_materials, std::vector<std::string>& us_sets);
-	YMaterial* FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_material);
+	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<YFbxMaterial*>& existing_materials);
+	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<YFbxMaterial*>& out_materials, std::vector<std::string>& us_sets);
+	YFbxMaterial* FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_material);
 	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
 	bool IsOddNegativeScale(FbxAMatrix& total_matrix);
 private:

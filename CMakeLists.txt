@@ -24,14 +24,22 @@ project(demo)
 #第三方库路径
 SET(THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 SET(FBX_BIN ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64)
+SET(ENGINE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/engine)
+SET(FBXIMPORTER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/importer)
 
 #第三方库头文件
 SET(THIRD_PARTY_INCLUDE ${THIRD_PARTY}/fbxsdk/include)
 
-add_subdirectory(${THIRD_PARTY}/jsoncpp)
-
+#add_subdirectory(${THIRD_PARTY}/jsoncpp)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/importer)
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/third_party/jsoncpp)
 #当前工程include目录
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${THIRD_PARTY_INCLUDE})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include 
+                    ${THIRD_PARTY_INCLUDE} 
+                    ${ENGINE_PATH}/include 
+                    ${ENGINE_PATH}/third_party/jsoncpp/include
+                    ${FBXIMPORTER_PATH}/include)
 
 
 # 添加编译宏
@@ -50,7 +58,7 @@ file(GLOB_RECURSE SRC_LIST "src/*.cpp" "src/*.h" )
 file(GLOB_RECURSE HEAD_LIST "include/*.h" )
 # hlsl files
 file(GLOB_RECURSE HLSL_LIST "src/*.hlsl")
-message(${HLSL_LIST})
+# message(${HLSL_LIST})
 # 添加到工程
 add_executable(demo ${SRC_LIST} ${HEAD_LIST})
 
@@ -84,6 +92,8 @@ target_link_libraries(demo dxgi)
 target_link_libraries(demo dxguid)	
 target_link_libraries(demo d3dcompiler)
 target_link_libraries(demo jsoncpp)
+target_link_libraries(demo solidangle)
+target_link_libraries(demo fbximporter)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
 # post build
@@ -92,7 +102,8 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 add_custom_command(
 		TARGET demo POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:${FBX_BIN}/debug/libfbxsdk.dll> $<$<CONFIG:Release>:${FBX_BIN}/release/libfbxsdk.dll> 	$<TARGET_FILE_DIR:demo>
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/src/Shader/ 	$<TARGET_FILE_DIR:demo>/Shader
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/engine/src/Shader/ 	$<TARGET_FILE_DIR:demo>/Shader
 )
 
-add_dependencies(demo jsoncpp)
+#add_dependencies(demo jsoncpp solidangle)
+add_dependencies(demo solidangle jsoncpp fbximporter)

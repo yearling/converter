@@ -98,9 +98,9 @@ YMatrix YRotator::ToMatrix() const
 
 YQuat YRotator::ToQuat() const
 {
-	float rad_half_pitch = YMath::DegreesToRadians(pitch*0.5);
-	float rad_half_yaw = YMath::DegreesToRadians(yaw*0.5);
-	float rad_half_roll = YMath::DegreesToRadians(roll*0.5);
+	float rad_half_pitch = YMath::DegreesToRadians(pitch*0.5f);
+	float rad_half_yaw = YMath::DegreesToRadians(yaw*0.5f);
+	float rad_half_roll = YMath::DegreesToRadians(roll*0.5f);
 	float sp = YMath::Sin(rad_half_pitch);
 	float cp = YMath::Cos(rad_half_pitch);
 	float sy = YMath::Sin(rad_half_yaw);

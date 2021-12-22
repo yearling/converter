@@ -6,13 +6,14 @@
 #include "fbxsdk/scene/fbxaxissystem.h"
 #include "fbxsdk/core/math/fbxaffinematrix.h"
 #include "fbxsdk/scene/geometry/fbxlayer.h"
-#include "Importer/YFbxImporter.h"
+#include "YFbxImporter.h"
 #include "Engine/YLog.h"
 #include "Engine/YRawMesh.h"
 #include "Engine/YMaterial.h"
-#include "Importer/YFbxUtility.h"
+#include "YFbxUtility.h"
 #include "RHI/DirectX11/D3D11VertexFactory.h"
 #include "engine/YStaticMesh.h"
+#include "YFbxMaterial.h"
 
 YFbxImporter::YFbxImporter()
 {
@@ -394,7 +395,7 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 		}
 	}
 	YLODMesh* raw_mesh = static_mesh->raw_meshes[lod_index].get();
-	std::vector<YMaterial*> mesh_materials;
+	std::vector<YFbxMaterial*> mesh_materials;
 	int node_fail_count = 0;
 	bool is_all_degenerated = true;
 	float SqrBoundingBoxThreshold = THRESH_POINTS_ARE_NEAR * THRESH_POINTS_ARE_NEAR;
@@ -434,7 +435,7 @@ void YFbxImporter::CheckSmoothingInfo(FbxMesh* fbx_mesh)
 }
 
 
-void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<YMaterial*>& out_materials, std::vector<std::string>& us_sets)
+void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<YFbxMaterial*>& out_materials, std::vector<std::string>& us_sets)
 {
 	if (FbxMesh* mesh_node = fbx_node->GetMesh()) 
 	{
@@ -465,18 +466,18 @@ void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<
 			//only create the material used by mesh element material
 			if (fbx_material && (used_material_indexes.find(material_index) != used_material_indexes.end()))
 			{
-				 YMaterial* material = 	FindExistingMaterialFormFbxMaterial(fbx_material);
+				YFbxMaterial* material = 	FindExistingMaterialFormFbxMaterial(fbx_material);
 				 out_materials.push_back(material);
 			}
 		}
 	}
 }
 
-YMaterial* YFbxImporter::FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_material)
+YFbxMaterial* YFbxImporter::FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_material)
 {
 	if (imported_material_data.fbx_material_to_us_material.find(fbx_material) == imported_material_data.fbx_material_to_us_material.end())
 	{
-		YMaterial* material = new YMaterial();
+		YFbxMaterial* material = new YFbxMaterial();
 		material->InitFromFbx(fbx_material);
 		imported_material_data.fbx_material_to_us_material[fbx_material] = material;
 	}

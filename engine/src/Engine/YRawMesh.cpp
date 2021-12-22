@@ -42,7 +42,7 @@ int YLODMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_id
 {
 	out_edges.clear();
 	// create triangle
-	int polygon_id = polygons.size();
+	int polygon_id = (int)polygons.size();
 	polygons.push_back(YMeshPolygon());
 
 	YMeshPolygon& tmp_polygon = polygons[polygon_id];

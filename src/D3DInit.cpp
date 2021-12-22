@@ -6,7 +6,7 @@
 #include "RHI/DirectX11/D3D11Device.h"
 #include "RHI/DirectX11/ComPtr.h"
 #include "Engine/YLog.h"
-#include "Importer/YFbxImporter.h"
+#include "YFbxImporter.h"
 #include "Engine/YCamera.h"
 #include "Engine/YCanvas.h"
 #include "Engine/YInputManager.h"

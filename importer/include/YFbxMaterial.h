@@ -1,10 +1,10 @@
 #pragma once
 #include <string>
 #include "Fbxsdk.h"
-struct YMaterial
+struct YFbxMaterial
 {
 public:
-	YMaterial();
+	YFbxMaterial();
 	void InitFromFbx(const FbxSurfaceMaterial* surface_material);
 	std::string name;
 	const FbxSurfaceMaterial* fbx_material=nullptr;
@@ -13,6 +13,6 @@ public:
 
 struct YFbxMaterialCombine
 {
-	YMaterial* material=nullptr;
+	YFbxMaterial* material=nullptr;
 	FbxSurfaceMaterial* fbx_material=nullptr;
 };

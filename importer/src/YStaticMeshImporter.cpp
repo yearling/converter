@@ -1,13 +1,13 @@
 #include <cassert>
 #include "fbxsdk/scene/geometry/fbxlayer.h"
-#include "importer/YFbxImporter.h"
+#include "YFbxImporter.h"
 #include "Engine/YRawMesh.h"
 #include "Math/YMath.h"
-#include "Importer/YFbxUtility.h"
+#include "YFbxUtility.h"
 #include "Engine/YMaterial.h"
 #include "Engine/YLog.h"
 
-bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh, std::vector<YMaterial*>& existing_materials)
+bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh, std::vector<YFbxMaterial*>& existing_materials)
 {
 	FbxMesh* fbx_mesh = node->GetMesh();
 	std::string node_name = node->GetName();
@@ -17,7 +17,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 
 	int material_count = 0;
 	int material_index_offset = (int)existing_materials.size();
-	std::vector<YMaterial*> materials;
+	std::vector<YFbxMaterial*> materials;
 	FindOrImportMaterialsFromNode(node, materials, fbx_uvs.uv_set);
 	material_count = node->GetMaterialCount();
 	assert(material_count == materials.size());
@@ -27,7 +27,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 	}
 	if (material_count == 0)
 	{
-		existing_materials.push_back(new YMaterial());
+		existing_materials.push_back(new YFbxMaterial());
 		material_count = 1;
 	}
 
@@ -369,7 +369,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 			int real_material_index = material_index_offset + material_index;
 			if (!polygon_group_mapping.count(real_material_index))
 			{
-				YMaterial* material = existing_materials[real_material_index];
+				YFbxMaterial* material = existing_materials[real_material_index];
 				std::string material_name = material->name;
 				int existing_polygon_group_id = INVALID_ID;
 				for (int group_id = 0; group_id < raw_mesh->polygon_groups.size(); ++group_id)

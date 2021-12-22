@@ -1,7 +1,7 @@
 #include <string>
 #include "fbxsdk/scene/geometry/fbxlayer.h"
 #include "fbxsdk/fileio/fbximporter.h"
-#include "Importer/YFbxUtility.h"
+#include "YFbxUtility.h"
 #include "Math/YMath.h"
 #include "Engine/YLog.h"
 

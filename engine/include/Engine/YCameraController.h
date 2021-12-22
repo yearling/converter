@@ -60,8 +60,8 @@ protected:
 	float rotation_speed_pitch = 5.f;
 	float rotation_speed_yaw = 5.f;
 	bool right_button_pressed = false;
-	int last_x=0.0;
-	int last_y=0.0;
+	int last_x=0;
+	int last_y=0;
 	float delta_pitch_screen = 0;
 	float delta_yaw_screen = 0;
 	SmoothStep smooth_delta_pitch;
