@@ -60,11 +60,8 @@ void FPSCameraController::Update(double delta_time)
 	YVector origin_w = camera_->GetPosition();
 	YVector final_pos = origin_w + forward_w * forwad_distance + right_w * right_distance;
 	camera_->SetPosition(final_pos);
-
-	
-	smooth_delta_pitch.SmoothAcc(delta_pitch);
-	smooth_delta_yaw.SmoothAcc(delta_yaw);
-
+	smooth_delta_pitch.SmoothAcc(delta_pitch_screen);
+	smooth_delta_yaw.SmoothAcc(delta_yaw_screen);
 	float pitch_delta = smooth_delta_yaw.Result() * rotation_speed_pitch* delta_time;
 	float yaw_delta = smooth_delta_pitch.Result() * rotation_speed_yaw * delta_time;
 	YRotator final_rotator = camera_->GetRotator();
@@ -72,17 +69,16 @@ void FPSCameraController::Update(double delta_time)
 	final_rotator.pitch = YMath::Clamp(-90.f, 90.0f, final_rotator.pitch);
 	final_rotator.yaw += yaw_delta;
 	camera_->SetRotation(final_rotator);
-
-	//LOG_INFO(" smooth deltx_x: ", smooth_delta_pitch.Result(), " delta y: ", smooth_delta_yaw.Result());
 }
 
 void FPSCameraController::OnKeyDown(char c)
 {
 	if (!right_button_pressed)
 	{
+		forward_speed = 0.f;
+		right_button_pressed = 0.f;
 		return;
 	}
-	//LOG_INFO("key down: ", c);
 	if (c == 'W')
 	{
 		forward_speed = speed_base;
@@ -103,7 +99,6 @@ void FPSCameraController::OnKeyDown(char c)
 
 void FPSCameraController::OnKeyUp(char c)
 {
-	//LOG_INFO("key up: ", c);
 	if (c == 'W')
 	{
 		forward_speed = 0.f;
@@ -124,20 +119,16 @@ void FPSCameraController::OnKeyUp(char c)
 
 void FPSCameraController::OnRButtonDown(int x, int y)
 {
-	//LOG_INFO("R mouse button down: ", x, " ", y);
 	right_button_pressed = true;
 	last_x = x;
 	last_y = y;
-	ShowCursor(false);
 }
 
 void FPSCameraController::OnRButtonUp(int x, int y)
 {
-	//LOG_INFO("R mouse button up: ", x, " ", y);
 	right_button_pressed = false;
-	delta_pitch = 0;
-	delta_yaw = 0;
-	ShowCursor(true);
+	delta_pitch_screen = 0;
+	delta_yaw_screen = 0;
 }
 
 void FPSCameraController::OnMouseMove(int x, int y)
@@ -145,9 +136,8 @@ void FPSCameraController::OnMouseMove(int x, int y)
 
 	if (right_button_pressed)
 	{
-		//LOG_INFO("R mouse move: ", x, " ", y);
-		delta_pitch = x - last_x;
-		delta_yaw = y - last_y;
+		delta_pitch_screen = x - last_x;
+		delta_yaw_screen = y - last_y;
 		last_x = x;
 		last_y = y;
 	}

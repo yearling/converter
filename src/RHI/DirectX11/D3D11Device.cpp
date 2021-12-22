@@ -697,9 +697,9 @@ bool D3D11Device::Present() {
     if (d3d_swap_chain_) {
         //swap_index_++;
         HRESULT hr = S_OK;
-        hr=d3d_swap_chain_->Present(1, 0);
+        hr=d3d_swap_chain_->Present(0, 0);
         if (hr!=S_OK) {
-            ERROR_INFO("err_prent"); 
+            ERROR_INFO("dx11 present error, error code is :",hr); 
         }
     }
     return true;

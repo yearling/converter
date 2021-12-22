@@ -107,7 +107,7 @@ void Render()
 	double delta_time = std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time).count();
 	delta_time *= 0.000001; // to second
 	last_frame_time = current_time;
-	LOG_INFO("fps: ", 1.0 / delta_time);
+	//LOG_INFO("fps: ", 1.0 / delta_time);
 	Update(delta_time);
 	// 正式的场景绘制工作
 		//device->PreRender();
@@ -122,8 +122,7 @@ void Render()
 	raw_dc->ClearRenderTargetView(main_rtv, reinterpret_cast<float*>(color));
 	raw_dc->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 
-	//return;
-	//g_Canvas->Render(main_camera.get());
+	g_Canvas->Render(main_camera.get());
 
 	for (std::unique_ptr<YStaticMesh>& mesh : g_test_mesh)
 	{
@@ -168,6 +167,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 			return -1;
 		}
 	}
+
+
 	return Run();
 }
 

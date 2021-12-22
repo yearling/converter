@@ -45,7 +45,7 @@ public:
 			sequence.push_back(v);
 		}
 		std::deque<float> sequence;
-		int smooth_frame_count = 15;
+		int smooth_frame_count = 50;
 	};
 protected:
 	void OnKeyDown(char c);
@@ -57,13 +57,12 @@ protected:
 	float right_speed = 0.0;
 	float speed_base = 20.0;
 	float rotation_speed_pitch = 5.f;
-	float rotation_speed_yaw = 3.f;
+	float rotation_speed_yaw = 5.f;
 	bool right_button_pressed = false;
 	int last_x;
 	int last_y;
-	float delta_pitch = 0;
-	float delta_yaw = 0;
+	float delta_pitch_screen = 0;
+	float delta_yaw_screen = 0;
 	SmoothStep smooth_delta_pitch;
 	SmoothStep smooth_delta_yaw;
-	float decom = 3;
 };
