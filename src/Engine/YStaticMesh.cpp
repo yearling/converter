@@ -61,8 +61,9 @@ void YStaticMesh::Render(CameraBase* camera)
 	pixel_shader_->Update();
 
 	int triangle_total = 0;
-	for (int triangle_count : polygon_group_offsets)
+	for (auto& polygon_group : raw_meshes[0]->polygon_groups)
 	{
+		int triangle_count = polygon_group.polygons.size();
 		dc->DrawIndexed(triangle_count * 3, triangle_total, 0);
 		triangle_total += triangle_count * 3;
 	}

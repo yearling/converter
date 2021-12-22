@@ -20,11 +20,6 @@ void DrawUtility::DrawGrid()
 	{
 		g_Canvas->DrawLine(YVector(xStart, 0, zCurrent), YVector(xEnd, 0, zCurrent), YVector4(1.0f, 1.0f, 1.0f, 0.3f));
 	}
-
-	// Draw Coordinate
-	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(5, 0, 0), YVector4(1, 0, 0, 1));
-	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(0, 5, 0), YVector4(0, 1, 0, 1));
-	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(0, 0, 5), YVector4(0, 0, 1, 1));
 }
 
 void DrawUtility::DrawWorldCoordinate(CameraBase* camera)

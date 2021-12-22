@@ -72,5 +72,9 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 // }
 float4 PSMain(VS_OUTPUT Input) :SV_Target
 {
-	return Input.vColor;	
+	float3 dir_light = float3(1.0,1.0,-1.0);
+	dir_light = normalize(dir_light);
+	float ndl = dot(dir_light,normalize(Input.vNormal));
+	ndl = clamp(ndl,0,1.0);
+	return float4(ndl,ndl,ndl,1.0);	
 }

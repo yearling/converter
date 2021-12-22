@@ -12,6 +12,8 @@
 #include "Engine/YInputManager.h"
 #include "Engine/YCameraController.h"
 #include "Engine/YCanvasUtility.h"
+#include <fstream>
+#include "reader.h"
 HINSTANCE	g_hInstance(nullptr);
 HWND		g_hWnd(nullptr);
 
@@ -35,9 +37,27 @@ bool CreateWindows();
 bool InitD3D();
 int Run();
 
+void demo_simple()
+{
+	std::ifstream ifs;
+	ifs.open("checkjson.json");
+	assert(ifs.is_open());
+
+	Json::Reader reader;
+	Json::Value root;
+	if (!reader.parse(ifs, root, false))
+	{
+		std::cerr << "parse failed \n";
+		return;
+	}
+
+	std::string name = root["name"].asString(); // 实际字段保存在这里
+	int age = root["age"].asInt(); // 这是整型，转化是指定类型
+}
 
 bool InitD3D()
 {
+	demo_simple();
 	device = D3D11Device::CreateD3D11Device();
 	if (!device->CreateSwapChain((void*)&g_hWnd))
 	{
@@ -60,7 +80,8 @@ bool OpenFbx()
 	std::unique_ptr<YFbxImporter> importer = std::make_unique<YFbxImporter>();
 	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\cube\maya_tube4.fbx)";
 	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\nija\nija_head_low.FBX)";
-	const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\plane\plane.FBX)";
+	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\plane\plane.FBX)";
+	const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\shader_ball_ue\shader_ball.FBX)";
 	if (!importer->ImportFile(file_path))
 	{
 		return 0;

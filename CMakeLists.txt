@@ -28,6 +28,8 @@ SET(FBX_BIN ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64)
 #第三方库头文件
 SET(THIRD_PARTY_INCLUDE ${THIRD_PARTY}/fbxsdk/include)
 
+add_subdirectory(${THIRD_PARTY}/jsoncpp)
+
 #当前工程include目录
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${THIRD_PARTY_INCLUDE})
 
@@ -81,7 +83,7 @@ target_link_libraries(demo d3d11)
 target_link_libraries(demo dxgi)
 target_link_libraries(demo dxguid)	
 target_link_libraries(demo d3dcompiler)
-
+target_link_libraries(demo jsoncpp)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
 # post build
@@ -92,3 +94,5 @@ add_custom_command(
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:${FBX_BIN}/debug/libfbxsdk.dll> $<$<CONFIG:Release>:${FBX_BIN}/release/libfbxsdk.dll> 	$<TARGET_FILE_DIR:demo>
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/src/Shader/ 	$<TARGET_FILE_DIR:demo>/Shader
 )
+
+add_dependencies(demo jsoncpp)
