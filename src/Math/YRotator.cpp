@@ -78,7 +78,7 @@ YMatrix YRotator::ToMatrix() const
 	float cr = YMath::Cos(rad_roll);
 	YMatrix tmp;
 	tmp.m[0][0] = cy * cr;
-	tmp.m[0][1] = cy * sp;
+	tmp.m[0][1] = cy * sr;
 	tmp.m[0][2] = -sy;
 	tmp.m[0][3] = 0.0;
 	tmp.m[1][0] = -cp * sr + sp * sy * cr;

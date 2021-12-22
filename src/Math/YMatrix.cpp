@@ -3,6 +3,7 @@
 #include "Math/YRotator.h"
 #include <cassert>
 #include <cstring>
+#include "Math/YQuaterion.h"
 
 YMatrix3x3::YMatrix3x3()
 {
@@ -209,10 +210,12 @@ YVector4 YMatrix::TransformVector4(const YVector4& v) const
 	return YVector4(f);
 }
 
-YVector4 YMatrix::TransformPosition(const YVector& v) const
+YVector YMatrix::TransformPosition(const YVector& v) const
 {
-	return TransformVector4(YVector4(v, 1.0f));
+	YVector4 pos= TransformVector4(YVector4(v, 1.0f));
+	return YVector(pos.x / pos.w, pos.y / pos.w, pos.z / pos.w);
 }
+
 
 YMatrix YMatrix::GetTransposed() const
 {
@@ -265,5 +268,88 @@ YVector YMatrix::GetScaledAxis(int axis) const
 	return YVector::zero_vector;
 }
 
-const YMatrix YMatrix::Identity(YVector4(1.0, 0.0, 0.0, 0.0), YVector4(0.0, 1.0, 0.0, 0.0), YVector4(0.0, 0.0, 1.0, 0.0), YVector4(0.0, 0.0, 0.0, 1.0));
+void YMatrix::Decompose(YVector& tralsation, YQuat& quat, YVector& scale) const
+{	// Get the 3D scale from the matrix
+	YMatrix tmp(*this);
+	scale = tmp.ExtractScaling();
 
+	// If there is negative scaling going on, we handle that here
+	if (Determinant() < 0.f)
+	{
+		// Assume it is along X and modify transform accordingly. 
+		// It doesn't actually matter which axis we choose, the 'appearance' will be the same
+		scale.x *= -1.f;
+		tmp.SetAxis(0, -tmp.GetScaledAxis(0));
+	}
+
+	quat = YQuat(tmp);
+	tralsation = GetOrigin();
+
+	// Normalize rotation
+	quat.Normalize();
+}
+YVector YMatrix::GetOrigin() const
+{
+	return YVector(m[3][0], m[3][1], m[3][2]);
+}
+void YMatrix::SetAxis(int i, const YVector& axis)
+{
+	assert(i >= 0 && i <= 2);
+	m[i][0] = axis.x;
+	m[i][1] = axis.y;
+	m[i][2] = axis.z;
+}
+const YMatrix YMatrix::Identity(YVector4(1.0, 0.0, 0.0, 0.0), YVector4(0.0, 1.0, 0.0, 0.0), YVector4(0.0, 0.0, 1.0, 0.0), YVector4(0.0, 0.0, 0.0, 1.0));
+YVector YMatrix::ExtractScaling(float tolerance/*=SMALL_NUMBER*/) 
+{
+	YVector scale_3d(0, 0, 0);
+
+	// For each row, find magnitude, and if its non-zero re-scale so its unit length.
+	const float square_sum0 = (m[0][0] * m[0][0]) + (m[0][1] * m[0][1]) + (m[0][2] * m[0][2]);
+	const float square_sum1 = (m[1][0] * m[1][0]) + (m[1][1] * m[1][1]) + (m[1][2] * m[1][2]);
+	const float square_sum2 = (m[2][0] * m[2][0]) + (m[2][1] * m[2][1]) + (m[2][2] * m[2][2]);
+
+	if (square_sum0 > tolerance)
+	{
+		float scale_0 = YMath::Sqrt(square_sum0);
+		scale_3d[0] = scale_0;
+		float inv_scale0 = 1.f / scale_0;
+		m[0][0] *= inv_scale0;
+		m[0][1] *= inv_scale0;
+		m[0][2] *= inv_scale0;
+	}
+	else
+	{
+		scale_3d[0] = 0;
+	}
+
+	if (square_sum1 > tolerance)
+	{
+		float scale1 = YMath::Sqrt(square_sum1);
+		scale_3d[1] = scale1;
+		float inv_scale1 = 1.f / scale1;
+		m[1][0] *= inv_scale1;
+		m[1][1] *= inv_scale1;
+		m[1][2] *= inv_scale1;
+	}
+	else
+	{
+		scale_3d[1] = 0;
+	}
+
+	if (square_sum2 > tolerance)
+	{
+		float scale2 = YMath::Sqrt(square_sum2);
+		scale_3d[2] = scale2;
+		float inv_scale2 = 1.f / scale2;
+		m[2][0] *= inv_scale2;
+		m[2][1] *= inv_scale2;
+		m[2][2] *= inv_scale2;
+	}
+	else
+	{
+		scale_3d[2] = 0;
+	}
+
+	return scale_3d;
+}

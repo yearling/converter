@@ -19,6 +19,9 @@ void PerspectiveCamera::Update()
 	CameraBase::Update();
 	float radian_y = YMath::DegreesToRadians(fov_y_);
 	projection_matrix_ = GetPerspectiveMatrix(radian_y, aspect_, near_plane_, far_plane_);
+	inv_view_proj_matrix_ = projection_matrix_.Inverse();
+	view_proj_matrix_ = view_matrix_ * projection_matrix_;
+	inv_view_proj_matrix_ = view_proj_matrix_.Inverse();
 }
 
 YMatrix PerspectiveCamera::GetPerspectiveMatrix(float radian_y_fov, float aspec, float near_plane, float far_plane)
@@ -64,6 +67,11 @@ YMatrix CameraBase::GetViewMatrix()const
 	return view_matrix_;
 }
 
+YMatrix CameraBase::GetInvViewMatrix() const
+{
+	return inv_view_matrix;
+}
+
 YMatrix CameraBase::GetProjectionMatrix()const
 {
 	return projection_matrix_;
@@ -104,6 +112,16 @@ bool CameraBase::IsPerspectiveCamera() const
 	return perspective_camera_;
 }
 
+YVector CameraBase::GetPosition() const
+{
+	return position_;
+}
+
+YRotator CameraBase::GetRotator() const
+{
+	return rotaion_;
+}
+
 void CameraBase::SetNearPlane(float near_plane)
 {
 	near_plane_ = near_plane;
@@ -127,11 +145,13 @@ void CameraBase::SetAspect(float aspect)
 void CameraBase::SetPosition(const YVector& position)
 {
 	position_ = position;
+	Update();
 }
 
 void CameraBase::SetRotation(const YRotator& rotator)
 {
 	rotaion_ = rotator;
+	Update();
 }
 
 void CameraBase::Update()

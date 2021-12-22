@@ -52,11 +52,29 @@ YCamvas::~YCamvas()
 
 }
 
-void YCamvas::DrawLine(const YVector& start, const YVector& end, const YVector4& color)
+void YCamvas::DrawCube(const YVector& Pos, const YVector4& Color, float length /*= 0.3f*/)
 {
-	if (g_Canvas) {
-		g_Canvas->DrawLineInternal(start, end, color);
-	}
+	YVector point0(-1, 1, -1);
+	YVector point1(1, 1, -1);
+	YVector point2(1, -1, -1);
+	YVector point3(-1, -1, -1);
+	YVector point4(-1, 1, 1);
+	YVector point5(1, 1, 1);
+	YVector point6(1, -1, 1);
+	YVector point7(-1, -1, 1);
+
+	DrawLine(point0 * length + Pos, point1 * length + Pos, Color);
+	DrawLine(point0 * length + Pos, point3 * length + Pos, Color);
+	DrawLine(point0 * length + Pos, point4 * length + Pos, Color);
+	DrawLine(point1 * length + Pos, point2 * length + Pos, Color);
+	DrawLine(point1 * length + Pos, point5 * length + Pos, Color);
+	DrawLine(point2 * length + Pos, point3 * length + Pos, Color);
+	DrawLine(point2 * length + Pos, point6 * length + Pos, Color);
+	DrawLine(point3 * length + Pos, point7 * length + Pos, Color);
+	DrawLine(point4 * length + Pos, point5 * length + Pos, Color);
+	DrawLine(point4 * length + Pos, point7 * length + Pos, Color);
+	DrawLine(point5 * length + Pos, point6 * length + Pos, Color);
+	DrawLine(point6 * length + Pos, point7 * length + Pos, Color);
 }
 
 void YCamvas::Update()
@@ -108,7 +126,7 @@ void YCamvas::Render(CameraBase* camera)
 	lines_.clear();
 }
 
-void YCamvas::DrawLineInternal(const YVector& start, const YVector& end, const YVector4& color)
+void YCamvas::DrawLine(const YVector& start, const YVector& end, const YVector4& color)
 {
 	lines_.push_back(LineDesc(start, end, color));
 }
@@ -219,3 +237,26 @@ bool YCamvas::AllocGPUResource()
 YCamvas* g_Canvas = nullptr;
 
 
+void DrawUtility::DrawGrid()
+{
+	// DrawGrids
+	float xStart = -100.0f;
+	float xEnd = 100.0f;
+	float zStart = -100.0f;
+	float zEnd = 100.0f;
+	float Grid = 10.0f;
+
+	for (float xCurrent = xStart; xCurrent < xEnd + 1.0f; xCurrent += Grid)
+	{
+		g_Canvas->DrawLine(YVector(xCurrent, 0, zStart), YVector(xCurrent, 0, zEnd), YVector4(1.0f, 1.0f, 1.0f, 0.3f));
+	}
+	for (float zCurrent = zStart; zCurrent < zEnd + 1.0f; zCurrent += Grid)
+	{
+		g_Canvas->DrawLine(YVector(xStart, 0, zCurrent), YVector(xEnd, 0, zCurrent), YVector4(1.0f, 1.0f, 1.0f, 0.3f));
+	}
+
+	// Draw Coordinate
+	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(5, 0, 0), YVector4(1, 0, 0, 1));
+	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(0, 5, 0), YVector4(0, 1, 0, 1));
+	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(0, 0, 5), YVector4(0, 0, 1, 1));
+}

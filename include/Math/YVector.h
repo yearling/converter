@@ -31,6 +31,7 @@ public:
 	bool ContainsNaN() const;
 	YVector GetSafeNormal(float Tolerance = SMALL_NUMBER) const;
 	YVector operator^(const YVector& v) const;
+	YVector operator*(float mul)const;
 	YVector CrossProduct(const YVector& a, const YVector& b);
 	float	operator|(const YVector& v) const;
 	float Dot(const YVector& a, const YVector& b);
@@ -42,6 +43,8 @@ public:
 	static const YVector zero_vector;
 	/** world up vector (0,1,0) */
 	static const YVector up_vector;
+	static const YVector forward_vector;
+	static const YVector right_vector;
 };
 
 struct YVector4

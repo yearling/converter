@@ -8,6 +8,7 @@ public:
 	virtual ~CameraBase();
 	
 	YMatrix GetViewMatrix() const;
+	YMatrix GetInvViewMatrix() const;
 	YMatrix GetProjectionMatrix() const;
 	YMatrix GetViewProjectionMatrix() const;
 	YMatrix GetInvViewProjectionMatrix() const;
@@ -16,7 +17,8 @@ public:
 	float GetFovY() const; //degree
 	float GetAspect() const;
 	bool IsPerspectiveCamera() const;
-
+	YVector GetPosition() const;
+	YRotator GetRotator() const;
 
 	void SetNearPlane(float near_plane);
 	void SetFarPlane(float far_plane);

@@ -7,12 +7,11 @@ class YCamvas
 public:
 	YCamvas();
 	virtual ~YCamvas();
-	static void DrawLine(const YVector& start, const YVector& end, const YVector4& color);
-
+	void DrawLine(const YVector& start, const  YVector& end, const  YVector4& color);
+	void DrawCube(const YVector& Pos, const YVector4& Color, float length = 0.3f);
 	void Update();
 	void Render(CameraBase* camera);
 protected:
-	void DrawLineInternal(const YVector& start, const  YVector& end, const  YVector4& color);
 	bool AllocGPUResource();
 	friend class YCanvasVertexFactory;
 	struct LineDesc
@@ -37,4 +36,9 @@ protected:
 	std::unique_ptr<D3DPixelShader> pixel_shader_;
 };
 
+class DrawUtility
+{
+public:
+	static void DrawGrid();
+};
 extern YCamvas* g_Canvas;

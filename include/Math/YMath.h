@@ -237,4 +237,20 @@ struct YMath
 	static float GetBasisDeterminantSign(const YVector& x_axis, const YVector& y_axis, const YVector& z_xis);
 	static unsigned int GetIntColor(const YVector4& color);
 
+	template<class T>
+	static T Clamp(T min_value, T max_value, T in_value)
+	{
+		if (in_value < min_value)
+		{
+			return min_value;
+		}
+		else if (in_value > max_value)
+		{
+			return max_value;
+		}
+		else
+		{
+			return in_value;
+		}
+	}
 };

@@ -90,6 +90,11 @@ YVector YVector::operator^(const YVector& v) const
 	);
 }
 
+YVector YVector::operator*(float mul) const
+{
+	return YVector(x * mul, y * mul, z * mul);
+}
+
 YVector YVector::CrossProduct(const YVector& a, const YVector& b)
 {
 	return a ^ b;
@@ -125,9 +130,10 @@ YVector YVector::operator+(const YVector& v) const
 	return YVector(x + v.x, y + v.y, z + v.z);
 }
 
-const YVector YVector::zero_vector = YVector(0.0,0.0,0.0);
-
-const YVector YVector::up_vector = YVector(0.0,1.0,0.0);
+const YVector YVector::zero_vector = YVector(0.f,0.f,0.f);
+const YVector YVector::right_vector = YVector(1.f, 0.f, 0.f);
+const YVector YVector::up_vector = YVector(0.f,1.f,0.f);
+const YVector YVector::forward_vector = YVector(0.f, 0.f, 1.f);
 
 YVector4::YVector4(float in_x, float in_y, float in_z, float in_w)
 	:x(in_x), y(in_y), z(in_z),w(in_w)

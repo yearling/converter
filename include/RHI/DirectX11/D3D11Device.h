@@ -97,7 +97,7 @@ public:
 	bool Create2DTextureArrayDSV_SRV(UINT width, UINT height, DXGI_FORMAT format, UINT ArraySize, TComPtr<ID3D11Texture2D>& tex2D,
 		const std::string& alias /*= ""*/);
 	// SetRT
-	bool SetRenderTarget(ID3D11RenderTargetView *rtv, TComPtr<ID3D11DepthStencilView>& dsv);
+	bool SetRenderTarget(ID3D11RenderTargetView *rtv, ID3D11DepthStencilView* dsv);
 
 	// SetViewPort
 	bool SetViewPort(int top_left_x, int top_left_y, int width, int height);

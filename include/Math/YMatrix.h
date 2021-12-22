@@ -25,15 +25,19 @@ public:
 	// Homogeneous transform.
 	YVector4 TransformVector4(const YVector4& v) const;
 	/** Transform a location - will take into account translation part of the YMatrix. */
-	YVector4 TransformPosition(const YVector& v) const;
+	YVector TransformPosition(const YVector& v) const;
 	YMatrix GetTransposed() const;
 	/**
 	 *	Transform a direction vector - will not take into account translation part of the FMatrix.
 	 *	If you want to transform a surface normal (or plane) and correctly account for non-uniform scaling you should use TransformByUsingAdjointT.
 	 */
 	YVector TransformVector(const YVector& v) const;
-	inline YVector GetScaledAxis(int axis) const;
-	
+	YVector GetScaledAxis(int axis) const;
+	/** Remove any scaling from this matrix (ie magnitude of each row is 1) and return the 3D scale vector that was initially present. */
+	YVector ExtractScaling(float Tolerance = SMALL_NUMBER);
+	void Decompose(YVector& tralsation, YQuat& quat, YVector& scale) const;
+	void YMatrix::SetAxis(int i, const YVector& axis);
+	YVector GetOrigin() const;
 	union
 	{
 		float m[4][4];
