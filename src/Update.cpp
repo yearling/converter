@@ -98,12 +98,10 @@ bool OpenFbx()
 
 void Update(double delta_time)
 {
-	g_Canvas->DrawLine(YVector(0, 0, 0), YVector(30, 0, 0), YVector4(0.0, 0.0, 1.0, 1.0));
-	g_Canvas->DrawCube(YVector(0.0, 5.0, 0.0), YVector4(1.0, 0.0, 0.0, 1.0));
+	camera_controller->Update(delta_time);
+
 	DrawUtility::DrawGrid();
 	DrawUtility::DrawWorldCoordinate(main_camera.get());
-	main_camera->Update();
-	camera_controller->Update(delta_time);
 	g_Canvas->Update();
 
 }

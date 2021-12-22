@@ -62,7 +62,6 @@ void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...
 		assert(0);
 	}
 #endif
-
 }
 
 #define LOG_INFO(...) MyTraceImplTmp(LogType::EVerbos,__LINE__, __FILE__, __VA_ARGS__)

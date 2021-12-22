@@ -50,31 +50,32 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 // Texture2D txNormal;
 // SamplerState samLinear;
 
-// float3 sRGBToLinear(float3 Color)
-// {
-// 	Color = max(6.10352e-5, Color); // minimum positive non-denormal (fixes black problem on DX11 AMD and NV)
-// 	return Color > 0.04045 ? pow(Color * (1.0 / 1.055) + 0.0521327, 2.4) : Color * (1.0 / 12.92);
-// }
+float3 sRGBToLinear(float3 Color)
+{
+	Color = max(6.10352e-5, Color); // minimum positive non-denormal (fixes black problem on DX11 AMD and NV)
+	return Color > 0.04045 ? pow(Color * (1.0 / 1.055) + 0.0521327, 2.4) : Color * (1.0 / 12.92);
+}
 
-// float LinearToSrgbBranchingChannel(float lin)
-// {
-// 	if (lin < 0.00313067)
-// 		return lin * 12.92;
-// 	return pow(lin, (1.0 / 2.4)) * 1.055 - 0.055;
-// }
+float LinearToSrgbBranchingChannel(float lin)
+{
+	if (lin < 0.00313067)
+		return lin * 12.92;
+	return pow(lin, (1.0 / 2.4)) * 1.055 - 0.055;
+}
 
-// float3 LinearToSrgbBranching(float3 lin)
-// {
-// 	return half3(
-// 		LinearToSrgbBranchingChannel(lin.r),
-// 		LinearToSrgbBranchingChannel(lin.g),
-// 		LinearToSrgbBranchingChannel(lin.b));
-// }
+float3 LinearToSrgbBranching(float3 lin)
+{
+	return half3(
+		LinearToSrgbBranchingChannel(lin.r),
+		LinearToSrgbBranchingChannel(lin.g),
+		LinearToSrgbBranchingChannel(lin.b));
+}
 float4 PSMain(VS_OUTPUT Input) :SV_Target
 {
 	float3 dir_light = float3(1.0,1.0,-1.0);
 	dir_light = normalize(dir_light);
 	float ndl = dot(dir_light,normalize(Input.vNormal));
 	ndl = clamp(ndl,0,1.0);
-	return float4(ndl,ndl,ndl,1.0);	
+	float3 srgb = LinearToSrgbBranching(float3(ndl,ndl,ndl));
+	return float4(srgb,1.0);	
 }
