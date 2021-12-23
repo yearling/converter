@@ -1,4 +1,6 @@
 #include "D3DInit.h"
+#include "Platform/Windows/YSysUtility.h"
+#include "Utility/YAverageSmooth.h"
 ID3D11DeviceContext* g_deviceContext(nullptr);
 IDXGISwapChain* g_swapChain(nullptr);
 
@@ -9,9 +11,11 @@ std::vector<std::unique_ptr<YStaticMesh>> g_test_mesh;
 std::unique_ptr<PerspectiveCamera> main_camera;
 std::unique_ptr<CameraController> camera_controller;
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time;
-
+AverageSmooth<float> fps(1000);
 bool InitD3D()
 {
+	// open console for debug
+	//YSysUtility::AllocWindowsConsole();
 	// create device
 	device = D3D11Device::CreateD3D11Device();
 
@@ -53,9 +57,10 @@ bool InitD3D()
 	{
 		if (!mesh->AllocGpuResource())
 		{
-			return -1;
+			return false;
 		}
 	}
+
 	return true;
 }
 
@@ -112,7 +117,8 @@ void Render()
 	double delta_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time).count();
 	delta_time *= 0.000001; // to second
 	last_frame_time = current_time;
-	//LOG_INFO("fps: ", 1.0 / delta_time);
+	fps.SmoothAcc((float)(1.0f / delta_time));
+	LOG_INFO("fps: ", fps.Average());
 	Update(delta_time);
 	// 正式的场景绘制工作
 	ID3D11RenderTargetView* main_rtv = device->GetMainRTV();

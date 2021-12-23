@@ -4,6 +4,7 @@
 #include <cassert>
 #include "Engine/YLog.h"
 #include "RHI/DirectX11/D3D11Texture.h"
+#include <dxgi1_5.h>
 D3D11Device* g_device = nullptr;
 D3D11Device::D3D11Device() {}
 D3D11Device::~D3D11Device() {}
@@ -70,8 +71,8 @@ bool D3D11Device::CreateSwapChain(void* wnd) {
     //chain_des.Windowed = TRUE;
     chain_des.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
     // chain_des.Flags=DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH |DXGI_SWAP_CHAIN_FLAG_GDI_COMPATIBLE ;
-    chain_des.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-    TComPtr<IDXGIFactory2> dxgi_factory;
+    chain_des.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH | DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+    TComPtr<IDXGIFactory5> dxgi_factory;
     TComPtr<IDXGIDevice1> dxgi_device;
     TComPtr<IDXGIAdapter> dxgi_adapter;
     HRESULT hr = S_OK;
@@ -81,10 +82,13 @@ bool D3D11Device::CreateSwapChain(void* wnd) {
     if (FAILED(hr = dxgi_device->GetParent(__uuidof(IDXGIAdapter), (void**)&dxgi_adapter))) {
         return false;
     }
-    if (FAILED(hr = dxgi_adapter->GetParent(__uuidof(IDXGIFactory2), (void**)&dxgi_factory))) {
+    if (FAILED(hr = dxgi_adapter->GetParent(__uuidof(IDXGIFactory5), (void**)&dxgi_factory))) {
         return false;
     }
-
+	BOOL allowTearing = FALSE;
+	hr = dxgi_factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(BOOL));
+	if (FAILED(hr))
+		allowTearing = FALSE;
     if (FAILED(hr = dxgi_factory->CreateSwapChainForHwnd(d3d_device_, *(reinterpret_cast<HWND*>(wnd)), &chain_des, &full_desc, nullptr, &d3d_swap_chain_))) {
         return false;
     }
@@ -697,7 +701,12 @@ bool D3D11Device::Present() {
     if (d3d_swap_chain_) {
         //swap_index_++;
         HRESULT hr = S_OK;
-        hr=d3d_swap_chain_->Present(0, 0);
+        DXGI_PRESENT_PARAMETERS param;
+        param.DirtyRectsCount = 0;
+        param.pDirtyRects = nullptr;
+        param.pScrollOffset = 0;
+        param.pScrollRect = nullptr;
+        hr=d3d_swap_chain_->Present1(0, DXGI_PRESENT_ALLOW_TEARING,&param);
         if (hr!=S_OK) {
             ERROR_INFO("dx11 present error, error code is :",hr); 
         }

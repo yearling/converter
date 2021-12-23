@@ -63,8 +63,8 @@ void FPSCameraController::Update(double delta_time)
 	camera_->SetPosition(final_pos);
 	smooth_delta_pitch.SmoothAcc(delta_pitch_screen);
 	smooth_delta_yaw.SmoothAcc(delta_yaw_screen);
-	float pitch_delta = smooth_delta_yaw.Result() * rotation_speed_pitch* (float)delta_time;
-	float yaw_delta = smooth_delta_pitch.Result() * rotation_speed_yaw * (float)delta_time;
+	float pitch_delta = smooth_delta_yaw.Average() * rotation_speed_pitch* (float)delta_time;
+	float yaw_delta = smooth_delta_pitch.Average() * rotation_speed_yaw * (float)delta_time;
 	YRotator final_rotator = camera_->GetRotator();
 	final_rotator.pitch += pitch_delta;
 	final_rotator.pitch = YMath::Clamp(-90.f, 90.0f, final_rotator.pitch);
@@ -126,6 +126,9 @@ void FPSCameraController::OnRButtonDown(int x, int y)
 	right_button_pressed = true;
 	last_x = x;
 	last_y = y;
+#ifdef _WIN32
+	ShowCursor(FALSE);
+#endif
 }
 
 void FPSCameraController::OnRButtonUp(int x, int y)
@@ -133,6 +136,9 @@ void FPSCameraController::OnRButtonUp(int x, int y)
 	right_button_pressed = false;
 	delta_pitch_screen = 0;
 	delta_yaw_screen = 0;
+#ifdef _WIN32
+	ShowCursor(true);
+#endif
 }
 
 void FPSCameraController::OnMouseMove(int x, int y)
