@@ -31,6 +31,7 @@ SET(FBXIMPORTER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/importer)
 SET(THIRD_PARTY_INCLUDE ${THIRD_PARTY}/fbxsdk/include)
 
 #add_subdirectory(${THIRD_PARTY}/jsoncpp)
+add_subdirectory(${THIRD_PARTY}/imgui)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/importer)
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/third_party/jsoncpp)
@@ -94,6 +95,8 @@ target_link_libraries(demo d3dcompiler)
 target_link_libraries(demo jsoncpp)
 target_link_libraries(demo solidangle)
 target_link_libraries(demo fbximporter)
+target_link_libraries(demo imgui)
+
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 
 # post build
@@ -105,5 +108,5 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/engine/src/Shader/ 	$<TARGET_FILE_DIR:demo>/Shader
 )
 
-#add_dependencies(demo jsoncpp solidangle)
-add_dependencies(demo solidangle jsoncpp fbximporter)
+#add_dependencies(demo jsoncpp solidangle imgui)
+add_dependencies(demo solidangle jsoncpp fbximporter imgui)

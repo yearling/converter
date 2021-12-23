@@ -1,9 +1,12 @@
 #include "D3DInit.h"
 #include "Platform/Windows/YSysUtility.h"
 #include "Utility/YAverageSmooth.h"
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx11.h"
 ID3D11DeviceContext* g_deviceContext(nullptr);
 IDXGISwapChain* g_swapChain(nullptr);
-
+bool is_resizing = false;
 ID3D11DepthStencilView* g_depthStencilView(nullptr);
 ID3D11RenderTargetView* g_renderTargetView(nullptr);
 std::unique_ptr<D3D11Device> device = nullptr;
@@ -12,6 +15,26 @@ std::unique_ptr<PerspectiveCamera> main_camera;
 std::unique_ptr<CameraController> camera_controller;
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time;
 AverageSmooth<float> fps(1000);
+bool show_demo_window = true;
+bool show_another_window = false;
+bool InitIMGUI()
+{
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplWin32_Init(g_hWnd);
+	ImGui_ImplDX11_Init(device->GetDevice(), device->GetDC());
+	return true;
+}
 bool InitD3D()
 {
 	// open console for debug
@@ -60,7 +83,8 @@ bool InitD3D()
 			return false;
 		}
 	}
-
+	
+	InitIMGUI();
 	return true;
 }
 
@@ -141,30 +165,97 @@ void Render()
 		}
 	}
 
+
+	// Start the Dear ImGui frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+	if (show_demo_window)
+		ImGui::ShowDemoWindow(&show_demo_window);
+
+	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+	{
+		static float f = 0.0f;
+		static int counter = 0;
+
+		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Another Window", &show_another_window);
+
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+		if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+			counter++;
+		ImGui::SameLine();
+		ImGui::Text("counter = %d", counter);
+
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+	}
+
+	// 3. Show another simple window.
+	if (show_another_window)
+	{
+		ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+		ImGui::Text("Hello from another window!");
+		if (ImGui::Button("Close Me"))
+			show_another_window = false;
+		ImGui::End();
+	}
+
+	// Rendering
+	ImGui::Render();
+
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	device->Present();
 }
 void Release()
 {
+	// Cleanup
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
 	delete g_Canvas;
 	g_Canvas = nullptr;
 	delete g_input_manager;
 	g_input_manager = nullptr;
 }
 
+void OnResize()
+{
+	device->OnResize(g_winWidth, g_winHeight);
+	main_camera->SetAspect((float)g_winWidth / (float)g_winHeight);
+}
+
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 
 LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
+		return true;
+
 	int x = (int)(short)LOWORD(lParam);
 	int y = (int)(short)HIWORD(lParam);
 
 	switch (msg)
 	{
 	case WM_RBUTTONDOWN:
+		SetCapture(hwnd);
 		g_input_manager->OnEventRButtonDown(x, y);
 		break;
 
 	case WM_RBUTTONUP:
 		g_input_manager->OnEventRButtonUp(x, y);
+		ReleaseCapture();
 		break;
 
 	case WM_MOUSEMOVE:
@@ -186,6 +277,50 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		int z_delta = (int)GET_WHEEL_DELTA_WPARAM(wParam);
 		float z_normal = (float)z_delta / (float)WHEEL_DELTA;
 		g_input_manager->OnMouseWheel(x, y, z_normal);
+		break;
+	}
+	case WM_SIZE:
+	{
+		g_winWidth = LOWORD(lParam);
+		g_winHeight = HIWORD(lParam);
+		if (device)
+		{
+			switch (wParam)
+			{
+			case SIZE_MINIMIZED:
+			{
+				break;
+			}
+			case SIZE_MAXIMIZED:
+			{
+				OnResize();
+				break;
+			}
+			case SIZE_RESTORED:
+			{
+				OnResize();
+				break;
+			}
+			default:
+				break;
+			}
+		}
+		break;
+	}
+	case WM_ENTERSIZEMOVE:
+	{
+		is_resizing = true;
+		break;
+	}
+	case WM_EXITSIZEMOVE:
+	{
+		is_resizing = false;
+		break;
+	}
+	case WM_SYSCOMMAND:
+	{
+		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
+			return 0;
 		break;
 	}
 	case WM_DESTROY:

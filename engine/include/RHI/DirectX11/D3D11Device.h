@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include "RHI/DirectX11/ComPtr.h"
+#include <dxgi1_5.h>
 //#include <guiddef.h>
 //#include <dxgi1_2.h>
 class D3DTextureSampler;
@@ -91,13 +92,15 @@ public:
 
 	bool Create2DTextureDSV_SRV(UINT width, UINT height, DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D,
 		const std::string& alias /*= ""*/);
+	bool CreateDepth2DTexture(UINT width, UINT height, DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D,
+		const std::string& alias /*= ""*/);
 	bool CreateDSVForTexture2D(DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D, TComPtr<ID3D11DepthStencilView>& dsv,
 		const std::string& alias /*= ""*/);
 
 	bool Create2DTextureArrayDSV_SRV(UINT width, UINT height, DXGI_FORMAT format, UINT ArraySize, TComPtr<ID3D11Texture2D>& tex2D,
 		const std::string& alias /*= ""*/);
 	// SetRT
-	bool SetRenderTarget(ID3D11RenderTargetView *rtv, ID3D11DepthStencilView* dsv);
+	bool SetRenderTarget(ID3D11RenderTargetView* rtv, ID3D11DepthStencilView* dsv);
 
 	// SetViewPort
 	bool SetViewPort(int top_left_x, int top_left_y, int width, int height);
@@ -110,6 +113,7 @@ private:
 	TComPtr<ID3D11Device> d3d_device_;
 	TComPtr<ID3D11DeviceContext> d3d_dc_;
 	TComPtr<IDXGISwapChain1> d3d_swap_chain_;
+	TComPtr<IDXGIFactory5> dxgi_factory;
 	unsigned long swap_index_ = 0;
 	int width_ = 0;
 	int height_ = 0;
@@ -117,6 +121,8 @@ private:
 	TComPtr<ID3D11DepthStencilView> main_DSV_;
 	TComPtr<ID3D11Texture2D> main_depth_buffer_;
 	std::unique_ptr <D3DTextureSamplerManager> sample_state_mamager_;
+	HWND cur_hwnd_;
+	bool disable_Vsync = true;
 };
 
 extern D3D11Device* g_device;
