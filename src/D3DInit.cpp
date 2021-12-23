@@ -82,7 +82,7 @@ bool CreateWindows()
 
 	ShowWindow(g_hWnd, SW_SHOW);
 	UpdateWindow(g_hWnd);
-
+	SetWindowPos(g_hWnd, HWND_TOPMOST, 1, 1, 1, 1, SWP_NOMOVE | SWP_NOSIZE);
 	return TRUE;
 }
 
