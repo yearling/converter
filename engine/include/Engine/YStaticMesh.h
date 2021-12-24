@@ -13,7 +13,7 @@ public:
 	void	Render(CameraBase* camera);
 	std::vector<std::unique_ptr<YLODMesh>> raw_meshes;
 
-private:
+public:
 	friend class YStaticMeshVertexFactory;
 	bool allocated_gpu_resource = false;
 	std::vector<TComPtr<ID3D11Buffer>> vertex_buffers_;

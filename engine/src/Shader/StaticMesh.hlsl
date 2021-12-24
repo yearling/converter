@@ -2,7 +2,8 @@
 	matrix g_projection;
 	matrix g_VP;
 	matrix g_InvVP;
-	float3 g_lightDir;
+	float3 light_dir;
+	float show_normal;
 
 	matrix g_world;
 
@@ -70,12 +71,23 @@ float3 LinearToSrgbBranching(float3 lin)
 		LinearToSrgbBranchingChannel(lin.g),
 		LinearToSrgbBranchingChannel(lin.b));
 }
+float3 CoverNormalToColor(float3 in_normal)
+{
+	float3 normalized_normal = normalize(in_normal);
+	float3 linear_normal = (normalized_normal + float3(1.0,1.0,1.0))* 0.5;
+	return linear_normal;
+}
 float4 PSMain(VS_OUTPUT Input) :SV_Target
 {
 	float3 dir_light = float3(1.0,1.0,-1.0);
 	dir_light = normalize(dir_light);
-	float ndl = dot(dir_light,normalize(Input.vNormal));
+	float ndl = dot(light_dir,normalize(Input.vNormal));
 	ndl = clamp(ndl,0,1.0);
 	float3 srgb = LinearToSrgbBranching(float3(ndl,ndl,ndl));
+	if(show_normal>0.0)
+	{
+		float3 normal_color = CoverNormalToColor(Input.vNormal);
+		return float4(normal_color,1.0);
+	}
 	return float4(srgb,1.0);	
 }

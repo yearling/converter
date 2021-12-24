@@ -79,6 +79,18 @@ YQuat::YQuat(const YMatrix& rotation_matrix)
 }
 
 
+YQuat::YQuat(const YVector& axis, float degree)
+{
+	YVector	normal_axis = axis.GetSafeNormal();
+	float radian = YMath::DegreesToRadians(degree);
+	float sin_half = YMath::Sin(radian * 0.5f);
+	float cos_half = YMath::Cos(radian * 0.5f);
+	x = sin_half * normal_axis.x;
+	y = sin_half * normal_axis.y;
+	z = sin_half * normal_axis.z;
+	w = cos_half;
+}
+
 YRotator YQuat::Rotator() const
 {
 	const float singularity_test = w * y - x * z;

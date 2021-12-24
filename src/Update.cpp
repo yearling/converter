@@ -15,8 +15,10 @@ std::unique_ptr<PerspectiveCamera> main_camera;
 std::unique_ptr<CameraController> camera_controller;
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time;
 AverageSmooth<float> fps(1000);
-bool show_demo_window = true;
+bool show_demo_window = false;
 bool show_another_window = false;
+bool show_normal = false;
+YVector light_dir(0.0, 0.0, 0.0);
 bool InitIMGUI()
 {
 	// Setup Dear ImGui context
@@ -28,6 +30,7 @@ bool InitIMGUI()
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsLight();
 	//ImGui::StyleColorsClassic();
 
 	// Setup Platform/Renderer backends
@@ -84,7 +87,15 @@ bool InitD3D()
 		}
 	}
 	
+	//caculate light
+	YVector z_ori = YVector(0.f, 0.f, 1.0f);
+	YVector dir = YVector(-1.0f, -1.0f, 1.0f).GetSafeNormal();
+	YVector axis = z_ori ^ dir;
+	axis = axis.GetSafeNormal();
+	YQuat rotator = YQuat(axis, YMath::RadiansToDegrees(YMath::Acos(z_ori | dir)));
+	light_dir = rotator.Euler();
 	InitIMGUI();
+	//YVector light_dir_calc = rotator.ToMatrix().TransformVector(YVector::forward_vector);
 	return true;
 }
 
@@ -94,7 +105,10 @@ bool OpenFbx()
 	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\cube\maya_tube4.fbx)";
 	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\nija\nija_head_low.FBX)";
 	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\plane\plane.FBX)";
-	const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\shader_ball_ue\shader_ball.FBX)";
+	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\shader_ball_ue\shader_ball.FBX)";
+	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\shader_ball_ue\shader_ball_modify_vertex.FBX)";
+	//const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\sp_shader_ball\sp_shader_ball.FBX)";
+	const std::string file_path = R"(C:\Users\admin\Desktop\fbxtest\sp_shader_ball\blender_shader_ball.FBX)";
 	if (!importer->ImportFile(file_path))
 	{
 		return 0;
@@ -125,6 +139,58 @@ bool OpenFbx()
 	return true;
 }
 
+void DrawUI()
+{
+	// Start the Dear ImGui frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+	if (show_demo_window)
+		ImGui::ShowDemoWindow(&show_demo_window);
+
+	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+	{
+		static float f = 0.0f;
+		static int counter = 0;
+
+		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+		ImGui::DragFloat3("Light dir", &light_dir.x, 1.0f, -180, 180);
+		ImGui::Checkbox("show normal", &show_normal);
+		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+		ImGui::Checkbox("Another Window", &show_another_window);
+
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+		static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+		if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+			counter++;
+		ImGui::SameLine();
+		ImGui::Text("counter = %d", counter);
+
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+	}
+
+	// 3. Show another simple window.
+	if (show_another_window)
+	{
+		ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+		ImGui::Text("Hello from another window!");
+		if (ImGui::Button("Close Me"))
+			show_another_window = false;
+		ImGui::End();
+	}
+
+	// Rendering
+	ImGui::Render();
+
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
 void Update(double delta_time)
 {
 	camera_controller->Update(delta_time);
@@ -134,7 +200,6 @@ void Update(double delta_time)
 	g_Canvas->Update();
 
 }
-
 void Render()
 {
 	std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
@@ -162,57 +227,15 @@ void Render()
 		if (mesh)
 		{
 			mesh->Render(main_camera.get());
+			YVector light_dir_calc =- YRotator(light_dir).ToMatrix().TransformVector(YVector::forward_vector);
+			mesh->pixel_shader_->BindResource("light_dir", &light_dir_calc.x, 3);
+			float show_normal_f = show_normal ? 1.0 : -1.0;
+			mesh->pixel_shader_->BindResource("show_normal", show_normal_f);
 		}
 	}
 
 
-	// Start the Dear ImGui frame
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
-
-	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-	if (show_demo_window)
-		ImGui::ShowDemoWindow(&show_demo_window);
-
-	// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-	{
-		static float f = 0.0f;
-		static int counter = 0;
-
-		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-		ImGui::Checkbox("Another Window", &show_another_window);
-
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-		ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-		if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-			counter++;
-		ImGui::SameLine();
-		ImGui::Text("counter = %d", counter);
-
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::End();
-	}
-
-	// 3. Show another simple window.
-	if (show_another_window)
-	{
-		ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-		ImGui::Text("Hello from another window!");
-		if (ImGui::Button("Close Me"))
-			show_another_window = false;
-		ImGui::End();
-	}
-
-	// Rendering
-	ImGui::Render();
-
-	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	DrawUI();
 	device->Present();
 }
 void Release()

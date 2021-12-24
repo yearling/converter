@@ -13,6 +13,7 @@ public:
 	YQuat(YQuat&&) = default;
 	YQuat& operator=(const YQuat&) = default;
 	YQuat& operator=(YQuat&&) = default;
+	YQuat(const YVector& axis, float degree);
 	explicit YQuat(const YRotator& rotator);
 	explicit YQuat(const YMatrix& rotation_matrix);
 

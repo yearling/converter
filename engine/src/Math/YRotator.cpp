@@ -25,6 +25,13 @@ YRotator::YRotator(const YQuat& quta)
 	*this = quta.Rotator();
 }
 
+YRotator::YRotator(const YVector& in_v)
+{
+	pitch = in_v.x;
+	yaw = in_v.y;
+	roll = in_v.z;
+}
+
 YRotator YRotator::MakeFromEuler(const YVector& euler)
 {
 	YRotator rotator(euler.x, euler.y,euler.z);

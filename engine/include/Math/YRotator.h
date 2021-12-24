@@ -21,6 +21,7 @@ public:
 	YRotator(const YMatrix& matrix);
 	YRotator(const YMatrix3x3& matrix);
 	YRotator(const YQuat& quta);
+	YRotator(const YVector& in_v);
 	static YRotator MakeFromEuler(const YVector& euler);	
 	static float ClampAxis(float Angle); //return [0,360)
 	static float NormalizeAxis(float Angle);//return (-180,180]
