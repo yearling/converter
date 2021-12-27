@@ -159,13 +159,13 @@ public:
 		*this = nullptr;
 	}
 
-	uint32 GetRefCount()
+	uint32_t GetRefCount() const
 	{
-		uint32 Result = 0;
+		uint32_t Result = 0;
 		if (Reference)
 		{
 			Result = Reference->GetRefCount();
-			check(Result > 0); // you should never have a zero ref count if there is a live ref counted pointer (*this is live)
+			assert(Result > 0); // you should never have a zero ref count if there is a live ref counted pointer (*this is live)
 		}
 		return Result;
 	}
@@ -175,17 +175,6 @@ public:
 		ReferencedType* OldReference = Reference;
 		Reference = InPtr.Reference;
 		InPtr.Reference = OldReference;
-	}
-
-	friend FArchive& operator<<(FArchive& Ar, TRefCountPtr& Ptr)
-	{
-		ReferenceType PtrReference = Ptr.Reference;
-		Ar << PtrReference;
-		if (Ar.IsLoading())
-		{
-			Ptr = PtrReference;
-		}
-		return Ar;
 	}
 
 private:
@@ -209,4 +198,17 @@ template<typename ReferencedType>
 inline bool operator==(ReferencedType* A, const TRefCountPtr<ReferencedType>& B)
 {
 	return A == B.GetReference();
+}
+
+namespace std
+{
+	template <typename	T>
+	struct hash<TRefCountPtr<T>>
+	{
+		size_t operator()(const TRefCountPtr<T>& k) const
+		{
+			size_t res = (size_t)k.GetReference() >> 3;
+			return res;
+		}
+	};
 }

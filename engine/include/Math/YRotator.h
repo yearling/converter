@@ -25,6 +25,7 @@ public:
 	static YRotator MakeFromEuler(const YVector& euler);	
 	static float ClampAxis(float Angle); //return [0,360)
 	static float NormalizeAxis(float Angle);//return (-180,180]
+	bool ContainsNaN() const;
 	YVector Euler() const;
 	YMatrix ToMatrix() const;
 	YQuat ToQuat() const;

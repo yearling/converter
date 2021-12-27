@@ -292,6 +292,22 @@ YVector YMatrix::GetOrigin() const
 {
 	return YVector(m[3][0], m[3][1], m[3][2]);
 }
+
+bool YMatrix::ContainsNaN() const
+{
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			if (!YMath::IsFinite(m[i][j]))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void YMatrix::SetAxis(int i, const YVector& axis)
 {
 	assert(i >= 0 && i <= 2);

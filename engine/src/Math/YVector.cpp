@@ -125,9 +125,24 @@ YVector YVector::operator-() const
 	return YVector(-x, -y, -z);
 }
 
+float YVector::GetMin() const
+{
+	return YMath::Min(x, YMath::Min(y, z));
+}
+
+float YVector::GetMax() const
+{
+	return YMath::Max(x, YMath::Max(y, z));
+}
+
 YVector YVector::operator+(const YVector& v) const
 {
 	return YVector(x + v.x, y + v.y, z + v.z);
+}
+
+YVector YVector::operator*(const YVector& v) const
+{
+	return YVector(x * v.x, y * v.y, z * v.z);
 }
 
 const YVector YVector::zero_vector = YVector(0.f,0.f,0.f);

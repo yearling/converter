@@ -38,6 +38,7 @@ public:
 	void Decompose(YVector& tralsation, YQuat& quat, YVector& scale) const;
 	void YMatrix::SetAxis(int i, const YVector& axis);
 	YVector GetOrigin() const;
+	bool ContainsNaN() const;
 	union
 	{
 		float m[4][4];

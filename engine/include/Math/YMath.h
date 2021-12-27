@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cmath>
+#include <float.h>
 //pre declare
 struct YVector2;
 struct YVector;

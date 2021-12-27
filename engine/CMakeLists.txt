@@ -24,7 +24,7 @@ SET(THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
 add_subdirectory(${THIRD_PARTY}/jsoncpp)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../libs)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${THIRD_PARTY}/jsoncpp/include )
 
 # 添加c++标准
 if(MSVC)

@@ -187,8 +187,59 @@ YQuat YQuat::GetNormalized(float Tolerance /*= SMALL_NUMBER*/) const
 	return Result;
 }
 
+bool YQuat::ContainsNaN() const
+{
+	return !(YMath::IsFinite(x) && YMath::IsFinite(y) && YMath::IsFinite(z) && YMath::IsFinite(w));
+}
+
 bool YQuat::IsNormalized() const
 {
 	return (YMath::Abs(1.f - YMath::Sqrt(x * x + y * y + z * z + w * w)) < THRESH_QUAT_NORMALIZED);
 
+}
+
+YQuat YQuat::Multiply(const YQuat& p, const YQuat& q)
+{
+	return YQuat(
+		p.w * q.x + p.x * q.w + p.y * q.z - p.z * q.y,
+		q.w * q.y - p.x * q.z + p.y * q.w + p.z * q.x,
+		p.w * q.z + p.x * q.y - p.y * q.x + p.z * q.w,
+		p.w * p.w - p.x * q.x - p.y * q.y - p.z * q.z
+	);
+}
+
+YQuat YQuat::operator*(const YQuat& q) const
+{
+	return Multiply(*this, q);
+}
+
+YVector YQuat::operator*(const YVector& v) const
+{
+	return RotateVector(v);
+}
+
+YVector YQuat::RotateVector(const YVector& V) const
+{
+	// http://people.csail.mit.edu/bkph/articles/Quaternions.pdf
+	// 上面论文里没有ue的这个化简过后的公式
+	// 根据 methematics for 3d game programing中的公式
+	// q = (Q,w)
+	// qVq' = w^2*V + 2w * Cross(Q,V) + Dot(Q,V)*Q - Crose(Cross(Q,V),Q)
+	// 
+	// base: Cross(Cross(Q,V),Q) = Q^2*V-Dot(Q,V)*Q
+	// get: Dot(Q,V)*Q = Q^2*V - Cross(Cross(Q,V),Q)
+	//                 =Q^2*V + Cross(Cross(Q,Cross(Q,V))
+	// get:
+	// qVq' = (W^2 + Q^2)V+ 2W*Cross(Q,V)-2Cross(Cross(Q,V)Q)
+	//       = V + 2W(Q x V) + 2Qx (Q x V)
+	// V' = V + 2w(Q x V) + (2Q x (Q x V))
+	// refactor:
+	// V' = V + w(2(Q x V)) + (Q x (2(Q x V)))
+	// T = 2(Q x V);
+	// V' = V + w*(T) + (Q x T)
+
+	const YVector Q(x, y, z);
+	const YVector T = 2.f * YVector::CrossProduct(Q, V);
+	const YVector Result = V + (w * T) + YVector::CrossProduct(Q, T);
+	return Result;
 }

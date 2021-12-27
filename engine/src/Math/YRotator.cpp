@@ -66,6 +66,11 @@ float YRotator::NormalizeAxis(float angle)
 	return angle;
 }
 
+bool YRotator::ContainsNaN() const
+{
+	return !(YMath::IsFinite(pitch) && YMath::IsFinite(yaw) && YMath::IsFinite(roll));
+}
+
 YVector YRotator::Euler() const
 {
 	return YVector(pitch, yaw, roll);

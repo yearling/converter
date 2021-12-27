@@ -5,10 +5,10 @@ struct YVector2
 public:
 	float x;
 	float y;
-	YVector2()=default;
-	YVector2(const YVector2&)=default;
+	YVector2() = default;
+	YVector2(const YVector2&) = default;
 	YVector2& operator=(const YVector2&) = default;
-	YVector2(YVector2&&)=default;
+	YVector2(YVector2&&) = default;
 	YVector2& operator=(YVector2&&) = default;
 	YVector2(float in_x, float in_y);
 };
@@ -24,7 +24,7 @@ public:
 	YVector& operator=(const YVector&) = default;
 	YVector(YVector&&) = default;
 	YVector& operator=(YVector&&) = default;
-	YVector(float in_x, float in_y,float in_z);
+	YVector(float in_x, float in_y, float in_z);
 	float& operator[](int index);
 	float operator[](int index)const;
 	bool IsNearlyZero(float tolerance = KINDA_SMALL_NUMBER) const;
@@ -32,13 +32,16 @@ public:
 	YVector GetSafeNormal(float Tolerance = SMALL_NUMBER) const;
 	YVector operator^(const YVector& v) const;
 	YVector operator*(float mul)const;
-	YVector CrossProduct(const YVector& a, const YVector& b);
+	static YVector CrossProduct(const YVector& a, const YVector& b);
 	float	operator|(const YVector& v) const;
 	float Dot(const YVector& a, const YVector& b);
 	bool Equals(const YVector& v, float Tolerance = KINDA_SMALL_NUMBER) const;
 	YVector operator-(const YVector& v) const;
 	YVector operator+(const YVector& v) const;
 	YVector operator-() const;
+	YVector operator*(const YVector& v) const;
+	float GetMin() const;
+	float GetMax() const;
 	/** zero vector (0,0,0) */
 	static const YVector zero_vector;
 	/** world up vector (0,1,0) */
@@ -47,6 +50,10 @@ public:
 	static const YVector right_vector;
 };
 
+inline YVector operator*(float f, YVector in_v)
+{
+	return YVector(in_v.x * f, in_v.y * f, in_v.z * f);
+}
 struct YVector4
 {
 public:
@@ -61,6 +68,6 @@ public:
 	YVector4& operator=(const YVector4&) = default;
 	YVector4(YVector4&&) = default;
 	YVector4& operator=(YVector4&&) = default;
-	YVector4(float in_x, float in_y,float in_z, float in_w);
+	YVector4(float in_x, float in_y, float in_z, float in_w);
 	YVector AffineTransform()const;
 };

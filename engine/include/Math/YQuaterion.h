@@ -20,10 +20,14 @@ public:
 	YRotator Rotator() const;
 	YVector Euler() const;
 	YMatrix ToMatrix() const;
+	YVector RotateVector(const YVector& V) const;
 	static YQuat Identity;
 	 void Normalize(float Tolerance = SMALL_NUMBER);
 	 YQuat GetNormalized(float Tolerance = SMALL_NUMBER) const;
-
+	 bool ContainsNaN() const;
 	// Return true if this quaternion is normalized
 	bool IsNormalized() const;
+	static YQuat Multiply(const YQuat& p, const YQuat& q);
+	YQuat operator*(const YQuat& q) const;
+	YVector operator*(const YVector& v) const;
 };
