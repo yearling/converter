@@ -245,7 +245,7 @@ void YStaticMesh::ReleaseGPUReosurce()
 void YStaticMesh::SaveV0(const std::string& dir)
 {
 	MemoryFile mem_file;
-	const int version = 0;
+	int version = 0;
 	mem_file << version;
 
 }

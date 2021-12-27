@@ -141,6 +141,11 @@ const std::vector<unsigned char>& MemoryFile::GetReadOnlyFileContent() const
 	return memory_content_;
 }
 
+bool MemoryFile::ReadBool(bool& value)
+{
+	return ReadElemts(&value, 1);
+}
+
 bool MemoryFile::ReadChar(char& value)
 {
 	return ReadElemts(&value, 1);
@@ -284,75 +289,114 @@ void MemoryFile::WriteYMatrix(const YMatrix& mat)
 	WriteElemts(&mat, 1);
 }
 
-MemoryFile& MemoryFile::operator<<(const int value)
+void MemoryFile::WriteBool(bool value)
 {
-	WriteInt32(value);
+	WriteElemts(&value, 1);
+}
+
+MemoryFile& MemoryFile::operator<<( int& value)
+{
+	if(IsReading())
+	{ 
+		ReadInt32(value);
+	}
+	else
+	{
+		WriteInt32(value);
+	}
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(float value)
+MemoryFile& MemoryFile::operator<<(float& value)
 {
-	WriteFloat32(value);
+	if (IsReading())
+	{
+		ReadFloat32(value);
+	}
+	else 
+	{
+		WriteFloat32(value);
+	}
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(char value)
+MemoryFile& MemoryFile::operator<<(char& value)
 {
-	WriteChar(value);
+	if (IsReading())
+	{
+		ReadChar(value);
+	}
+	else
+	{
+		WriteChar(value);
+	}
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(unsigned char value)
+MemoryFile& MemoryFile::operator<<(unsigned char& value)
 {
 	WriteUChar(value);
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(const std::string& value)
+MemoryFile& MemoryFile::operator<<(std::string& value)
 {
 	WriteString(value);
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(const YVector2& value)
+MemoryFile& MemoryFile::operator<<(YVector2& value)
 {
 	WriteFloat32Vector(&value.x, 2);
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(const YVector& value)
+MemoryFile& MemoryFile::operator<<(YVector& value)
 {
 	WriteFloat32Vector(&value.x, 3);
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(const YVector4& value)
+MemoryFile& MemoryFile::operator<<( YVector4& value)
 {
 	WriteFloat32Vector(&value.x, 4);
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(const YMatrix& value)
+MemoryFile& MemoryFile::operator<<( YMatrix& value)
 {
 	WriteFloat32Vector(&value.m[0][0], 16);
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(const YRotator& value)
+MemoryFile& MemoryFile::operator<<( YRotator& value)
 {
 	WriteFloat32Vector(&value.pitch, 3);
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(const YQuat& value)
+MemoryFile& MemoryFile::operator<<( YQuat& value)
 {
 	WriteFloat32Vector(&value.x, 4);
 	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(uint32_t value)
+MemoryFile& MemoryFile::operator<<(uint32_t& value)
 {
 	WriteUInt32(value);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(bool& value)
+{
+	if (IsReading())
+	{
+		ReadBool(value);
+	}
+	else
+	{
+		WriteBool(value);
+	}
 	return *this;
 }
 
