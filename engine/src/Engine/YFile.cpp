@@ -53,7 +53,7 @@ std::unique_ptr<MemoryFile> YFile::ReadFile()
 	std::unique_ptr<MemoryFile> mem_file = std::make_unique<MemoryFile>();
 	mem_file->AllocSizeUninitialized((uint32_t)size);
 	std::vector<unsigned char>& mem = mem_file->GetFileContent();
-	size_t read_size = fread(&mem[0], size, 1, read_file);
+	size_t read_size = fread(&mem[0], sizeof(unsigned char), size, read_file);
 	assert(read_size == size);
 	fclose(read_file);
 	return std::move(mem_file);
@@ -84,13 +84,13 @@ bool YFile::WriteFile(const std::string& path, const MemoryFile* memory_file)
 		fclose(write_file);
 		return true;
 	}
-	 size_t write_size = fwrite(&memory_file->GetReadOnlyFileContent()[0], content_to_write.size() * sizeof(unsigned char), 1, write_file);
-	 if (write_size !=(size_t) content_to_write.size() * sizeof(unsigned char))
-	 {
-		 fclose(write_file);
-		 return false;
-	 }
-	 fclose(write_file);
+	size_t write_size = fwrite(&memory_file->GetReadOnlyFileContent()[0], sizeof(unsigned char), content_to_write.size(), write_file);
+	if (write_size != (size_t)content_to_write.size())
+	{
+		fclose(write_file);
+		return false;
+	}
+	fclose(write_file);
 	return true;
 }
 
@@ -248,7 +248,7 @@ void MemoryFile::WriteFloat32Vector(float* value, int n)
 void MemoryFile::WriteString(const std::string& str)
 {
 	WriteInt32((int)str.size());
-	WriteChars(str.c_str(),(int) str.size());
+	WriteChars(str.c_str(), (int)str.size());
 }
 
 void MemoryFile::WriteYVector(const YVector& vec)

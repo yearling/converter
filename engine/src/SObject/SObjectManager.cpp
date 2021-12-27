@@ -17,7 +17,7 @@ void SObjectManager::Destroy()
 	{
 		UnifyLeft = 0;
 		DestroyUnitfyCount = 0;
-		for (auto iter = unify_objects_.begin(); iter!= unify_objects_.end();)
+		for (auto iter = unify_objects_.begin(); iter != unify_objects_.end();)
 		{
 			if (iter->second.GetRefCount() == 1)
 			{
@@ -33,18 +33,18 @@ void SObjectManager::Destroy()
 
 		DestroyInstanceCount = 0;
 		InstanceLeft = 0;
-		for(auto iter=instanced_objects_.begin();iter!= instanced_objects_.end();)
+		for (auto iter = instanced_objects_.begin(); iter != instanced_objects_.end();)
 		{
-				if ((*iter).GetRefCount() == 1)
-				{
-					iter = instanced_objects_.erase(iter);
-					DestroyInstanceCount++;
-				}
-				else
-				{
-					iter++;
-					InstanceLeft++;
-				}
+			if ((*iter).GetRefCount() == 1)
+			{
+				iter = instanced_objects_.erase(iter);
+				DestroyInstanceCount++;
+			}
+			else
+			{
+				iter++;
+				InstanceLeft++;
+			}
 		}
 
 	} while (DestroyUnitfyCount || DestroyInstanceCount);

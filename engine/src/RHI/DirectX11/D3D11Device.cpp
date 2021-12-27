@@ -162,7 +162,7 @@ bool D3D11Device::OnResize(int width, int height) {
 		{
 			chain_des.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 		}
-		if (FAILED(hr = dxgi_factory->CreateSwapChainForHwnd(d3d_device_, cur_hwnd_ , &chain_des, &full_desc, nullptr, &d3d_swap_chain_))) {
+		if (FAILED(hr = dxgi_factory->CreateSwapChainForHwnd(d3d_device_, cur_hwnd_, &chain_des, &full_desc, nullptr, &d3d_swap_chain_))) {
 			return false;
 		}
 	}
@@ -171,7 +171,7 @@ bool D3D11Device::OnResize(int width, int height) {
 		if (FAILED(hr = d3d_swap_chain_->ResizeBuffers(2, width_, height_, DXGI_FORMAT_R8G8B8A8_UNORM, 0))) {
 			ERROR_INFO("d3d swap chain resize buffer failed!");
 		}
-	
+
 	}
 
 	TComPtr<ID3D11Texture2D> back_buffer;
@@ -654,7 +654,7 @@ bool D3D11Device::CreateDepth2DTexture(UINT width, UINT height, DXGI_FORMAT form
 	desc.ArraySize = 1;
 	desc.Format = format;
 	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags =  D3D11_BIND_DEPTH_STENCIL;
+	desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	desc.MipLevels = 1;
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;

@@ -37,7 +37,7 @@ public:
 		FPaths::NormalizeFilename(PackagePathNoSuffix);
 		FName PackageFName(*(FPaths::GetBaseFilename(PackagePathNoSuffix, false)));
 		auto FindResult = g_sobject_manager.unify_objects_.Find(PackageFName);
-		if (FindResult!= g_sobject_manager.unify_objects_.end())
+		if (FindResult != g_sobject_manager.unify_objects_.end())
 		{
 			return TRefCountPtr<ClassType>(dynamic_cast<ClassType*>(FindResult.second.GetReference()), true);
 		}
@@ -46,7 +46,7 @@ public:
 			TRefCountPtr<ClassType> Obj((new ClassType(Forward<T>(Args)...)), true);
 			if (Obj->LoadFromPackage(PackagePath))
 			{
-				g_sobject_manager.unify_objects_.insert[PackageFName]=TRefCountPtr<SObject>(Obj.GetReference());
+				g_sobject_manager.unify_objects_.insert[PackageFName] = TRefCountPtr<SObject>(Obj.GetReference());
 				return Obj;
 			}
 			else

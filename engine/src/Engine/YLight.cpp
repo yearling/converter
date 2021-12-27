@@ -36,9 +36,9 @@ LightBase::~LightBase()
 
 }
 
-DirectLight::DirectLight():LightBase(LightType::LT_Direct)
+DirectLight::DirectLight() :LightBase(LightType::LT_Direct)
 {
-	
+
 }
 
 void DirectLight::SetLightDir(const YVector light_dir)
@@ -51,7 +51,7 @@ YVector DirectLight::GetLightdir() const
 	return light_dir_;
 }
 
-IBLLight::IBLLight():LightBase(LightType::LT_IBL)
+IBLLight::IBLLight() :LightBase(LightType::LT_IBL)
 {
 
 }

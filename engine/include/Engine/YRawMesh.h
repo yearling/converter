@@ -23,7 +23,7 @@ struct YMeshVertexInstance
 {
 	YMeshVertexInstance();
 	/** The vertex this is instancing */
-	int vertex_id=-1;
+	int vertex_id = -1;
 
 	/** List of connected triangles */
 	std::vector<int> connected_triangles;
@@ -57,7 +57,7 @@ struct YMeshEdge
 	/** The triangles that share this edge */
 	std::vector<int> connected_triangles;
 	bool edge_hardness = false;
-	float edge_crease_sharpness =0;
+	float edge_crease_sharpness = 0;
 	void AddTriangleID(int triangle_id);
 };
 
@@ -83,7 +83,7 @@ public:
 
 	int GetVertexPairEdge(int vertex_id0, int vertex_id1);
 	int CreateEdge(int vertex_id_0, int vertex_id_1);
-	int CreatePolygon(int polygon_group_id,std::vector<int> vertex_ins_ids, std::vector<int>& out_edges);
+	int CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_ids, std::vector<int>& out_edges);
 };
 
 

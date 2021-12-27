@@ -12,5 +12,5 @@ void YSysUtility::AllocWindowsConsole()
 	freopen_s(&stream, "CONOUT$", "w+t", stderr);
 	setlocale(LC_ALL, "chs");
 	std::ios::sync_with_stdio();
-	std::cout.clear(); 
+	std::cout.clear();
 }

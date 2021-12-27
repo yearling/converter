@@ -14,7 +14,7 @@ int YLODMesh::GetVertexPairEdge(int vertex_id0, int vertex_id1)
 	{
 		int vertex_maybe_0 = edges[edge].VertexIDs[0];
 		int vertex_maybe_1 = edges[edge].VertexIDs[1];
-		if ((vertex_maybe_0 == vertex_id0 && vertex_maybe_1 == vertex_id1) || (vertex_maybe_0==vertex_id1 && vertex_maybe_1 == vertex_id0))
+		if ((vertex_maybe_0 == vertex_id0 && vertex_maybe_1 == vertex_id1) || (vertex_maybe_0 == vertex_id1 && vertex_maybe_1 == vertex_id0))
 		{
 			return edge;
 		}
@@ -95,7 +95,7 @@ void YMeshEdge::AddTriangleID(int triangle_id)
 
 YMeshVertexInstance::YMeshVertexInstance()
 {
-	vertex_instance_uvs.resize(MAX_MESH_TEXTURE_COORDS,YVector2(0.0,0.0));
+	vertex_instance_uvs.resize(MAX_MESH_TEXTURE_COORDS, YVector2(0.0, 0.0));
 }
 
 void YMeshVertexInstance::AddTriangleID(int triangle_id)
@@ -110,7 +110,7 @@ void YMeshVertexInstance::AddTriangleID(int triangle_id)
 void YMeshVertex::AddVertexInstance(int index)
 {
 	auto find_reuslt = std::find(vertex_instance_ids.begin(), vertex_instance_ids.end(), index);
-	if(find_reuslt==vertex_instance_ids.end())
+	if (find_reuslt == vertex_instance_ids.end())
 	{
 		vertex_instance_ids.push_back(index);
 	}

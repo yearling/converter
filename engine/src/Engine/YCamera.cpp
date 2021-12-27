@@ -2,7 +2,7 @@
 
 PerspectiveCamera::PerspectiveCamera()
 {
-	perspective_camera_=true;
+	perspective_camera_ = true;
 }
 
 PerspectiveCamera::PerspectiveCamera(float fov, float aspec, float near_plane, float far_plane)
@@ -34,7 +34,7 @@ YMatrix PerspectiveCamera::GetPerspectiveMatrix(float radian_y_fov, float aspec,
 	tmp.m[0][3] = 0.f;
 
 	tmp.m[1][0] = 0.f;
-	tmp.m[1][1] = 1.f/YMath::Tan(half_y_fov);
+	tmp.m[1][1] = 1.f / YMath::Tan(half_y_fov);
 	tmp.m[1][2] = 0.f;
 	tmp.m[1][3] = 0.f;
 

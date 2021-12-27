@@ -80,7 +80,7 @@ void YCamvas::DrawCube(const YVector& Pos, const YVector4& Color, float length /
 void YCamvas::Update()
 {
 	AllocGPUResource();
-	
+
 	std::vector<YVector> points_tmp;
 	std::vector<unsigned int> color_tmp;
 	points_tmp.reserve(lines_.size() * 2);
@@ -95,10 +95,10 @@ void YCamvas::Update()
 	//update
 	if (points_tmp.size())
 	{
-		g_device->UpdateVBDynaimc(vertex_buffers_[0], 0, &points_tmp[0],(unsigned int) points_tmp.size() * sizeof(YVector));
-		g_device->UpdateVBDynaimc(vertex_buffers_[1], 0, &color_tmp[0], (unsigned int) color_tmp.size() * sizeof(int));
+		g_device->UpdateVBDynaimc(vertex_buffers_[0], 0, &points_tmp[0], (unsigned int)points_tmp.size() * sizeof(YVector));
+		g_device->UpdateVBDynaimc(vertex_buffers_[1], 0, &color_tmp[0], (unsigned int)color_tmp.size() * sizeof(int));
 	}
-	
+
 }
 
 void YCamvas::Render(CameraBase* camera)
@@ -121,7 +121,7 @@ void YCamvas::Render(CameraBase* camera)
 	vertex_shader_->BindResource("g_view", camera->GetViewMatrix());
 	vertex_shader_->Update();
 	pixel_shader_->Update();
-	dc->Draw((unsigned int)lines_.size() * 2,0);
+	dc->Draw((unsigned int)lines_.size() * 2, 0);
 
 	lines_.clear();
 }
@@ -137,7 +137,7 @@ bool YCamvas::AllocGPUResource()
 	{
 		assert(max_line_num_ == 0);
 		max_line_num_ += increament_;
-		int position_bytes = max_line_num_ * sizeof(YVector)*2;
+		int position_bytes = max_line_num_ * sizeof(YVector) * 2;
 		int color_bytes = max_line_num_ * sizeof(unsigned int) * 2;
 		{
 			TComPtr<ID3D11Buffer> vb_tmp;

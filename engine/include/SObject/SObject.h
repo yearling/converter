@@ -4,7 +4,7 @@
 #include <string>
 #include "Engine/YLog.h"
 #include "Engine/YReferenceCount.h"
-class SObject:public YRefCountedObject
+class SObject :public YRefCountedObject
 {
 public:
 	virtual ~SObject();
@@ -12,8 +12,8 @@ public:
 	SObject(SObject&&) = default;
 	SObject& operator=(const SObject&) = delete;
 	SObject& operator=(SObject&&) = default;
-	virtual bool LoadFromPackage(const std::string & Path);
-	virtual void SaveToPackage(const std::string & Path);
+	virtual bool LoadFromPackage(const std::string& Path);
+	virtual void SaveToPackage(const std::string& Path);
 	virtual bool LoadFromJson(const Json::Value& RootJson);
 	virtual bool PostLoadOp();
 protected:

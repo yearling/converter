@@ -20,7 +20,7 @@ void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...
 	std::ostringstream stream;
 	std::string log_name;
 
-	switch(log_type)
+	switch (log_type)
 	{
 	case LogType::EVerbos:
 		log_name = "[log]";
@@ -38,7 +38,7 @@ void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...
 	case LogType::EVerbos:
 		g_verbo_log += stream.str();
 		(stream << ... << std::forward<Args>(args)) << '\n';
-		
+
 		break;
 	case LogType::EWarning:
 		stream << fileName << "(" << line << ") : ";

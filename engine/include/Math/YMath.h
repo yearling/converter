@@ -140,7 +140,7 @@ struct YMath
 
 	static  bool IsNegativeDouble(const double& A)
 	{
-		return ((*(uint64_t*) & A) >= (uint64_t)0x8000000000000000); // Detects sign bit.
+		return ((*(uint64_t*)&A) >= (uint64_t)0x8000000000000000); // Detects sign bit.
 	}
 
 	static   int TruncToInt(float F)

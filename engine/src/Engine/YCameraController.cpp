@@ -52,9 +52,9 @@ FPSCameraController::~FPSCameraController()
 
 void FPSCameraController::Update(double delta_time)
 {
-	float forwad_distance = (float)delta_time * forward_speed+ (float)delta_time * wheel_speed * wheel_forward_base;
+	float forwad_distance = (float)delta_time * forward_speed + (float)delta_time * wheel_speed * wheel_forward_base;
 	float right_distance = (float)delta_time * right_speed;
-	
+
 	YMatrix world_matrix = camera_->GetInvViewMatrix();
 	YVector forward_w = world_matrix.TransformVector(YVector::forward_vector);
 	YVector right_w = world_matrix.TransformVector(YVector::right_vector);
@@ -63,7 +63,7 @@ void FPSCameraController::Update(double delta_time)
 	camera_->SetPosition(final_pos);
 	smooth_delta_pitch.SmoothAcc(delta_pitch_screen);
 	smooth_delta_yaw.SmoothAcc(delta_yaw_screen);
-	float pitch_delta = smooth_delta_yaw.Average() * rotation_speed_pitch* (float)delta_time;
+	float pitch_delta = smooth_delta_yaw.Average() * rotation_speed_pitch * (float)delta_time;
 	float yaw_delta = smooth_delta_pitch.Average() * rotation_speed_yaw * (float)delta_time;
 	YRotator final_rotator = camera_->GetRotator();
 	final_rotator.pitch += pitch_delta;

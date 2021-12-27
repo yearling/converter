@@ -2,10 +2,10 @@
 
 YTransform::YTransform()
 	:translation(YVector::zero_vector),
-	rotator(0.f,0.f,0.f,1.f),
-	scale(1.f,1.f,1.f)
+	rotator(0.f, 0.f, 0.f, 1.f),
+	scale(1.f, 1.f, 1.f)
 {
-	
+
 }
 
 YTransform::YTransform(const YVector& in_translation, const YQuat& in_quat, const YVector& in_scale)
@@ -13,7 +13,7 @@ YTransform::YTransform(const YVector& in_translation, const YQuat& in_quat, cons
 	rotator(in_quat),
 	scale(in_scale)
 {
-	
+
 }
 
 YTransform::YTransform(const YMatrix& mat)
@@ -65,7 +65,7 @@ void YTransform::Multiply(YTransform* OutTransform, const YTransform* A, const Y
 	if (bHaveNegativeScale)
 	{
 		// @note, if you have 0 scale with negative, you're going to lose rotation as it can't convert back to quat
-		new(OutTransform) YTransform(A->ToMatrix()* B->ToMatrix());
+		new(OutTransform) YTransform(A->ToMatrix() * B->ToMatrix());
 	}
 	else
 	{

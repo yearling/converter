@@ -12,17 +12,17 @@ public:
 	float yaw;
 	/** US: Rotation around the forward axis (around Z axis), Tilting your head, 0=Straight, +Clockwise, -CCW. */
 	float roll;
-	YRotator()=default;
+	YRotator() = default;
 	YRotator(const YRotator&) = default;
 	YRotator& operator=(const YRotator&) = default;
 	YRotator(YRotator&&) = default;
 	YRotator& operator=(YRotator&&) = default;
-	YRotator(float in_x, float in_y,float in_z);
+	YRotator(float in_x, float in_y, float in_z);
 	YRotator(const YMatrix& matrix);
 	YRotator(const YMatrix3x3& matrix);
 	YRotator(const YQuat& quta);
 	YRotator(const YVector& in_v);
-	static YRotator MakeFromEuler(const YVector& euler);	
+	static YRotator MakeFromEuler(const YVector& euler);
 	static float ClampAxis(float Angle); //return [0,360)
 	static float NormalizeAxis(float Angle);//return (-180,180]
 	bool ContainsNaN() const;

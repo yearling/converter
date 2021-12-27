@@ -11,7 +11,7 @@ public:
 	virtual ~SActor();
 	static constexpr  bool IsInstance() { return true; }
 	//virtual bool LoadFromJson(const TSharedPtr<FJsonObject>&RootJson);
-	virtual bool LoadFromJson(Json::Value&RootJson);
+	virtual bool LoadFromJson(Json::Value& RootJson);
 	virtual bool PostLoadOp();
 
 	template<typename T>
@@ -35,7 +35,7 @@ public:
 		}
 	}
 	template<typename T>
-	void RecurisveGetTypeComponent(SComponent::EComponentType ComponentType, std::vector<T*> &InOutSelectComponents)
+	void RecurisveGetTypeComponent(SComponent::EComponentType ComponentType, std::vector<T*>& InOutSelectComponents)
 	{
 		for (TRefCountPtr<SComponent>& Component : Components)
 		{

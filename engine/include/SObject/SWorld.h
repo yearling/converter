@@ -11,7 +11,7 @@ public:
 	SWorld();
 	virtual ~SWorld();
 	static constexpr bool IsInstance() { return false; };
-	virtual bool LoadFromPackage(const std::string & Path);
+	virtual bool LoadFromPackage(const std::string& Path);
 	virtual bool PostLoadOp();
 	void UpdateToScene();
 protected:

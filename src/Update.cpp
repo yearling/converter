@@ -229,7 +229,7 @@ void Render()
 			mesh->Render(main_camera.get());
 			YVector light_dir_calc =- YRotator(light_dir).ToMatrix().TransformVector(YVector::forward_vector);
 			mesh->pixel_shader_->BindResource("light_dir", &light_dir_calc.x, 3);
-			float show_normal_f = show_normal ? 1.0 : -1.0;
+			float show_normal_f = show_normal ? 1.f : -1.f;
 			mesh->pixel_shader_->BindResource("show_normal", show_normal_f);
 		}
 	}

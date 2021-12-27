@@ -34,7 +34,7 @@ YRotator::YRotator(const YVector& in_v)
 
 YRotator YRotator::MakeFromEuler(const YVector& euler)
 {
-	YRotator rotator(euler.x, euler.y,euler.z);
+	YRotator rotator(euler.x, euler.y, euler.z);
 	return rotator;
 }
 
@@ -79,9 +79,9 @@ YVector YRotator::Euler() const
 YMatrix YRotator::ToMatrix() const
 {
 	// xyz
-	float rad_pitch=	YMath::DegreesToRadians(pitch);
-	float rad_yaw=	YMath::DegreesToRadians(yaw);
-	float rad_roll=	YMath::DegreesToRadians(roll);
+	float rad_pitch = YMath::DegreesToRadians(pitch);
+	float rad_yaw = YMath::DegreesToRadians(yaw);
+	float rad_roll = YMath::DegreesToRadians(roll);
 	float sp = YMath::Sin(rad_pitch);
 	float cp = YMath::Cos(rad_pitch);
 	float sy = YMath::Sin(rad_yaw);
@@ -110,9 +110,9 @@ YMatrix YRotator::ToMatrix() const
 
 YQuat YRotator::ToQuat() const
 {
-	float rad_half_pitch = YMath::DegreesToRadians(pitch*0.5f);
-	float rad_half_yaw = YMath::DegreesToRadians(yaw*0.5f);
-	float rad_half_roll = YMath::DegreesToRadians(roll*0.5f);
+	float rad_half_pitch = YMath::DegreesToRadians(pitch * 0.5f);
+	float rad_half_yaw = YMath::DegreesToRadians(yaw * 0.5f);
+	float rad_half_roll = YMath::DegreesToRadians(roll * 0.5f);
 	float sp = YMath::Sin(rad_half_pitch);
 	float cp = YMath::Cos(rad_half_pitch);
 	float sy = YMath::Sin(rad_half_yaw);

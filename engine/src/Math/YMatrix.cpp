@@ -212,7 +212,7 @@ YVector4 YMatrix::TransformVector4(const YVector4& v) const
 
 YVector YMatrix::TransformPosition(const YVector& v) const
 {
-	YVector4 pos= TransformVector4(YVector4(v, 1.0f));
+	YVector4 pos = TransformVector4(YVector4(v, 1.0f));
 	return YVector(pos.x / pos.w, pos.y / pos.w, pos.z / pos.w);
 }
 
@@ -316,7 +316,7 @@ void YMatrix::SetAxis(int i, const YVector& axis)
 	m[i][2] = axis.z;
 }
 const YMatrix YMatrix::Identity(YVector4(1.0, 0.0, 0.0, 0.0), YVector4(0.0, 1.0, 0.0, 0.0), YVector4(0.0, 0.0, 1.0, 0.0), YVector4(0.0, 0.0, 0.0, 1.0));
-YVector YMatrix::ExtractScaling(float tolerance/*=SMALL_NUMBER*/) 
+YVector YMatrix::ExtractScaling(float tolerance/*=SMALL_NUMBER*/)
 {
 	YVector scale_3d(0, 0, 0);
 

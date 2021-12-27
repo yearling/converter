@@ -10,12 +10,12 @@ class MemoryFile;
 class YFile
 {
 public:
-	enum class FileType:uint8_t
+	enum  FileType
 	{
-		FT_Read = 0,
-		FT_Write = 1<<2,
-		FT_TXT = 1<<3,
-		FT_BINARY= 1<<4,
+		FT_Read = 1 << 1,
+		FT_Write = 1 << 2,
+		FT_TXT = 1 << 3,
+		FT_BINARY = 1 << 4,
 		FT_NUM
 	};
 	YFile();
@@ -23,7 +23,7 @@ public:
 	explicit YFile(const std::string& path);
 	explicit YFile(FileType type);
 	YFile(FileType type, const std::string& path);
-	std::unique_ptr<MemoryFile> ReadFile() ;
+	std::unique_ptr<MemoryFile> ReadFile();
 	bool WriteFile(const std::string& path, const MemoryFile* memory_file);
 protected:
 	FileType type_;
@@ -45,11 +45,11 @@ public:
 	void ReserveSize(uint32_t reserve_file_size);
 	void AllocSizeUninitialized(uint32_t reserve_file_size);
 	std::vector<unsigned char>& GetFileContent();
-	const std::vector<unsigned char>& GetReadOnlyFileContent()const ;
+	const std::vector<unsigned char>& GetReadOnlyFileContent()const;
 	bool ReadChar(char& value);
-	bool ReadChars(char* value,int n);
+	bool ReadChars(char* value, int n);
 	bool ReadUChar(unsigned char& value);
-	bool ReadUChars(unsigned char* value,int n);
+	bool ReadUChars(unsigned char* value, int n);
 	bool ReadInt32(int& value);
 	bool ReadInt32Vector(int* value, int n);
 	bool ReadFloat32(float& value);
@@ -59,7 +59,7 @@ public:
 	bool ReadYMatrix(YMatrix& mat);
 	bool ReadString(std::string& str);
 	void WriteChar(char value);
-	void WriteChars(const char* value,int n);
+	void WriteChars(const char* value, int n);
 	void WriteUChar(unsigned char value);
 	void WriteInt32(int value);
 	void WriteInt32Vector(const int* value, int n);
@@ -70,9 +70,9 @@ public:
 	void WriteYVector4(const YVector4& vec);
 	void WriteYMatrix(const YMatrix& mat);
 	template<typename T>
-	bool ReadElemts(T* value,int n)
+	bool ReadElemts(T* value, int n)
 	{
-		size_t read_size = sizeof(T)* n;
+		size_t read_size = sizeof(T) * n;
 		if (read_pos_ + read_size > memory_content_.size())
 		{
 			return false;
@@ -84,10 +84,10 @@ public:
 
 
 	template<typename T>
-	void WriteElemts(const T* value , int n)
+	void WriteElemts(const T* value, int n)
 	{
 		size_t write_size = sizeof(T) * n;
-		FitSize( memory_content_.size() + write_size);
+		FitSize(memory_content_.size() + write_size);
 		size_t current_size = memory_content_.size();
 		memory_content_.resize(current_size + write_size);
 		memcpy(&memory_content_[current_size], &value, write_size);

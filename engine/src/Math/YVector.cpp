@@ -2,12 +2,12 @@
 #include "Math/YVector.h"
 
 YVector2::YVector2(float in_x, float in_y)
-:x(in_x), y(in_y){
-	
+	:x(in_x), y(in_y) {
+
 }
 
 YVector::YVector(float in_x, float in_y, float in_z)
-	:x(in_x),y(in_y),z(in_z)
+	: x(in_x), y(in_y), z(in_z)
 {
 
 }
@@ -15,7 +15,7 @@ YVector::YVector(float in_x, float in_y, float in_z)
 float& YVector::operator[](int index)
 {
 	assert(0 <= index && index <= 2);
-	if(index==0)
+	if (index == 0)
 	{
 		return x;
 	}
@@ -102,7 +102,7 @@ YVector YVector::CrossProduct(const YVector& a, const YVector& b)
 
 float YVector::operator|(const YVector& v) const
 {
-	return x * v.x + y * v.y + z* v.z;
+	return x * v.x + y * v.y + z * v.z;
 }
 
 float YVector::Dot(const YVector& a, const YVector& b)
@@ -145,13 +145,13 @@ YVector YVector::operator*(const YVector& v) const
 	return YVector(x * v.x, y * v.y, z * v.z);
 }
 
-const YVector YVector::zero_vector = YVector(0.f,0.f,0.f);
+const YVector YVector::zero_vector = YVector(0.f, 0.f, 0.f);
 const YVector YVector::right_vector = YVector(1.f, 0.f, 0.f);
-const YVector YVector::up_vector = YVector(0.f,1.f,0.f);
+const YVector YVector::up_vector = YVector(0.f, 1.f, 0.f);
 const YVector YVector::forward_vector = YVector(0.f, 0.f, 1.f);
 
 YVector4::YVector4(float in_x, float in_y, float in_z, float in_w)
-	:x(in_x), y(in_y), z(in_z),w(in_w)
+	:x(in_x), y(in_y), z(in_z), w(in_w)
 {
 
 }
@@ -174,7 +174,7 @@ YVector4::YVector4(const float* v)
 
 YVector YVector4::AffineTransform() const
 {
-	if (YMath::Abs(w) < SMALL_NUMBER) 
+	if (YMath::Abs(w) < SMALL_NUMBER)
 	{
 		return YVector::zero_vector;
 	}

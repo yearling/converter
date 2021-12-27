@@ -12,7 +12,7 @@ SWorld::~SWorld()
 
 }
 
-bool SWorld::LoadFromPackage(const std::string & Path)
+bool SWorld::LoadFromPackage(const std::string& Path)
 {
 	return true;
 }

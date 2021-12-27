@@ -10,9 +10,9 @@ public:
 		LT_Direct = 0,
 		LT_Spot = 1,
 		LT_Point_light = 2,
-		LT_IBL=3,
+		LT_IBL = 3,
 		LT_Square = 4,
-		LT_Mesh =5
+		LT_Mesh = 5
 	};
 	LightBase();
 	~LightBase();

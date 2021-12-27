@@ -6,7 +6,7 @@ class CameraBase
 public:
 	CameraBase();
 	virtual ~CameraBase();
-	
+
 	YMatrix GetViewMatrix() const;
 	YMatrix GetInvViewMatrix() const;
 	YMatrix GetProjectionMatrix() const;
@@ -23,14 +23,14 @@ public:
 	void SetNearPlane(float near_plane);
 	void SetFarPlane(float far_plane);
 	void SetFovY(float fov_y); //degree
-	void SetAspect(float aspect); 
+	void SetAspect(float aspect);
 	void SetPosition(const YVector& position);
 	void SetRotation(const YRotator& rotator);
 	virtual void Update();
 protected:
 	YVector position_;
 	YRotator rotaion_;
-	
+
 	YMatrix inv_view_matrix;
 	YMatrix view_matrix_;
 	YMatrix projection_matrix_;
@@ -43,11 +43,11 @@ protected:
 	bool perspective_camera_ = true;
 };
 
-class PerspectiveCamera:public CameraBase
+class PerspectiveCamera :public CameraBase
 {
 public:
 	PerspectiveCamera();
-	PerspectiveCamera(float fov, float aspec,float near_plane, float far_plane);
+	PerspectiveCamera(float fov, float aspec, float near_plane, float far_plane);
 	void Update() override;
 	static YMatrix GetPerspectiveMatrix(float radian_y_fov, float aspec, float near_plane, float far_plane);
 };

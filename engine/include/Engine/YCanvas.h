@@ -17,7 +17,7 @@ protected:
 	struct LineDesc
 	{
 		LineDesc(const YVector& in_s, const YVector& in_e, const YVector4& in_color)
-		:start(in_s),end(in_e),color(in_color){}
+			:start(in_s), end(in_e), color(in_color) {}
 		YVector start, end;
 		YVector4 color;
 	};

@@ -14,7 +14,7 @@ struct YMatrix
 {
 public:
 	YMatrix();
-	YMatrix(const YVector4& row0, const YVector4& row1,const YVector4& row2,const YVector4& row3);
+	YMatrix(const YVector4& row0, const YVector4& row1, const YVector4& row2, const YVector4& row3);
 	YMatrix operator*(const YMatrix& other);
 	YMatrix(const YRotator& rotator, const YVector& translation);
 	float Determinant() const;

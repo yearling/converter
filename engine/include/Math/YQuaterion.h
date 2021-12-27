@@ -7,7 +7,7 @@ public:
 	float y;
 	float z;
 	float w;
-	YQuat()=default;
+	YQuat() = default;
 	YQuat(float x, float y, float z, float w);
 	YQuat(const YQuat&) = default;
 	YQuat(YQuat&&) = default;
@@ -22,9 +22,9 @@ public:
 	YMatrix ToMatrix() const;
 	YVector RotateVector(const YVector& V) const;
 	static YQuat Identity;
-	 void Normalize(float Tolerance = SMALL_NUMBER);
-	 YQuat GetNormalized(float Tolerance = SMALL_NUMBER) const;
-	 bool ContainsNaN() const;
+	void Normalize(float Tolerance = SMALL_NUMBER);
+	YQuat GetNormalized(float Tolerance = SMALL_NUMBER) const;
+	bool ContainsNaN() const;
 	// Return true if this quaternion is normalized
 	bool IsNormalized() const;
 	static YQuat Multiply(const YQuat& p, const YQuat& q);

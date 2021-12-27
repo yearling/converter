@@ -3,6 +3,7 @@
 #include "RHI/DirectX11/D3D11VertexFactory.h"
 #include "Engine/YLog.h"
 #include <fstream>
+#include "Engine/YFile.h"
 
 class YStaticMeshVertexFactory :public DXVertexFactory
 {
@@ -63,7 +64,7 @@ void YStaticMesh::Render(CameraBase* camera)
 	int triangle_total = 0;
 	for (auto& polygon_group : raw_meshes[0]->polygon_groups)
 	{
-		int triangle_count =(int) polygon_group.polygons.size();
+		int triangle_count = (int)polygon_group.polygons.size();
 		dc->DrawIndexed(triangle_count * 3, triangle_total, 0);
 		triangle_total += triangle_count * 3;
 	}
@@ -175,16 +176,14 @@ bool YStaticMesh::AllocGpuResource()
 	{
 		vertex_shader_ = std::make_unique<D3DVertexShader>();
 		const std::string shader_path = "Shader/StaticMesh.hlsl";
-		std::ifstream inFile;
-		inFile.open(shader_path); //open the input file
-		if (inFile.bad())
+		YFile vertex_shader_source(YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_TXT), shader_path);
+		std::unique_ptr<MemoryFile> mem_file = vertex_shader_source.ReadFile();
+		if (!mem_file)
 		{
 			ERROR_INFO("open shader ", shader_path, " failed!");
 			return false;
 		}
-		std::stringstream strStream;
-		strStream << inFile.rdbuf(); //read the file
-		std::string str = strStream.str();
+		std::string str(mem_file->GetReadOnlyFileContent().begin(), mem_file->GetReadOnlyFileContent().end());
 		if (!vertex_shader_->CreateShaderFromSource(str, "VSMain", static_mesh_vertex_factory.get()))
 		{
 			return false;
@@ -194,16 +193,15 @@ bool YStaticMesh::AllocGpuResource()
 	{
 		pixel_shader_ = std::make_unique<D3DPixelShader>();
 		const std::string shader_path = "Shader/StaticMesh.hlsl";
-		std::ifstream inFile;
-		inFile.open(shader_path); //open the input file
-		if (inFile.bad())
+			
+		YFile vertex_shader_source(YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_TXT), shader_path);
+		std::unique_ptr<MemoryFile> mem_file = vertex_shader_source.ReadFile();
+		if (!mem_file)
 		{
 			ERROR_INFO("open shader ", shader_path, " failed!");
 			return false;
 		}
-		std::stringstream strStream;
-		strStream << inFile.rdbuf(); //read the file
-		std::string str = strStream.str();
+		std::string str(mem_file->GetReadOnlyFileContent().begin(), mem_file->GetReadOnlyFileContent().end());
 		if (!pixel_shader_->CreateShaderFromSource(str, "PSMain"))
 		{
 			return false;
