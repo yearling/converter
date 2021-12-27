@@ -116,3 +116,63 @@ void YMeshVertex::AddVertexInstance(int index)
 	}
 
 }
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YLODMesh& lod_mesh)
+{
+	mem_file << lod_mesh.LOD_index;
+	mem_file << lod_mesh.sub_meshes;
+	mem_file << lod_mesh.vertex_position;
+	return mem_file;
+}
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YRawMesh& raw_mesh)
+{
+	mem_file << raw_mesh.mesh_name;
+	return mem_file;
+}
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshEdge& mesh_edge)
+{
+	mem_file << mesh_edge.VertexIDs[0];
+	mem_file << mesh_edge.VertexIDs[1];
+	mem_file << mesh_edge.connected_triangles;
+	mem_file << mesh_edge.edge_hardness;
+	mem_file << mesh_edge.edge_crease_sharpness;
+
+	return mem_file;
+}
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshPolygonGroup& mesh_polygon_group)
+{
+	mem_file << mesh_polygon_group.polygons;
+	return mem_file;
+}
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshPolygon& mesh_polygon)
+{
+	mem_file << mesh_polygon.polygon_group_id;
+	mem_file << mesh_polygon.vertex_instance_ids;
+	return mem_file;
+}
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshVertexInstance& mesh_vertex_instance)
+{
+	mem_file << mesh_vertex_instance.vertex_id;
+	mem_file << mesh_vertex_instance.connected_triangles;
+	mem_file << mesh_vertex_instance.vertex_instance_normal;
+	mem_file << mesh_vertex_instance.vertex_instance_tangent;
+	mem_file << mesh_vertex_instance.vertex_instance_binormal_sign;
+	mem_file << mesh_vertex_instance.vertex_instance_color;
+	mem_file << mesh_vertex_instance.vertex_instance_uvs;
+
+	return mem_file;
+}
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshVertex& mesh_vertex)
+{
+	mem_file << mesh_vertex.vertex_instance_ids;
+	mem_file << mesh_vertex.connect_edge_ids;
+	mem_file << mesh_vertex.position;
+	return mem_file;
+}
+

@@ -30,3 +30,12 @@ public:
 	YMatrix ToMatrix() const;
 	YQuat ToQuat() const;
 };
+
+namespace std
+{
+	template<>
+	struct is_pod<YRotator>
+	{
+		static constexpr bool value = true;
+	};
+}

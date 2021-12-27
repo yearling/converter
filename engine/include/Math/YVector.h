@@ -1,5 +1,6 @@
 #pragma once
 #include "Math/YMath.h"
+#include <type_traits>
 struct YVector2
 {
 public:
@@ -71,3 +72,24 @@ public:
 	YVector4(float in_x, float in_y, float in_z, float in_w);
 	YVector AffineTransform()const;
 };
+
+namespace std
+{
+	template<>
+	struct is_pod<YVector2>
+	{
+		static constexpr bool  value = true;
+	};
+
+	template<>
+	struct is_pod<YVector>
+	{
+		static constexpr bool value = true;
+	};
+
+	template<>
+	struct is_pod<YVector4>
+	{
+		static constexpr bool value = true;
+	};
+}

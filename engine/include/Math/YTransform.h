@@ -18,3 +18,13 @@ public:
 	static const YTransform identity;
 	YMatrix ToMatrix()const;
 };
+
+
+namespace std
+{
+	template<>
+	struct is_pod<YTransform>
+	{
+		bool value = true;
+	};
+}

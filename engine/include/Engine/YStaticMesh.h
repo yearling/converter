@@ -13,6 +13,7 @@ public:
 	void	Render(CameraBase* camera);
 	std::vector<std::unique_ptr<YLODMesh>> raw_meshes;
 
+	void SaveV0(const std::string& dir);
 public:
 	friend class YStaticMeshVertexFactory;
 	bool allocated_gpu_resource = false;
@@ -26,4 +27,5 @@ public:
 	std::unique_ptr<D3DVertexShader> vertex_shader_;
 	std::unique_ptr<D3DPixelShader> pixel_shader_;
 	std::unique_ptr<DXVertexFactory> vertex_factory_;
+	std::string model_name;
 };

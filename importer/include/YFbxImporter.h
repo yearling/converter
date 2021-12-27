@@ -23,8 +23,6 @@ struct FbxImportParam
 	bool transform_vertex_to_absolute = true; // true:for static mesh , false for skeleton mesh
 	bool bake_pivot_in_vertex = true; // bake pivot in vetex only in  static mesh, we choose transform_vertex_to_absolute is false, and want vertex bake in pivot space
 	bool remove_degenerate_triangles = true;
-
-
 };
 
 struct FbxMeshInfo
@@ -45,6 +43,7 @@ struct FbxImportSceneInfo
 	int skin_mesh=0;
 	double frame_rate = 0.0;
 	std::vector<FbxMeshInfo> mesh_infos;
+	std::string model_name;
 };
 
 struct ConvertedResult

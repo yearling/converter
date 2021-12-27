@@ -46,3 +46,19 @@ public:
 	static const YMatrix Identity;
 
 };
+
+namespace std
+{
+
+	template<>
+	struct is_pod<YMatrix3x3>
+	{
+		static constexpr bool value = true;
+	};
+
+	template<>
+	struct is_pod<YMatrix>
+	{
+		static constexpr bool value = true;
+	};
+}

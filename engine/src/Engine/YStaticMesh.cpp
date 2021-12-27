@@ -69,6 +69,9 @@ void YStaticMesh::Render(CameraBase* camera)
 		triangle_total += triangle_count * 3;
 	}
 }
+
+
+
 YStaticMesh::YStaticMesh()
 {
 
@@ -236,4 +239,13 @@ void YStaticMesh::ReleaseGPUReosurce()
 	ds_ = nullptr;
 	sampler_state_ = nullptr;
 	allocated_gpu_resource = false;
+}
+
+
+void YStaticMesh::SaveV0(const std::string& dir)
+{
+	MemoryFile mem_file;
+	const int version = 0;
+	mem_file << version;
+
 }

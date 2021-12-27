@@ -1,6 +1,9 @@
 #include "Engine/YFile.h"
 #include "Engine/YLog.h"
 #include <cstdio>
+#include "Utility/YPath.h"
+#include "Math/YRotator.h"
+#include "Math/YQuaterion.h"
 YFile::YFile()
 	:type_(FileType::FT_NUM)
 {
@@ -60,7 +63,7 @@ std::unique_ptr<MemoryFile> YFile::ReadFile()
 	return nullptr;
 }
 
-bool YFile::WriteFile(const std::string& path, const MemoryFile* memory_file)
+bool YFile::WriteFile(const std::string& path, const MemoryFile* memory_file, bool create_directory_recurvie)
 {
 	assert(memory_file);
 	if (!memory_file)
@@ -68,6 +71,10 @@ bool YFile::WriteFile(const std::string& path, const MemoryFile* memory_file)
 		return false;
 	}
 
+	if (create_directory_recurvie)
+	{
+		YPath::CreateDirectoryRecursive(YPath::GetPath(path));
+	}
 	bool write_file_flag = (int)type_ && (int)FileType::FT_Write;
 	bool binary_content = (int)type_ && (int)FileType::FT_BINARY;
 	assert(write_file_flag);
@@ -159,6 +166,11 @@ bool MemoryFile::ReadInt32(int& value)
 	return ReadElemts(&value, 1);
 }
 
+bool MemoryFile::ReadUInt32(uint32_t& value)
+{
+	return ReadElemts(&value, 1);
+}
+
 bool MemoryFile::ReadInt32Vector(int* value, int n)
 {
 	return ReadElemts(value, n);
@@ -230,17 +242,22 @@ void MemoryFile::WriteInt32(int value)
 	WriteElemts(&value, 1);
 }
 
+void MemoryFile::WriteUInt32(uint32_t value)
+{
+	WriteElemts(&value, 1);
+}
+
 void MemoryFile::WriteInt32Vector(const int* value, int n)
 {
 	WriteElemts(value, n);
 }
 
-void MemoryFile::Writeloat32(float value)
+void MemoryFile::WriteFloat32(float value)
 {
 	WriteElemts(&value, 1);
 }
 
-void MemoryFile::WriteFloat32Vector(float* value, int n)
+void MemoryFile::WriteFloat32Vector(const float* value, int n)
 {
 	WriteElemts(value, n);
 }
@@ -265,6 +282,78 @@ void MemoryFile::WriteYVector4(const YVector4& vec)
 void MemoryFile::WriteYMatrix(const YMatrix& mat)
 {
 	WriteElemts(&mat, 1);
+}
+
+MemoryFile& MemoryFile::operator<<(const int value)
+{
+	WriteInt32(value);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(float value)
+{
+	WriteFloat32(value);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(char value)
+{
+	WriteChar(value);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(unsigned char value)
+{
+	WriteUChar(value);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(const std::string& value)
+{
+	WriteString(value);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(const YVector2& value)
+{
+	WriteFloat32Vector(&value.x, 2);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(const YVector& value)
+{
+	WriteFloat32Vector(&value.x, 3);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(const YVector4& value)
+{
+	WriteFloat32Vector(&value.x, 4);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(const YMatrix& value)
+{
+	WriteFloat32Vector(&value.m[0][0], 16);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(const YRotator& value)
+{
+	WriteFloat32Vector(&value.pitch, 3);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(const YQuat& value)
+{
+	WriteFloat32Vector(&value.x, 4);
+	return *this;
+}
+
+MemoryFile& MemoryFile::operator<<(uint32_t value)
+{
+	WriteUInt32(value);
+	return *this;
 }
 
 void MemoryFile::FitSize(size_t increased_size)

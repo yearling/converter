@@ -115,6 +115,7 @@ bool OpenFbx()
 	}
 	const FbxImportSceneInfo* scene_info = importer->GetImportedSceneInfo();
 	FbxImportParam import_param;
+	import_param.model_name = scene_info->model_name;
 	if (!scene_info->has_skin)
 	{
 		import_param.import_as_skelton = false;

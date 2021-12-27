@@ -14,6 +14,7 @@
 #include "RHI/DirectX11/D3D11VertexFactory.h"
 #include "engine/YStaticMesh.h"
 #include "YFbxMaterial.h"
+#include "Utility/YPath.h"
 
 YFbxImporter::YFbxImporter()
 {
@@ -122,7 +123,7 @@ bool YFbxImporter::ParseFile(const FbxImportParam& import_param, ConvertedResult
 			// todo LOD
 			std::vector<FbxNode*> mesh_nodes;
 			GetMeshArray(root_node,mesh_nodes);
-			out_result.static_meshes.emplace_back(ImportStaticMeshAsSingle(mesh_nodes, "test", 0));
+			out_result.static_meshes.emplace_back(ImportStaticMeshAsSingle(mesh_nodes, import_param_->model_name, 0));
 		}
 	}
 	return true;
@@ -181,7 +182,7 @@ void YFbxImporter::RenameMaterialName()
 void YFbxImporter::ParseSceneInfo()
 {
 	scene_info_ = std::make_unique<FbxImportSceneInfo>();
-	
+	scene_info_->model_name = YPath::GetBaseFilename(origin_file_path_);
 	FbxTimeSpan global_time_span(FBXSDK_TIME_INFINITE, FBXSDK_TIME_MINUS_INFINITE);
 	
 	//Í³¼ÆMesh
@@ -375,6 +376,7 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 	CheckSmoothingInfo(mesh_nodes[0]->GetMesh());
 	
 	std::unique_ptr<YStaticMesh> static_mesh = std::make_unique<YStaticMesh>();
+	static_mesh->model_name = mesh_name;
 	if (static_mesh->raw_meshes.size() <= lod_index)
 	{
 		for (int i = 0; i <= lod_index; ++i)

@@ -1,5 +1,6 @@
 #pragma once
 #include "Math/YMath.h"
+#include <type_traits>
 struct YQuat
 {
 public:
@@ -31,3 +32,12 @@ public:
 	YQuat operator*(const YQuat& q) const;
 	YVector operator*(const YVector& v) const;
 };
+
+namespace std
+{
+	template<>
+	struct is_pod<YQuat>
+	{
+		static constexpr bool value = true;
+	};
+}

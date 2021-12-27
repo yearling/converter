@@ -5,6 +5,7 @@
 #include <memory>
 #include "YMath.h"
 #include "math/YVector.h"
+#include "YFile.h"
 
 const int INVALID_ID = -1;
 struct YMeshVertex
@@ -86,4 +87,32 @@ public:
 	int CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_ids, std::vector<int>& out_edges);
 };
 
+MemoryFile& operator<<(MemoryFile& mem_file, const YLODMesh& lod_mesh);
 
+MemoryFile& operator<<(MemoryFile& mem_file, const YRawMesh& raw_mesh);
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshEdge& mesh_edge);
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshPolygonGroup& mesh_polygon_group);
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshPolygon& mesh_polygon);
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshVertexInstance& mesh_vertex_instance);
+
+MemoryFile& operator<<(MemoryFile& mem_file, const YMeshVertex& mesh_vertex);
+
+
+
+MemoryFile& operator>>(MemoryFile& mem_file, const YLODMesh& lod_mesh);
+
+MemoryFile& operator>>(MemoryFile& mem_file, const YRawMesh& raw_mesh);
+
+MemoryFile& operator>>(MemoryFile& mem_file, const YMeshEdge& mesh_edge);
+
+MemoryFile& operator>>(MemoryFile& mem_file, const YMeshPolygonGroup& mesh_polygon_group);
+
+MemoryFile& operator>>(MemoryFile& mem_file, const YMeshPolygon& mesh_polygon);
+
+MemoryFile& operator>>(MemoryFile& mem_file, const YMeshVertexInstance& mesh_vertex_instance);
+
+MemoryFile& operator>>(MemoryFile& mem_file, const YMeshVertex& mesh_vertex);
