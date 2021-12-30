@@ -10,8 +10,20 @@ YFile::YFile()
 
 }
 
-YFile::YFile(FileType type, const std::string& path)
-	: type_(type), path_(path)
+YFile::YFile( const std::string& path, FileType type )
+	:path_(path), type_(type)
+{
+
+}
+
+YFile::YFile(const std::string& path)
+	:path_(path)
+{
+
+}
+
+YFile::YFile(FileType type)
+	:type_(type)
 {
 
 }
@@ -53,17 +65,16 @@ std::unique_ptr<MemoryFile> YFile::ReadFile()
 		fclose(read_file);
 		return std::make_unique<MemoryFile>();
 	}
-	std::unique_ptr<MemoryFile> mem_file = std::make_unique<MemoryFile>();
+	std::unique_ptr<MemoryFile> mem_file = std::make_unique<MemoryFile>(MemoryFile::FileType::FT_Read);
 	mem_file->AllocSizeUninitialized((uint32_t)size);
-	std::vector<unsigned char>& mem = mem_file->GetFileContent();
-	size_t read_size = fread(&mem[0], sizeof(unsigned char), size, read_file);
+	size_t read_size = fread(mem_file->GetData(), sizeof(unsigned char), size, read_file);
 	assert(read_size == size);
 	fclose(read_file);
 	return std::move(mem_file);
 	return nullptr;
 }
 
-bool YFile::WriteFile(const std::string& path, const MemoryFile* memory_file, bool create_directory_recurvie)
+bool YFile::WriteFile( const MemoryFile* memory_file, bool create_directory_recurvie)
 {
 	assert(memory_file);
 	if (!memory_file)
@@ -73,7 +84,7 @@ bool YFile::WriteFile(const std::string& path, const MemoryFile* memory_file, bo
 
 	if (create_directory_recurvie)
 	{
-		YPath::CreateDirectoryRecursive(YPath::GetPath(path));
+		YPath::CreateDirectoryRecursive(YPath::GetPath(path_));
 	}
 	bool write_file_flag = (int)type_ && (int)FileType::FT_Write;
 	bool binary_content = (int)type_ && (int)FileType::FT_BINARY;
@@ -131,10 +142,6 @@ void MemoryFile::AllocSizeUninitialized(uint32_t size)
 	memory_content_.resize(size);
 }
 
-std::vector<unsigned char>& MemoryFile::GetFileContent()
-{
-	return memory_content_;
-}
 
 const std::vector<unsigned char>& MemoryFile::GetReadOnlyFileContent() const
 {
@@ -335,55 +342,119 @@ MemoryFile& MemoryFile::operator<<(char& value)
 
 MemoryFile& MemoryFile::operator<<(unsigned char& value)
 {
-	WriteUChar(value);
+	if (IsReading())
+	{
+		ReadUChar(value);
+	}
+	else
+	{
+		WriteUChar(value);
+	}
 	return *this;
 }
 
 MemoryFile& MemoryFile::operator<<(std::string& value)
 {
-	WriteString(value);
+	if(IsReading())
+	{
+		ReadString(value);
+	}
+	else
+	{
+		WriteString(value);
+	}
 	return *this;
 }
 
 MemoryFile& MemoryFile::operator<<(YVector2& value)
 {
-	WriteFloat32Vector(&value.x, 2);
+	if (IsReading())
+	{
+		ReadFloat32Vector(&value.x, 2);
+	}
+	else
+	{
+		WriteFloat32Vector(&value.x, 2);
+	}
 	return *this;
 }
 
 MemoryFile& MemoryFile::operator<<(YVector& value)
 {
-	WriteFloat32Vector(&value.x, 3);
+	if(IsReading())
+	{ 
+		ReadFloat32Vector(&value.x, 3);
+	}
+	else
+	{
+		WriteFloat32Vector(&value.x, 3);
+	}
 	return *this;
 }
 
 MemoryFile& MemoryFile::operator<<( YVector4& value)
 {
-	WriteFloat32Vector(&value.x, 4);
+	if (IsReading())
+	{
+		ReadFloat32Vector(&value.x, 4);
+	}
+	else
+	{
+		WriteFloat32Vector(&value.x, 4);
+	}
 	return *this;
 }
 
 MemoryFile& MemoryFile::operator<<( YMatrix& value)
 {
-	WriteFloat32Vector(&value.m[0][0], 16);
+
+	if (IsReading())
+	{
+		ReadFloat32Vector(&value.m[0][0], 16);
+	}
+	else
+	{
+		WriteFloat32Vector(&value.m[0][0], 16);
+	}
 	return *this;
 }
 
 MemoryFile& MemoryFile::operator<<( YRotator& value)
 {
-	WriteFloat32Vector(&value.pitch, 3);
+	if (IsReading())
+	{
+		ReadFloat32Vector(&value.pitch, 3);
+	}
+	else
+	{
+		WriteFloat32Vector(&value.pitch, 3);
+	}
 	return *this;
 }
 
 MemoryFile& MemoryFile::operator<<( YQuat& value)
 {
-	WriteFloat32Vector(&value.x, 4);
+	if (IsReading())
+	{
+		ReadFloat32Vector(&value.x, 4);
+	}
+	else
+	{
+		WriteFloat32Vector(&value.x, 4);
+	}
 	return *this;
 }
 
 MemoryFile& MemoryFile::operator<<(uint32_t& value)
 {
-	WriteUInt32(value);
+	if (IsReading())
+	{
+		ReadUInt32(value);
+	}
+	else
+	{
+		WriteUInt32(value);
+	}
 	return *this;
 }
 

@@ -1,7 +1,7 @@
 #include "Utility/YPath.h"
 #include "Platform/Windows/YSysUtility.h"
 const std::string YPath::separators = "\\/";
-std::vector<std::string> YPath::GetFilePaths(const std::string& path)
+std::vector<std::string> YPath::GetFilePathsSeperate(const std::string& path)
 {
 	std::vector<std::string> file_pathes;
 	std::string split_path = path;
@@ -9,19 +9,20 @@ std::vector<std::string> YPath::GetFilePaths(const std::string& path)
 	while (pos != std::string::npos)
 	{
 		std::string parent_dir = split_path.substr(0, pos);
-		file_pathes.push_back(split_path.substr(pos));
+		file_pathes.push_back(split_path.substr(pos+1));
 		split_path = parent_dir;
+		pos = split_path.find_last_of(YPath::separators);
 	}
 	if (!split_path.empty())
 	{
 		file_pathes.push_back(split_path);
 	}
-	return std::vector<std::string>(file_pathes.rend(), file_pathes.rbegin());
+	return std::vector<std::string>(file_pathes.rbegin(), file_pathes.rend());
 }
 
-std::vector<std::string> YPath::GetDirectoryPaths(const std::string directory)
+std::vector<std::string> YPath::GetDirectoryPathsSeperate(const std::string directory)
 {
-	return YPath::GetFilePaths(directory);
+	return YPath::GetFilePathsSeperate(directory);
 }
 
 std::string YPath::GetCleanFilename(const std::string& path)
@@ -31,7 +32,7 @@ std::string YPath::GetCleanFilename(const std::string& path)
 	{
 		return path;
 	}
-	return path.substr(pos);
+	return path.substr(pos+1);
 }
 
 std::string YPath::GetBaseFilename(const std::string& in_path, bool remove_path /*= true*/)
@@ -103,6 +104,10 @@ void YPath::NormalizeFilename(std::string& InPath)
 
 std::string YPath::PathCombine(const std::string& a, const std::string& b)
 {
+	if (a.empty())
+	{
+		return b;
+	}
 	return a + directory_seperater + b;
 }
 

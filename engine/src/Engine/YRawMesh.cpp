@@ -122,6 +122,11 @@ MemoryFile& operator<<(MemoryFile& mem_file, YLODMesh& lod_mesh)
 	mem_file << lod_mesh.LOD_index;
 	mem_file << lod_mesh.sub_meshes;
 	mem_file << lod_mesh.vertex_position;
+	mem_file << lod_mesh.vertex_instances;
+	mem_file << lod_mesh.polygons;
+	mem_file << lod_mesh.edges;
+	mem_file << lod_mesh.polygon_groups;
+	mem_file << lod_mesh.polygon_group_imported_material_slot_name;
 	return mem_file;
 }
 

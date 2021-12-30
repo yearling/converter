@@ -21,11 +21,13 @@ public:
 	bool GetCastShadow() const;
 	void SetLightStrength(float strength);
 	float GetLightStrength() const;
+	YVector4 GetLightColor() const; 
+	void SetLightColor(const YVector4 in_color);
 protected:
 	LightType light_type_ = LightType::LT_Direct;
 	bool cast_shadow_{ false };
 	float strength_{ 1.f };
-
+	YVector4 color_ = { 1.0f,1.0f,1.0f,1.0f };
 };
 
 class DirectLight :public LightBase

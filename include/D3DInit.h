@@ -19,6 +19,7 @@ bool OpenFbx();
 void Update(double delta_time);
 void Render();
 void Release();
+bool LoadMesh();
 LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 extern int	g_winWidth;

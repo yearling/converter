@@ -11,9 +11,11 @@ public:
 	bool AllocGpuResource();
 	void ReleaseGPUReosurce();
 	void	Render(CameraBase* camera);
-	std::vector<std::unique_ptr<YLODMesh>> raw_meshes;
+	void Render(class RenderParam* render_param);
+	std::vector<YLODMesh> raw_meshes;
 
-	void SaveV0(const std::string& dir);
+	bool SaveV0(const std::string& dir);
+	bool LoadV0(const std::string& file_path);
 public:
 	friend class YStaticMeshVertexFactory;
 	bool allocated_gpu_resource = false;

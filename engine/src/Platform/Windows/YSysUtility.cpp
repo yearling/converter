@@ -33,7 +33,7 @@ std::string YSysUtility::UTF8ToString(const std::string& str) {
 bool YSysUtility::IsDirectoryExist(const std::string& str)
 {
 	DWORD fileAttributes = ::GetFileAttributesA(str.c_str());
-	if (FILE_ATTRIBUTE_DIRECTORY & fileAttributes)
+	if ( (fileAttributes != 0xFFFFFFFF)  && (FILE_ATTRIBUTE_DIRECTORY & fileAttributes))
 	{
 		return true;
 	}
@@ -60,7 +60,7 @@ void YSysUtility::CreateDirectoryRecursive(const std::string& directory)
 	{
 		return;
 	}
-	std::vector<std::string> base_paths=  YPath::GetFilePaths(directory);
+	std::vector<std::string> base_paths=  YPath::GetFilePathsSeperate(directory);
 	std::string created_path;
 	for (const std::string& relative_child_path : base_paths)
 	{

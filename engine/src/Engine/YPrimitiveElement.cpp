@@ -1,7 +1,11 @@
 #include "Engine/YPrimitiveElement.h"
 
-PrimitiveElement::PrimitiveElement()
+PrimitiveElementProxy::PrimitiveElementProxy()
 {
 
 }
 
+DirectLightElementProxy::DirectLightElementProxy()
+{
+
+}

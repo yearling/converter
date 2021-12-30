@@ -1,11 +1,11 @@
+
+	matrix g_world;
 	matrix g_view;
 	matrix g_projection;
 	matrix g_VP;
 	matrix g_InvVP;
 	float3 light_dir;
 	float show_normal;
-
-	matrix g_world;
 
 
 struct VS_INPUT
@@ -29,7 +29,8 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 {
 	VS_OUTPUT Output;
 	matrix vp= mul(g_view,g_projection);
-	Output.vPosition = mul(float4(Input.vPosition,1.0), vp);
+	matrix wvp = mul (g_world,vp);
+	Output.vPosition = mul(float4(Input.vPosition,1.0), wvp);
 	Output.vTexcoord = Input.vTexCoord;
 	Output.vColor = float4(1.0,1.0,1.0,1.0);
 	Output.vNormal = Input.vNormal;

@@ -181,3 +181,5 @@ YVector YVector4::AffineTransform() const
 
 	return YVector(x / w, y / w, z / w);
 }
+
+const YVector4 YVector4::zero_vector = YVector4(0.f,0.f,0.f,0.f);

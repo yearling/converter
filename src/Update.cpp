@@ -4,6 +4,13 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
+#include "Utility/YPath.h"
+#include "Engine/YReferenceCount.h"
+#include "SObject/SWorld.h"
+#include "SObject/SObjectManager.h"
+#include "Engine/YRenderScene.h"
+#include "Render/YRenderInterface.h"
+#include "Render/YForwardRenderer.h"
 ID3D11DeviceContext* g_deviceContext(nullptr);
 IDXGISwapChain* g_swapChain(nullptr);
 bool is_resizing = false;
@@ -14,6 +21,8 @@ std::vector<std::unique_ptr<YStaticMesh>> g_test_mesh;
 std::unique_ptr<PerspectiveCamera> main_camera;
 std::unique_ptr<CameraController> camera_controller;
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time;
+std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
+std::unique_ptr<IRenderInterface> renderer;
 AverageSmooth<float> fps(1000);
 bool show_demo_window = false;
 bool show_another_window = false;
@@ -74,19 +83,25 @@ bool InitD3D()
 	}
 
 	// import fbx
-	if (!OpenFbx())
+#if 1
+	//if (!OpenFbx())
+	//{
+		//return false;
+	//}
+#else
+	if (!LoadMesh())
 	{
 		return false;
 	}
+#endif
+	//for (std::unique_ptr<YStaticMesh>& mesh : g_test_mesh)
+	//{
+	//	if (!mesh->AllocGpuResource())
+	//	{
+	//		return false;
+	//	}
+	//}
 
-	for (std::unique_ptr<YStaticMesh>& mesh : g_test_mesh)
-	{
-		if (!mesh->AllocGpuResource())
-		{
-			return false;
-		}
-	}
-	
 	//caculate light
 	YVector z_ori = YVector(0.f, 0.f, 1.0f);
 	YVector dir = YVector(-1.0f, -1.0f, 1.0f).GetSafeNormal();
@@ -96,6 +111,20 @@ bool InitD3D()
 	light_dir = rotator.Euler();
 	InitIMGUI();
 	//YVector light_dir_calc = rotator.ToMatrix().TransformVector(YVector::forward_vector);
+
+	//load world
+	std::string world_map_path = "map/world.json";
+	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
+	SWorld::SetWorld(new_world);
+	new_world->PostLoadOp();
+	SWorld::GetWorld()->SetCamera(main_camera.get());
+	renderer = std::make_unique<YForwardRenderer>();
+	if (!renderer->Init())
+	{
+		ERROR_INFO("forward render init failed");
+		return false;
+	}
+	game_start_time = std::chrono::high_resolution_clock::now();
 	return true;
 }
 
@@ -136,10 +165,27 @@ bool OpenFbx()
 	else
 	{
 		g_test_mesh = std::move(result.static_meshes);
+		for (auto& mesh : g_test_mesh)
+		{
+			std::string relitave_path = "model";
+			std::string dir_path = YPath::PathCombine(relitave_path, mesh->model_name);
+			mesh->SaveV0(dir_path);
+		}
 	}
 	return true;
 }
-
+bool LoadMesh()
+{
+	std::string file_path = R"(model\blender_shader_ball\blender_shader_ball.yasset)";
+	std::unique_ptr<YStaticMesh> mesh_to_load = std::make_unique<YStaticMesh>();
+	if (!mesh_to_load->LoadV0(file_path))
+	{
+		ERROR_INFO("load ", file_path, " failed!");
+		return false;
+	}
+	g_test_mesh.push_back(std::move(mesh_to_load));
+	return true;
+}
 void DrawUI()
 {
 	// Start the Dear ImGui frame
@@ -199,43 +245,33 @@ void Update(double delta_time)
 	DrawUtility::DrawGrid();
 	DrawUtility::DrawWorldCoordinate(main_camera.get());
 	g_Canvas->Update();
-
+	SWorld::GetWorld()->Update(delta_time);
 }
 void Render()
 {
-	std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
-	double delta_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time).count();
-	delta_time *= 0.000001; // to second
-	last_frame_time = current_time;
-	fps.SmoothAcc((float)(1.0f / delta_time));
-	LOG_INFO("fps: ", fps.Average());
-	Update(delta_time);
-	// 正式的场景绘制工作
-	ID3D11RenderTargetView* main_rtv = device->GetMainRTV();
-	ID3D11DepthStencilView* main_dsv = device->GetMainDSV();
-	device->SetRenderTarget(main_rtv, main_dsv);
-	device->SetViewPort(0, 0, g_winWidth, g_winHeight);
-	ID3D11Device* raw_device = device->GetDevice();
-	ID3D11DeviceContext* raw_dc = device->GetDC();
-	float color[4] = { 0.f, 0.f, 0.f, 1.0f };
-	raw_dc->ClearRenderTargetView(main_rtv, reinterpret_cast<float*>(color));
-	raw_dc->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-
-	g_Canvas->Render(main_camera.get());
-
-	for (std::unique_ptr<YStaticMesh>& mesh : g_test_mesh)
+	double delta_time = 0.0;
+	double game_time = 0.0;
 	{
-		if (mesh)
-		{
-			mesh->Render(main_camera.get());
-			YVector light_dir_calc =- YRotator(light_dir).ToMatrix().TransformVector(YVector::forward_vector);
-			mesh->pixel_shader_->BindResource("light_dir", &light_dir_calc.x, 3);
-			float show_normal_f = show_normal ? 1.f : -1.f;
-			mesh->pixel_shader_->BindResource("show_normal", show_normal_f);
-		}
+		std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
+		delta_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time).count();
+		delta_time *= 0.000001; // to second
+		last_frame_time = current_time;
+		fps.SmoothAcc((float)(1.0f / delta_time));
+
+		game_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - game_start_time).count();
+		game_time *= 0.000001;
 	}
+	//LOG_INFO("fps: ", fps.Average());
 
+	//update
+	Update(delta_time);
 
+	//render
+	std::unique_ptr<YRenderScene> render_scene = SWorld::GetWorld()->GenerateRenderScene();
+	render_scene->deta_time = delta_time;
+	render_scene->game_time = game_time;
+	renderer->Render(std::move(render_scene));
+	// 正式的场景绘制工作
 	DrawUI();
 	device->Present();
 }
@@ -250,6 +286,7 @@ void Release()
 	g_Canvas = nullptr;
 	delete g_input_manager;
 	g_input_manager = nullptr;
+	renderer->Clearup();
 }
 
 void OnResize()

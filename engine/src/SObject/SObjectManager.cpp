@@ -78,3 +78,8 @@ void SObjectManager::FrameDestroy()
 		}
 	}
 }
+
+SObjectManager& SObjectManager::GetManager()
+{
+	return g_sobject_manager;
+}

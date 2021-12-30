@@ -7,7 +7,9 @@
 #include "Math/YRotator.h"
 #include "Math/YTransform.h"
 #include "json.h"
-
+class YRenderScene;
+class SActor;
+class SSceneComponent;
 class SComponent :public SObject
 {
 public:
@@ -15,65 +17,115 @@ public:
 	{
 		Base,
 		SceneComponent,
+		RenderComponent,
 		StaticMeshComponent,
-		LightComponenet
+		LightComponenet,
+		DirectLightComponent,
+		ComNum
 	};
-	explicit SComponent(EComponentType Type) :ComponentType(Type) {}
-	static TRefCountPtr<SComponent> LoadFromNamedJson(const std::string& ComponentName, const Json::Value& RootJson);
-	static constexpr  bool IsInstance()
-	{
-		return true;
-	};
+	//SObject
+	static constexpr  bool IsInstance() { return true; };
+
+	//SComponent
+	// Type
+	explicit SComponent(EComponentType Type) :component_type_(Type) {}
 	EComponentType GetComponentType() const;
+
+	// Interface & Update
+	virtual void RegisterToScene(class YScene* scene);
+
+	// Parent
+	SActor* GetParentActor()const;
+
+	//Create Factory
+	static TRefCountPtr<SSceneComponent> ComponentFactory(const Json::Value& RootJson);
+
 protected:
-	EComponentType ComponentType;
+	virtual bool LoadChildFromJson(const Json::Value& root_json);
+
+protected:
+	EComponentType component_type_;
+	SActor* actor_parent_{ nullptr };
 };
 
 class SSceneComponent :public SComponent
+{
+public:
+	SSceneComponent() :SComponent(EComponentType::SceneComponent) {}
+	explicit SSceneComponent(EComponentType type);
+	//todo 
+	//FBoxSphereBounds Bounds;
+	YVector local_translation_;
+	YRotator local_rotation_;
+	/**
+	*	Non-uniform scaling of the component relative to its parent.
+	*	Note that scaling is always applied in local space (no shearing etc)
+	*/
+	YVector local_scale_;
+
+
+	// update 
+	void Update(double deta_time) override;
+	virtual void UpdateComponentToWorld();
+	void SetComponentToWorld(const YTransform& NewComponentToWorld);
+	const YTransform& GetComponentTransform() const;
+
+	// load
+	bool LoadFromJson(const Json::Value& RootJson)override;
+	virtual bool PostLoadOp();
+	virtual void RegisterToScene(class YScene* scene) override;
+	virtual void OnTransformChange();
+	// child
+	std::vector<TRefCountPtr<SSceneComponent>>& GetChildComponents() { return child_components_; }
+protected:
+	void UpdateComponentToWorldWithParentRecursive();
+	void PropagateTransformUpdate();
+	virtual void UpdateBound();
+	void UpdateChildTransforms();
+protected:
+	YTransform component_to_world_;
+	bool is_component_to_world_update_ = false;
+	SSceneComponent* parent_component_{ nullptr };
+	std::vector<TRefCountPtr<SSceneComponent>> child_components_;
+};
+
+class SRenderComponent :public SSceneComponent
 {
 public:
 	static constexpr  bool IsInstance()
 	{
 		return true;
 	};
-	SSceneComponent() :SComponent(EComponentType::SceneComponent) {}
-	/** Current bounds of the component */
-	//todo 
-	//FBoxSphereBounds Bounds;
-	/** Location of the component relative to its parent */
-	YVector local_translation;
+	SRenderComponent();
+	explicit SRenderComponent(EComponentType Type);
+	void Update(double deta_time) override;
+	virtual void RegisterToScene(class YScene* scene);
+	bool LoadFromJson(const Json::Value& RootJson)override;
+	~SRenderComponent();
 
-	/** Rotation of the component relative to its parent */
-	YRotator local_rotation;
-	/**
-	*	Non-uniform scaling of the component relative to its parent.
-	*	Note that scaling is always applied in local space (no shearing etc)
-	*/
-	YVector local_scale;
-	SSceneComponent* ParentCompnent = nullptr;
-	std::vector<TRefCountPtr<SSceneComponent>> ChildrenComponents;
-	virtual void UpdateComponentToWorld();
-	/** Sets the cached component to world directly. This should be used very rarely. */
-	FORCEINLINE void SetComponentToWorld(const YTransform& NewComponentToWorld)
-	{
-		is_component_to_world_update_ = true;
-		component_to_world = NewComponentToWorld;
-	}
+};
 
+class SLightComponent :public SRenderComponent
+{
+public:
+	SLightComponent();
+	explicit SLightComponent(EComponentType type);
+	void Update(double deta_time) override;
+	bool LoadFromJson(const Json::Value& RootJson)override;
+	void RegisterToScene(class YScene* scene) override;
+	~SLightComponent();
+};
 
-	/** Get the current component-to-world transform for this component */
-	FORCEINLINE const YTransform& GetComponentTransform() const
-	{
-		return component_to_world;
-	}
-	void UpdateComponentToWorldWithParentRecursive();
-	void PropagateTransformUpdate();
-	virtual void UpdateBound();
-	void UpdateChildTransforms();
-	virtual bool LoadFromJson(const Json::Value& RootJson);
+class DirectLight;
+class SDirectionLightComponent :public SLightComponent
+{
+public:
+	SDirectionLightComponent();
+	~SDirectionLightComponent();
+	bool LoadFromJson(const Json::Value& RootJson) override;
+	void RegisterToScene(class YScene* scene) override;
 	virtual bool PostLoadOp();
-private:
-	/** Current transform of the component, relative to the world */
-	YTransform component_to_world;
-	bool is_component_to_world_update_ = false;
+	void OnTransformChange() override;
+	void Update(double deta_time) override;
+	std::unique_ptr<DirectLight> dir_light_;
 };

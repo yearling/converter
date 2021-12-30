@@ -69,7 +69,7 @@ YMatrix CameraBase::GetViewMatrix()const
 
 YMatrix CameraBase::GetInvViewMatrix() const
 {
-	return inv_view_matrix;
+	return inv_view_matrix_;
 }
 
 YMatrix CameraBase::GetProjectionMatrix()const
@@ -156,6 +156,24 @@ void CameraBase::SetRotation(const YRotator& rotator)
 
 void CameraBase::Update()
 {
-	inv_view_matrix = YMatrix(rotaion_, position_);
-	view_matrix_ = inv_view_matrix.Inverse();
+	inv_view_matrix_ = YMatrix(rotaion_, position_);
+	view_matrix_ = inv_view_matrix_.Inverse();
+}
+
+std::unique_ptr<CameraElementProxy> CameraBase::GetProxy()
+{
+	std::unique_ptr<CameraElementProxy> proxy = std::make_unique<CameraElementProxy>();
+	proxy->position_ = position_;
+	proxy->rotation_ = rotaion_;
+	proxy->inv_view_matrix_ = inv_view_matrix_;
+	proxy->view_matrix_ = view_matrix_;
+	proxy->projection_matrix_ = projection_matrix_;
+	proxy->view_proj_matrix_ = view_proj_matrix_;
+	proxy->inv_view_proj_matrix_ = inv_view_proj_matrix_;
+	proxy->near_plane_ = near_plane_;
+	proxy->far_plane_ = far_plane_;
+	proxy->fov_y_ = fov_y_;
+	proxy->aspect_ = aspect_;
+	proxy->perspective_camera_ = perspective_camera_;
+	return proxy;
 }

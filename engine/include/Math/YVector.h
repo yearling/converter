@@ -71,6 +71,8 @@ public:
 	YVector4& operator=(YVector4&&) = default;
 	YVector4(float in_x, float in_y, float in_z, float in_w);
 	YVector AffineTransform()const;
+	// (0.f,0.f,0.f,0.f)
+	static const YVector4 zero_vector;
 };
 
 namespace std

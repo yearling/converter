@@ -31,6 +31,16 @@ float LightBase::GetLightStrength() const
 	return strength_;
 }
 
+YVector4 LightBase::GetLightColor() const
+{
+	return color_;
+}
+
+void LightBase::SetLightColor(const YVector4 in_color)
+{
+	color_ = in_color;
+}
+
 LightBase::~LightBase()
 {
 

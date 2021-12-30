@@ -383,20 +383,20 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 		{
 			if (static_mesh->raw_meshes.size() <= i)
 			{
-				static_mesh->raw_meshes.push_back(std::make_unique<YLODMesh>());
-				static_mesh->raw_meshes.back()->LOD_index = i;
+				static_mesh->raw_meshes.push_back(YLODMesh());
+				static_mesh->raw_meshes.back().LOD_index = i;
 			}
 			else
 			{
-				if (!static_mesh->raw_meshes[i])
+				//if (!static_mesh->raw_meshes[i])
 				{
-					static_mesh->raw_meshes.push_back(std::make_unique<YLODMesh>());
-					static_mesh->raw_meshes.back()->LOD_index = i;
+					static_mesh->raw_meshes.push_back(YLODMesh());
+					static_mesh->raw_meshes.back().LOD_index = i;
 				}
 			}
 		}
 	}
-	YLODMesh* raw_mesh = static_mesh->raw_meshes[lod_index].get();
+	YLODMesh* raw_mesh = &static_mesh->raw_meshes[lod_index];
 	std::vector<YFbxMaterial*> mesh_materials;
 	int node_fail_count = 0;
 	bool is_all_degenerated = true;

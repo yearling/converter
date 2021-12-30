@@ -4,8 +4,8 @@
 struct YPath
 {
 	// c:\user\admin\desktop\a.txt ==> [c:] [user] [admin] [desktop] [a.txt]
-	static std::vector<std::string> GetFilePaths(const std::string& path);
-	static std::vector<std::string> GetDirectoryPaths(const std::string directory);
+	static std::vector<std::string> GetFilePathsSeperate(const std::string& path);
+	static std::vector<std::string> GetDirectoryPathsSeperate(const std::string directory);
 	// Returns the filename (with extension), minus any path information.
 	static std::string GetCleanFilename(const std::string& path);
 

@@ -2,6 +2,7 @@
 #include "RHI/DirectX11/D3D11VertexFactory.h"
 #include "Engine/YLog.h"
 #include <fstream>
+#include "Render/YRenderInterface.h"
 
 class YCanvasVertexFactory :public DXVertexFactory
 {
@@ -119,6 +120,31 @@ void YCamvas::Render(CameraBase* camera)
 	//bind ib
 	vertex_shader_->BindResource("g_projection", camera->GetProjectionMatrix());
 	vertex_shader_->BindResource("g_view", camera->GetViewMatrix());
+	vertex_shader_->Update();
+	pixel_shader_->Update();
+	dc->Draw((unsigned int)lines_.size() * 2, 0);
+
+	lines_.clear();
+}
+
+void YCamvas::Render(RenderParam* render_param)
+{
+	if (vertex_buffers_.empty())
+	{
+		return;
+	}
+	ID3D11Device* device = g_device->GetDevice();
+	ID3D11DeviceContext* dc = g_device->GetDC();
+	float BlendColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	dc->OMSetBlendState(bs_, BlendColor, 0xffffffff);
+	dc->RSSetState(rs_);
+	dc->OMSetDepthStencilState(ds_, 0);
+	dc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	//bind im
+	vertex_factory_->SetupStreams();
+	//bind ib
+	vertex_shader_->BindResource("g_projection", render_param->camera_proxy->projection_matrix_);
+	vertex_shader_->BindResource("g_view", render_param->camera_proxy->view_matrix_);
 	vertex_shader_->Update();
 	pixel_shader_->Update();
 	dc->Draw((unsigned int)lines_.size() * 2, 0);

@@ -6,7 +6,6 @@
 #include <unordered_set>
 #include <set>
 #include "Engine/YReferenceCount.h"
-extern class SObjectManager g_sobject_manager;
 class SObjectManager
 {
 public:
@@ -16,7 +15,7 @@ public:
 	{
 		assert(ClassType::IsInstance());
 		TRefCountPtr<ClassType> Obj(new ClassType(Forward<T>(Args)...), true);
-		g_sobject_manager.instanced_objects_.insert(TRefCountPtr<SObject>(Obj.GetReference(), true));
+		GetManager().instanced_objects_.insert(TRefCountPtr<SObject>(Obj.GetReference(), true));
 		return Obj;
 	}
 
@@ -25,7 +24,7 @@ public:
 	{
 		assert(!ClassType::IsInstance());
 		TRefCountPtr<ClassType> Obj(new ClassType(Forward<T>(Args)...), true);
-		g_sobject_manager.instanced_objects_.insert(TRefCountPtr<SObject>(Obj.GetReference(), true));
+		GetManager().instanced_objects_.insert(TRefCountPtr<SObject>(Obj.GetReference(), true));
 		return Obj;
 	}
 
@@ -34,39 +33,32 @@ public:
 	{
 		assert(!ClassType::IsInstance());
 		std::string PackagePathNoSuffix = PackagePath;
-		FPaths::NormalizeFilename(PackagePathNoSuffix);
-		FName PackageFName(*(FPaths::GetBaseFilename(PackagePathNoSuffix, false)));
-		auto FindResult = g_sobject_manager.unify_objects_.Find(PackageFName);
-		if (FindResult != g_sobject_manager.unify_objects_.end())
+		// todo
+		//FPaths::NormalizeFilename(PackagePathNoSuffix);
+		std::string package_name = YPath::GetBaseFilename(PackagePathNoSuffix, false);
+		auto find_result = GetManager().unify_objects_.find(package_name);
+		if (find_result == GetManager().unify_objects_.end())
 		{
-			return TRefCountPtr<ClassType>(dynamic_cast<ClassType*>(FindResult.second.GetReference()), true);
+			TRefCountPtr<ClassType> Obj((new ClassType(Forward<T>(Args)...)), true);
+			if (Obj->LoadFromPackage(package_name))
+			{
+				GetManager().unify_objects_[package_name] = TRefCountPtr<SObject>(Obj.GetReference());
+				return Obj;
+			}
+			return nullptr;
 		}
 		else
 		{
-			TRefCountPtr<ClassType> Obj((new ClassType(Forward<T>(Args)...)), true);
-			if (Obj->LoadFromPackage(PackagePath))
-			{
-				g_sobject_manager.unify_objects_.insert[PackageFName] = TRefCountPtr<SObject>(Obj.GetReference());
-				return Obj;
-			}
-			else
-			{
-				return nullptr;
-			}
+			return TRefCountPtr<ClassType>(dynamic_cast<ClassType*>(find_result->second.GetReference()), true);
 		}
-	}
 
-	//template<typename ClassType,typename Pa, typename...T>
-	//static TRefCountPtr<ClassType> ConstructUnifyFromPackage(Pa Var, T&&... Args)
-	//{
-	//	return	ConstructUnifyFromPackage<ClassType>(Var, Forward<T>(Args...));
-	//}
+		return nullptr;
+	}
 
 	void Destroy();
 	void FrameDestroy();
-
+	static SObjectManager& GetManager();
 private:
 	std::unordered_map<std::string, TRefCountPtr<SObject>> unify_objects_;
 	std::unordered_set<TRefCountPtr<SObject>> instanced_objects_;
-	std::unordered_set<int> fuck_set;
 };

@@ -11,6 +11,7 @@ public:
 	void DrawCube(const YVector& Pos, const YVector4& Color, float length = 0.3f);
 	void Update();
 	void Render(CameraBase* camera);
+	void Render(class RenderParam* render_param);
 protected:
 	bool AllocGPUResource();
 	friend class YCanvasVertexFactory;
