@@ -141,6 +141,24 @@ void SSceneComponent::OnTransformChange()
 
 }
 
+void SSceneComponent::SetLocalTranslation(const YVector& v)
+{
+	local_translation_ = v;
+	is_component_to_world_update_ = false;
+}
+
+void SSceneComponent::SetLocalRotation(const YRotator& rotator)
+{
+	local_rotation_ = rotator;
+	is_component_to_world_update_ = false;
+}
+
+void SSceneComponent::SetLocalScale(const YVector& scale)
+{
+	local_scale_ = scale;
+	is_component_to_world_update_ = false;
+}
+
 std::unordered_map<std::string, std::function<SSceneComponent*()> > register_component_map =
 {
 	{"StaticMesh",[]() { return new SStaticMeshComponent(); }},

@@ -53,15 +53,6 @@ class SSceneComponent :public SComponent
 public:
 	SSceneComponent() :SComponent(EComponentType::SceneComponent) {}
 	explicit SSceneComponent(EComponentType type);
-	//todo 
-	//FBoxSphereBounds Bounds;
-	YVector local_translation_;
-	YRotator local_rotation_;
-	/**
-	*	Non-uniform scaling of the component relative to its parent.
-	*	Note that scaling is always applied in local space (no shearing etc)
-	*/
-	YVector local_scale_;
 
 
 	// update 
@@ -77,12 +68,29 @@ public:
 	virtual void OnTransformChange();
 	// child
 	std::vector<TRefCountPtr<SSceneComponent>>& GetChildComponents() { return child_components_; }
+	YTransform GetTransformToWorld() const { return component_to_world_; }
+	YVector GetLocalTranslation() const { return local_translation_; }
+	void SetLocalTranslation(const YVector& v);
+	YRotator GetLocalRotation() const { return local_rotation_; }
+	void SetLocalRotation(const YRotator& rotator);
+	YVector GetLocalScale() const { return local_scale_; }
+	void SetLocalScale(const YVector& scale);
 protected:
 	void UpdateComponentToWorldWithParentRecursive();
 	void PropagateTransformUpdate();
 	virtual void UpdateBound();
 	void UpdateChildTransforms();
 protected:
+	//todo 
+	//FBoxSphereBounds Bounds;
+	YVector local_translation_;
+	YRotator local_rotation_;
+	/**
+	*	Non-uniform scaling of the component relative to its parent.
+	*	Note that scaling is always applied in local space (no shearing etc)
+	*/
+	YVector local_scale_;
+
 	YTransform component_to_world_;
 	bool is_component_to_world_update_ = false;
 	SSceneComponent* parent_component_{ nullptr };

@@ -29,7 +29,7 @@ bool SWorld::LoadFromJson(const Json::Value& RootJson)
 			}
 			else
 			{
-				Actors.push_back(actor_ins);
+				actors_.push_back(actor_ins);
 			}
 		}
 		return true;
@@ -40,12 +40,12 @@ bool SWorld::LoadFromJson(const Json::Value& RootJson)
 bool SWorld::PostLoadOp()
 {
 	bool bSuccess = true;
-	for (TRefCountPtr<SActor>& Actor : Actors)
+	for (TRefCountPtr<SActor>& Actor : actors_)
 	{
 		bSuccess &= Actor->PostLoadOp();
 	}
 	scene_ = std::make_unique<YScene>();
-	for (TRefCountPtr<SActor>& actor : Actors)
+	for (TRefCountPtr<SActor>& actor : actors_)
 	{
 		actor->RegisterToScene(scene_.get());
 	}
@@ -65,7 +65,7 @@ void SWorld::Update(double deta_time)
 	// physical system update
 
 	// physical system update apply to animation
-	for (TRefCountPtr<SActor>& Actor : Actors)
+	for (TRefCountPtr<SActor>& Actor : actors_)
 	{
 		Actor->Update(deta_time);
 	}
@@ -88,4 +88,29 @@ void SWorld::SetCamera(CameraBase* camera)
 	//todo
 	camera_ = camera;
 	scene_->camera_ = camera_;
+}
+
+std::vector<TRefCountPtr<SActor>> SWorld::GetAllActorsWithComponent(const std::vector<SComponent::EComponentType> component_types) const
+{
+	std::vector<TRefCountPtr<SActor>> tmp;
+	std::vector<SComponent*> tmp_component;
+	for (const TRefCountPtr<SActor>& actor : actors_)
+	{
+		bool has_component = true;
+		for (SComponent::EComponentType component_type : component_types)
+		{
+			tmp_component.clear();
+			actor->RecursiveGetComponent(component_type, tmp_component);
+			if (tmp_component.empty())
+			{
+				has_component = false;
+				break;
+			}
+		}
+		if (has_component)
+		{
+			tmp.push_back(actor);
+		}
+	}
+	return tmp;
 }

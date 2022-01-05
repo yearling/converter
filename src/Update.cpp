@@ -11,6 +11,7 @@
 #include "Engine/YRenderScene.h"
 #include "Render/YRenderInterface.h"
 #include "Render/YForwardRenderer.h"
+#include "SObject/SComponent.h"
 ID3D11DeviceContext* g_deviceContext(nullptr);
 IDXGISwapChain* g_swapChain(nullptr);
 bool is_resizing = false;
@@ -203,7 +204,23 @@ void DrawUI()
 		static int counter = 0;
 
 		ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-		ImGui::DragFloat3("Light dir", &light_dir.x, 1.0f, -180, 180);
+		{
+			std::vector<TRefCountPtr<SActor>> light_actor = SWorld::GetWorld()->GetAllActorsWithComponent({SComponent::DirectLightComponent });
+			if (!light_actor.empty())
+			{
+				std::vector< SDirectionLightComponent*> light_component;
+				light_actor[0]->RecurisveGetTypeComponent(SComponent::DirectLightComponent, light_component);
+				if (!light_component.empty())
+				{
+					YRotator rotator = light_component[0]->GetLocalRotation();
+					if (ImGui::DragFloat3("Light dir", &rotator.pitch, 1.0f, -180, 180))
+					{
+						light_component[0]->SetLocalRotation(rotator);
+					}
+				}
+			}
+		}
+		//ImGui::DragFloat3("Light dir", &light_dir.x, 1.0f, -180, 180);
 		ImGui::Checkbox("show normal", &show_normal);
 		ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 		ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state

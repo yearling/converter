@@ -24,13 +24,13 @@ public:
 
 		if (CurrentComponent->GetComponentType() == ComponentType)
 		{
-			InOutSelectComponents.AddUnique(dynamic_cast<T*>(CurrentComponent));
+			InOutSelectComponents.push_back(dynamic_cast<T*>(CurrentComponent));
 		}
 
 		SSceneComponent* SceneComponent = dynamic_cast<SSceneComponent*>(CurrentComponent);
 		if (SceneComponent)
 		{
-			for (TRefCountPtr<SSceneComponent>& Child : SceneComponent->child_components_)
+			for (TRefCountPtr<SSceneComponent>& Child : SceneComponent->GetChildComponents())
 			{
 				RecursiveGetTypeComponent(Child.GetReference(), ComponentType, InOutSelectComponents);
 			}
@@ -39,15 +39,21 @@ public:
 	template<typename T>
 	void RecurisveGetTypeComponent(SComponent::EComponentType ComponentType, std::vector<T*>& InOutSelectComponents)
 	{
-		std::vector<TRefCountPtr<SComponent>> children = root_component_->GetChildComponents();
-		for (TRefCountPtr<SComponent>& Component : children)
+		if (root_component_->GetComponentType() == ComponentType)
+		{
+			InOutSelectComponents.push_back(dynamic_cast<T*>(root_component_.GetReference()));
+		}
+		std::vector<TRefCountPtr<SSceneComponent>> children = root_component_->GetChildComponents();
+		for (TRefCountPtr<SSceneComponent>& Component : children)
 		{
 			RecursiveGetTypeComponent(Component.GetReference(), ComponentType, InOutSelectComponents);
 		}
 	}
+
+	void RecursiveGetComponent(SComponent::EComponentType ComponentType, std::vector<SComponent*>& select_component);
 	void RegisterToScene(class YScene* render_scene);
 protected:
-	TRefCountPtr<SComponent> root_component_;
+	TRefCountPtr<SSceneComponent> root_component_;
 	int id_ = -1;
 	std::string name_;
 };

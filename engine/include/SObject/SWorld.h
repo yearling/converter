@@ -20,8 +20,11 @@ public:
 	//todo load camera
 
 	void SetCamera(CameraBase* camera);
+
+	inline std::vector<TRefCountPtr<SActor>> GetAllActors() { return actors_; }
+	std::vector<TRefCountPtr<SActor>> GetAllActorsWithComponent(const std::vector<SComponent::EComponentType> component_types)const;
 protected:
-	std::vector<TRefCountPtr<SActor>> Actors;
+	std::vector<TRefCountPtr<SActor>> actors_;
 	std::unique_ptr<YScene> scene_;
 	CameraBase* camera_;
 };

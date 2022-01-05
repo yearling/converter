@@ -62,6 +62,12 @@ void SActor::Update(double deta_time)
 	}
 }
 
+void SActor::RecursiveGetComponent(SComponent::EComponentType ComponentType, std::vector<SComponent*>& select_component)
+{
+	RecurisveGetTypeComponent<SComponent>(ComponentType, select_component);
+}
+
+
 void SActor::RegisterToScene(YScene* scene)
 {
 	if (root_component_)

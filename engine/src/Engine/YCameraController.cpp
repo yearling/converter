@@ -29,7 +29,7 @@ void CameraController::Update(double delta_time)
 
 FPSCameraController::FPSCameraController()
 {
-	memset(key_down, 0, sizeof(key_down));
+	memset(key_down_, 0, sizeof(key_down_));
 }
 
 void FPSCameraController::RegiesterEventProcess()
@@ -54,29 +54,29 @@ void FPSCameraController::Update(double delta_time)
 {
 	float forward_speed_local = 0.f;
 	float right_speed_local = 0.f;
-	if (key_down['W'])
+	if (key_down_['W'])
 	{
-		forward_speed_local += speed_base;
+		forward_speed_local += speed_base_;
 	}
 	
-	if (key_down['S'])
+	if (key_down_['S'])
 	{
-		forward_speed_local -= speed_base;
+		forward_speed_local -= speed_base_;
 	}
 
-	if (key_down['A'])
+	if (key_down_['A'])
 	{
-		right_speed_local -= speed_base;
+		right_speed_local -= speed_base_;
 	}
 
-	if (key_down['D'])
+	if (key_down_['D'])
 	{
-		right_speed_local += speed_base;
+		right_speed_local += speed_base_;
 	}
 
-	float forwad_distance = (float)delta_time * forward_speed_local + (float)delta_time * wheel_speed * wheel_forward_base;
+	float forwad_distance = (float)delta_time * forward_speed_local + (float)delta_time * wheel_speed_ * wheel_forward_base_;
 	float right_distance = (float)delta_time * right_speed_local;
-	if (right_button_pressed)
+	if (right_button_pressed_)
 	{
 		YMatrix world_matrix = camera_->GetInvViewMatrix();
 		YVector forward_w = world_matrix.TransformVector(YVector::forward_vector);
@@ -86,35 +86,35 @@ void FPSCameraController::Update(double delta_time)
 		camera_->SetPosition(final_pos);
 	}
 
-	smooth_delta_pitch.SmoothAcc(delta_pitch_screen);
-	smooth_delta_yaw.SmoothAcc(delta_yaw_screen);
-	float pitch_delta = smooth_delta_yaw.Average() * rotation_speed_pitch * (float)delta_time;
-	float yaw_delta = smooth_delta_pitch.Average() * rotation_speed_yaw * (float)delta_time;
+	smooth_delta_pitch_.SmoothAcc(delta_pitch_screen_);
+	smooth_delta_yaw_.SmoothAcc(delta_yaw_screen_);
+	float pitch_delta = smooth_delta_yaw_.Average() * rotation_speed_pitch_ * (float)delta_time;
+	float yaw_delta = smooth_delta_pitch_.Average() * rotation_speed_yaw_ * (float)delta_time;
 	YRotator final_rotator = camera_->GetRotator();
 	final_rotator.pitch += pitch_delta;
 	final_rotator.pitch = YMath::Clamp(-90.f, 90.0f, final_rotator.pitch);
 	final_rotator.yaw += yaw_delta;
 	camera_->SetRotation(final_rotator);
-	wheel_speed = 0.0;
-	delta_pitch_screen = 0.0;
-	delta_yaw_screen = 0.0;
+	wheel_speed_ = 0.0;
+	delta_pitch_screen_ = 0.0;
+	delta_yaw_screen_ = 0.0;
 }
 
 void FPSCameraController::OnKeyDown(char c)
 {
-	key_down[c] = true;
+	key_down_[c] = true;
 }
 
 void FPSCameraController::OnKeyUp(char c)
 {
-	key_down[c] = false;
+	key_down_[c] = false;
 }
 
 void FPSCameraController::OnRButtonDown(int x, int y)
 {
-	right_button_pressed = true;
-	last_x = x;
-	last_y = y;
+	right_button_pressed_ = true;
+	last_x_ = x;
+	last_y_ = y;
 #ifdef _WIN32
 	ShowCursor(FALSE);
 #endif
@@ -122,9 +122,9 @@ void FPSCameraController::OnRButtonDown(int x, int y)
 
 void FPSCameraController::OnRButtonUp(int x, int y)
 {
-	right_button_pressed = false;
-	delta_pitch_screen = 0;
-	delta_yaw_screen = 0;
+	right_button_pressed_ = false;
+	delta_pitch_screen_ = 0;
+	delta_yaw_screen_ = 0;
 #ifdef _WIN32
 	ShowCursor(true);
 #endif
@@ -132,16 +132,16 @@ void FPSCameraController::OnRButtonUp(int x, int y)
 
 void FPSCameraController::OnMouseMove(int x, int y)
 {
-	if (right_button_pressed)
+	if (right_button_pressed_)
 	{
-		delta_pitch_screen = (float)x - last_x;
-		delta_yaw_screen = (float)y - last_y;
-		last_x = x;
-		last_y = y;
+		delta_pitch_screen_ = (float)x - last_x_;
+		delta_yaw_screen_ = (float)y - last_y_;
+		last_x_ = x;
+		last_y_ = y;
 	}
 }
 
 void FPSCameraController::OnMouseWheel(int x, int y, float z)
 {
-	wheel_speed = z;
+	wheel_speed_ = z;
 }
