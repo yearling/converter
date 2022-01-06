@@ -7,8 +7,8 @@ struct CameraElementProxy
 {
 	YVector position_;
 	YRotator rotation_;
-	YMatrix inv_view_matrix_;
 	YMatrix view_matrix_;
+	YMatrix inv_view_matrix_;
 	YMatrix projection_matrix_;
 	YMatrix view_proj_matrix_;
 	YMatrix inv_view_proj_matrix_;

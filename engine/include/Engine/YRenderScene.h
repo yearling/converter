@@ -25,8 +25,8 @@ public:
 	YScene();
 	std::unordered_set<SStaticMeshComponent*> static_meshes_components_;
 	std::unordered_set<SDirectionLightComponent*> direct_light_components_;
+	SPerspectiveCameraComponent* perspective_camera_components_ = nullptr;
 	std::unique_ptr<YRenderScene> GenerateOneFrame() const;
-	CameraBase* camera_ = nullptr;
 	double deta_time = 0.0;
 	double game_time = 0.0;
 };

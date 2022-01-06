@@ -32,14 +32,22 @@ std::unique_ptr<YRenderScene> YScene::GenerateOneFrame() const
 		dir_light_elem.light_strength = light->GetLightStrength();
 		one_frame->dir_light_elements_.push_back(dir_light_elem);
 	}
+
+	{
+		one_frame->camera_element = std::move(perspective_camera_components_->camera_->GetProxy());
+	}
 	
 	if (one_frame->dir_light_elements_.size() == 0)
 	{
 		WARNING_INFO("scene has no dir light");
 	}
-	assert(camera_);
+
+	if (!one_frame->camera_element)
+	{
+		ERROR_INFO("scene has no camera");
+	}
+	assert(one_frame->camera_element);
 	
-	one_frame->camera_element = std::move(camera_->GetProxy());
 
 
 	return one_frame;

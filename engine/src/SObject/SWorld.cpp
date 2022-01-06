@@ -83,13 +83,6 @@ void SWorld::SetWorld(TRefCountPtr<SWorld>& world)
 	g_world = world;
 }
 
-void SWorld::SetCamera(CameraBase* camera)
-{
-	//todo
-	camera_ = camera;
-	scene_->camera_ = camera_;
-}
-
 std::vector<TRefCountPtr<SActor>> SWorld::GetAllActorsWithComponent(const std::vector<SComponent::EComponentType> component_types) const
 {
 	std::vector<TRefCountPtr<SActor>> tmp;

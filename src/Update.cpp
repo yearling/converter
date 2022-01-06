@@ -19,7 +19,6 @@ ID3D11DepthStencilView* g_depthStencilView(nullptr);
 ID3D11RenderTargetView* g_renderTargetView(nullptr);
 std::unique_ptr<D3D11Device> device = nullptr;
 std::vector<std::unique_ptr<YStaticMesh>> g_test_mesh;
-std::unique_ptr<PerspectiveCamera> main_camera;
 std::unique_ptr<CameraController> camera_controller;
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time;
 std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
@@ -63,13 +62,6 @@ bool InitD3D()
 	//resize
 	device->OnResize(g_winWidth, g_winHeight);
 
-	//camera
-	{
-		main_camera = std::make_unique<PerspectiveCamera>(60.f, (float)g_winWidth / (float)g_winHeight, 2.f, 10000.0f);
-		main_camera->SetPosition(YVector(0.0, 5.0, -10.f));
-		main_camera->SetRotation(YRotator(0.0, 0.0, 0.f));
-	}
-
 	//canvas
 	g_Canvas = new YCamvas();
 
@@ -77,11 +69,7 @@ bool InitD3D()
 	g_input_manager = new InputManger();
 
 	// camera controller
-	{
-		camera_controller = std::make_unique<FPSCameraController>();
-		camera_controller->SetCamera(main_camera.get());
-		camera_controller->RegiesterEventProcess();
-	}
+
 
 	// import fbx
 #if 1
@@ -118,7 +106,22 @@ bool InitD3D()
 	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
 	SWorld::SetWorld(new_world);
 	new_world->PostLoadOp();
-	SWorld::GetWorld()->SetCamera(main_camera.get());
+	{
+		std::vector<TRefCountPtr<SActor>> camera_actor = SWorld::GetWorld()->GetAllActorsWithComponent({ SComponent::PerspectiveCameraComponent });
+		if (!camera_actor.empty())
+		{
+			std::vector< SPerspectiveCameraComponent*> camera_component;
+			camera_actor[0]->RecurisveGetTypeComponent(SComponent::PerspectiveCameraComponent, camera_component);
+			if (!camera_component.empty())
+			{
+				{
+					camera_controller = std::make_unique<FPSCameraController>();
+					camera_controller->SetCamera(camera_component[0]->camera_.get());
+					camera_controller->RegiesterEventProcess();
+				}
+			}
+		}
+	}
 	renderer = std::make_unique<YForwardRenderer>();
 	if (!renderer->Init())
 	{
@@ -259,9 +262,7 @@ void Update(double delta_time)
 {
 	camera_controller->Update(delta_time);
 
-	DrawUtility::DrawGrid();
-	DrawUtility::DrawWorldCoordinate(main_camera.get());
-	g_Canvas->Update();
+
 	SWorld::GetWorld()->Update(delta_time);
 }
 void Render()
@@ -283,6 +284,8 @@ void Render()
 	//update
 	Update(delta_time);
 
+	DrawUtility::DrawGrid();
+	DrawUtility::DrawWorldCoordinate(SWorld::GetWorld()->GetScene());
 	//render
 	std::unique_ptr<YRenderScene> render_scene = SWorld::GetWorld()->GenerateRenderScene();
 	render_scene->deta_time = delta_time;
@@ -309,7 +312,18 @@ void Release()
 void OnResize()
 {
 	device->OnResize(g_winWidth, g_winHeight);
-	main_camera->SetAspect((float)g_winWidth / (float)g_winHeight);
+	{
+		std::vector<TRefCountPtr<SActor>> camera_actor = SWorld::GetWorld()->GetAllActorsWithComponent({ SComponent::PerspectiveCameraComponent });
+		if (!camera_actor.empty())
+		{
+			std::vector< SPerspectiveCameraComponent*> camera_component;
+			camera_actor[0]->RecurisveGetTypeComponent(SComponent::PerspectiveCameraComponent, camera_component);
+			if (!camera_component.empty())
+			{
+				camera_component[0]->camera_->SetAspect((float)g_winWidth / (float)g_winHeight);
+			}
+		}
+	}
 }
 
 // Forward declare message handler from imgui_impl_win32.cpp

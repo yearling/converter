@@ -2,6 +2,7 @@
 #include "Engine/YCanvas.h"
 #include "RHI/DirectX11/D3D11Device.h"
 #include "Render/YRenderInterface.h"
+#include "Engine/YCanvasUtility.h"
 
 
 bool YForwardRenderer::Init()
@@ -11,6 +12,7 @@ bool YForwardRenderer::Init()
 
 bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 {
+	
 	render_scene_ = std::move(render_scene);
 	ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
 	ID3D11DepthStencilView* main_dsv = g_device->GetMainDSV();
@@ -34,6 +36,8 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 		ele.mesh_->Render(&render_param);
 	}
 
+
+	g_Canvas->Update();
 	g_Canvas->Render(&render_param);
 	return true;
 }

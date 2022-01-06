@@ -7,4 +7,5 @@ class DrawUtility
 public:
 	static void DrawGrid();
 	static void DrawWorldCoordinate(CameraBase* camera);
+	static void DrawWorldCoordinate(class YScene* render_param);
 };

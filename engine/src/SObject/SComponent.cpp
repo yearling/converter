@@ -6,6 +6,7 @@
 #include "Engine/YLight.h"
 #include "Utility/YJsonHelper.h"
 #include "Engine/YRenderScene.h"
+#include "Engine/YCamera.h"
 
 SSceneComponent::SSceneComponent(EComponentType type)
 	:SComponent(type)
@@ -162,7 +163,8 @@ void SSceneComponent::SetLocalScale(const YVector& scale)
 std::unordered_map<std::string, std::function<SSceneComponent*()> > register_component_map =
 {
 	{"StaticMesh",[]() { return new SStaticMeshComponent(); }},
-	{"DirectionLight",[]() { return new SDirectionLightComponent(); }}
+	{"DirectionLight",[]() { return new SDirectionLightComponent(); }},
+	{"PerspectiveCamera",[]() { return new SPerspectiveCameraComponent(); }}
 };
 TRefCountPtr<SSceneComponent> SComponent::ComponentFactory(const Json::Value& RootJson)
 {
@@ -318,6 +320,7 @@ bool SDirectionLightComponent::LoadFromJson(const Json::Value& RootJson)
 
 void SDirectionLightComponent::RegisterToScene(YScene* scene)
 {
+	SLightComponent::RegisterToScene(scene);
 	scene->direct_light_components_.insert(this);
 }
 
@@ -338,4 +341,124 @@ void SDirectionLightComponent::OnTransformChange()
 void SDirectionLightComponent::Update(double deta_time)
 {
 	SLightComponent::Update(deta_time);
+}
+
+SCameraComponent::SCameraComponent()
+{
+
+}
+
+SCameraComponent::SCameraComponent(EComponentType type):SRenderComponent(type)
+{
+
+}
+
+SCameraComponent::~SCameraComponent()
+{
+
+}
+
+bool SCameraComponent::LoadFromJson(const Json::Value& root_json)
+{
+	if (!SRenderComponent::LoadFromJson(root_json))
+	{
+		return false;
+	}
+	return true;
+}
+
+void SCameraComponent::RegisterToScene(class YScene* scene)
+{
+	SRenderComponent::RegisterToScene(scene);
+}
+
+bool SCameraComponent::PostLoadOp()
+{
+	SRenderComponent::PostLoadOp();
+	return true;
+}
+
+void SCameraComponent::OnTransformChange()
+{
+
+}
+
+void SCameraComponent::Update(double deta_time)
+{
+
+}
+
+SPerspectiveCameraComponent::SPerspectiveCameraComponent():SCameraComponent(PerspectiveCameraComponent)
+{
+
+}
+
+SPerspectiveCameraComponent::~SPerspectiveCameraComponent()
+{
+
+}
+
+bool SPerspectiveCameraComponent::LoadFromJson(const Json::Value& root_json)
+{
+	if (!SCameraComponent::LoadFromJson(root_json))
+	{
+		return false;
+	}
+
+	camera_ = std::make_unique<PerspectiveCamera>();
+	if (root_json.isMember("fov"))
+	{
+		float fov = root_json["fov"].asFloat();
+		camera_->SetFovY(fov);
+	}
+
+	if (root_json.isMember("aspec"))
+	{
+		float aspect = root_json["aspec"].asFloat();
+		camera_->SetAspect(aspect);
+	}
+
+	if (root_json.isMember("near_plane"))
+	{
+		float near_plane = root_json["near_plane"].asFloat();
+		camera_->SetNearPlane(near_plane);
+	}
+
+	if (root_json.isMember("far_plane"))
+	{
+		float far_plane = root_json["far_plane"].asFloat();
+		camera_->SetFarPlane(far_plane);
+	}
+
+	LOG_INFO("Perspective camera load success! ");
+
+	return true;
+}
+
+void SPerspectiveCameraComponent::RegisterToScene(class YScene* scene)
+{
+	SCameraComponent::RegisterToScene(scene);
+	if (scene->perspective_camera_components_)
+	{
+		WARNING_INFO("has two or more perspective camera");
+	}
+	scene->perspective_camera_components_=this;
+}
+
+bool SPerspectiveCameraComponent::PostLoadOp()
+{
+	SCameraComponent::PostLoadOp();
+	return true;
+}
+
+void SPerspectiveCameraComponent::OnTransformChange()
+{
+	camera_->SetPosition(local_translation_);
+	camera_->SetRotation(local_rotation_);
+	camera_->Update();
+}
+
+void SPerspectiveCameraComponent::Update(double deta_time)
+{
+	camera_->Update();
 }

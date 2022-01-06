@@ -21,6 +21,7 @@ public:
 		StaticMeshComponent,
 		LightComponenet,
 		DirectLightComponent,
+		PerspectiveCameraComponent,
 		ComNum
 	};
 	//SObject
@@ -136,4 +137,30 @@ public:
 	void OnTransformChange() override;
 	void Update(double deta_time) override;
 	std::unique_ptr<DirectLight> dir_light_;
+};
+
+class SCameraComponent :public SRenderComponent
+{
+public:
+	SCameraComponent();
+	explicit SCameraComponent(EComponentType type);
+	~SCameraComponent() override;
+	bool LoadFromJson(const Json::Value& root_json) override;
+	void RegisterToScene(class YScene* scene) override;
+	virtual bool PostLoadOp();
+	void OnTransformChange() override;
+	void Update(double deta_time) override;
+};
+
+class SPerspectiveCameraComponent :public SCameraComponent
+{
+public:
+	SPerspectiveCameraComponent();
+	~SPerspectiveCameraComponent() override;
+	bool LoadFromJson(const Json::Value& root_json) override;
+	void RegisterToScene(class YScene* scene) override;
+	virtual bool PostLoadOp();
+	void OnTransformChange() override;
+	void Update(double deta_time) override;
+	std::unique_ptr<class PerspectiveCamera> camera_;
 };
