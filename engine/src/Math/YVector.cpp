@@ -95,6 +95,42 @@ YVector YVector::operator*(float mul) const
 	return YVector(x * mul, y * mul, z * mul);
 }
 
+YVector YVector::GetAbs() const
+{
+	return YVector(YMath::Abs(x), YMath::Abs(y), YMath::Abs(z));
+}
+
+YVector YVector::Reciprocal() const
+{
+	YVector rec_vector;
+	if (x != 0.f)
+	{
+		rec_vector.x = 1.f / x;
+	}
+	else
+	{
+		rec_vector.x = BIG_NUMBER;
+	}
+	if (y != 0.f)
+	{
+		rec_vector.y = 1.f / y;
+	}
+	else
+	{
+		rec_vector.y = BIG_NUMBER;
+	}
+	if (z != 0.f)
+	{
+		rec_vector.z = 1.f / z;
+	}
+	else
+	{
+		rec_vector.z = BIG_NUMBER;
+	}
+
+	return rec_vector;
+}
+
 YVector YVector::CrossProduct(const YVector& a, const YVector& b)
 {
 	return a ^ b;

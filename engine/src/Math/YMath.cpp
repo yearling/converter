@@ -1,6 +1,7 @@
 #include "Math/YMath.h"
 #include "Math/YVector.h"
 #include "Math/YMatrix.h"
+#include "Math/YBox.h"
 float YMath::Atan2(float y, float x)
 {
 	//return atan2f(Y,X);
@@ -64,5 +65,233 @@ unsigned int YMath::GetIntColor(const YVector4& color)
 	uint8_t z = (uint8_t)YMath::TruncToInt(color.z * 255.0f);
 	uint8_t w = (uint8_t)YMath::TruncToInt(color.w * 255.0f);
 	return (w << 24) | (z << 16) | (y << 8) | x;
+}
+
+bool YMath::LineBoxIntersection(const YBox& box, const YVector& start, const YVector& end, const YVector& direction)
+{
+	YVector time;
+	YVector rece_vec = direction.Reciprocal();
+	bool start_is_outside = false;
+	if (start.x < box.min_.x)
+	{
+		start_is_outside = true;
+		if (end.x >= box.min_.x)
+		{
+			time.x = (box.min_.x - start.x) * rece_vec.x;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (start.x > box.max_.x)
+	{
+		start_is_outside = true;
+		if (end.x <= box.max_.x)
+		{
+			time.x = (box.max_.x - start.x) * rece_vec.x;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		time.x = 0.0f;
+	}
+
+	if (start.y < box.min_.y)
+	{
+		start_is_outside = true;
+		if (end.y >= box.min_.y)
+		{
+			time.y = (box.min_.y - start.y) * rece_vec.y;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (start.y > box.max_.y)
+	{
+		start_is_outside = true;
+		if (end.y <= box.max_.y)
+		{
+			time.y = (box.max_.y - start.y) * rece_vec.y;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		time.y = 0.0f;
+	}
+
+	if (start.z < box.min_.z)
+	{
+		start_is_outside = true;
+		if (end.z >= box.min_.z)
+		{
+			time.z = (box.min_.z - start.z) * rece_vec.z;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (start.z > box.max_.z)
+	{
+		start_is_outside = true;
+		if (end.z <= box.max_.z)
+		{
+			time.z = (box.max_.z - start.z) * rece_vec.z;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		time.z = 0.0f;
+	}
+
+	if (start_is_outside)
+	{
+		const float max_time = YMath::Max(YMath::Max(time.x, time.y), time.z);
+		if (max_time >= 0.0f && max_time <= 1.0f)
+		{
+			const YVector hit = start + direction * max_time;
+			const float BOX_SIDE_THRESHOLD = 0.1f;
+			if (hit.x > box.min_.x - BOX_SIDE_THRESHOLD && hit.x < box.max_.x + BOX_SIDE_THRESHOLD &&
+				hit.y > box.min_.y - BOX_SIDE_THRESHOLD && hit.y < box.max_.y + BOX_SIDE_THRESHOLD &&
+				hit.z > box.min_.z - BOX_SIDE_THRESHOLD && hit.z < box.max_.z + BOX_SIDE_THRESHOLD)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+bool YMath::LineBoxIntersection(const YBox& box, const YVector& start, const YVector& direction)
+{
+	YVector time;
+	YVector rece_vec = direction.Reciprocal();
+	bool start_is_outside = false;
+	if (start.x < box.min_.x)
+	{
+		start_is_outside = true;
+		if (direction.x>0.f)
+		{
+			time.x = (box.min_.x - start.x) * rece_vec.x;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (start.x > box.max_.x)
+	{
+		start_is_outside = true;
+		if (direction.x <0.f)
+		{
+			time.x = (box.max_.x - start.x) * rece_vec.x;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		time.x = 0.0f;
+	}
+
+	if (start.y < box.min_.y)
+	{
+		start_is_outside = true;
+		if (direction.y > 0.f)
+		{
+			time.y = (box.min_.y - start.y) * rece_vec.y;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (start.y > box.max_.y)
+	{
+		start_is_outside = true;
+		if (direction.y < 0.f)
+		{
+			time.y = (box.max_.y - start.y) * rece_vec.y;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		time.y = 0.0f;
+	}
+
+	if (start.z < box.min_.z)
+	{
+		start_is_outside = true;
+		if (direction.z>0.f)
+		{
+			time.z = (box.min_.z - start.z) * rece_vec.z;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (start.z > box.max_.z)
+	{
+		start_is_outside = true;
+		if (direction.z < 0.f)
+		{
+			time.z = (box.max_.z - start.z) * rece_vec.z;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		time.z = 0.0f;
+	}
+
+	if (start_is_outside)
+	{
+		const float max_time = YMath::Max(YMath::Max(time.x, time.y), time.z);
+		if (max_time >= 0.0f && max_time <= 1.0f)
+		{
+			const YVector hit = start + direction * max_time;
+			const float BOX_SIDE_THRESHOLD = 0.1f;
+			if (hit.x > box.min_.x - BOX_SIDE_THRESHOLD && hit.x < box.max_.x + BOX_SIDE_THRESHOLD &&
+				hit.y > box.min_.y - BOX_SIDE_THRESHOLD && hit.y < box.max_.y + BOX_SIDE_THRESHOLD &&
+				hit.z > box.min_.z - BOX_SIDE_THRESHOLD && hit.z < box.max_.z + BOX_SIDE_THRESHOLD)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 

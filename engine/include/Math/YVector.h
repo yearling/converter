@@ -41,6 +41,12 @@ public:
 	YVector operator+(const YVector& v) const;
 	YVector operator-() const;
 	YVector operator*(const YVector& v) const;
+	YVector GetAbs() const;
+	YVector Reciprocal() const;
+	inline bool operator==(const YVector& v) const
+	{
+		return (x == v.x) && (y == v.y) && (z == v.z);
+	}
 	float GetMin() const;
 	float GetMax() const;
 	/** zero vector (0,0,0) */

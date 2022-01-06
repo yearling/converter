@@ -10,6 +10,7 @@ struct YMatrix;
 struct YMatrix3x3;
 struct YRotator;
 struct YQuat;
+struct YBox;
 
 /*-----------------------------------------------------------------------------
 	Floating point constants.
@@ -58,6 +59,13 @@ struct YQuat;
 #define THRESH_VECTOR_NORMALIZED		(0.01f)		/** Allowed error for a normalized vector (against squared magnitude) */
 #define THRESH_QUAT_NORMALIZED			(0.01f)		/** Allowed error for a normalized quaternion (against squared magnitude) */
 #define MAX_MESH_TEXTURE_COORDS			 8
+
+enum EForceInit
+{
+	ForceInit,
+	ForceInitToZero
+};
+
 struct YMath
 {
 	template< class T >
@@ -254,4 +262,7 @@ struct YMath
 			return in_value;
 		}
 	}
+
+	bool LineBoxIntersection(const YBox& box, const YVector& start, const YVector& end, const YVector& direction);
+	bool LineBoxIntersection(const YBox& box, const YVector& start, const YVector& direction);
 };
