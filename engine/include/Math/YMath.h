@@ -263,6 +263,6 @@ struct YMath
 		}
 	}
 
-	bool LineBoxIntersection(const YBox& box, const YVector& start, const YVector& end, const YVector& direction);
-	bool LineBoxIntersection(const YBox& box, const YVector& start, const YVector& direction);
+	static bool LineBoxIntersection(const YBox& box, const YVector& start, const YVector& end, const YVector& direction);
+	static bool LineBoxIntersection(const YBox& box, const class YRay& ray);
 };

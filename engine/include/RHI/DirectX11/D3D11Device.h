@@ -37,7 +37,7 @@ public:
 	int GetDeviceWidth() const;
 	int GetDeviceHeight() const;
 	void PreRender();
-
+	void RegisterEvents();
 public:
 	// shader
 	bool ComplieShaderFromFile(const std::string& file_name, const std::string& entry_point, const std::string& shader_model,

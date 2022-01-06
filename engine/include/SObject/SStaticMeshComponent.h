@@ -12,6 +12,7 @@ public:
 	void Update(double deta_time) override;
 	void RegisterToScene(class YScene* scene) override;
 	YStaticMesh* GetMesh();
+	void UpdateBound() override;
 protected:
 	std::unique_ptr<YStaticMesh> static_mesh_;
 };

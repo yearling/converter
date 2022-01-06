@@ -1,4 +1,5 @@
 #include "Engine/YCamera.h"
+#include "Math/YRay.h"
 
 PerspectiveCamera::PerspectiveCamera()
 {
@@ -176,4 +177,12 @@ std::unique_ptr<CameraElementProxy> CameraBase::GetProxy()
 	proxy->aspect_ = aspect_;
 	proxy->perspective_camera_ = perspective_camera_;
 	return proxy;
+}
+
+YRay CameraBase::GetWorldRayFromScreen(const YVector2& ScreenCoord) const
+{
+	YVector4 projection_pos(ScreenCoord.x, ScreenCoord.y, 0.0,1.0);
+	YVector world_position = inv_view_proj_matrix_.TransformVector4(projection_pos).AffineTransform();
+	YVector ray_dir_in_world = (world_position - position_).GetSafeNormal();
+	return YRay(position_, ray_dir_in_world);
 }

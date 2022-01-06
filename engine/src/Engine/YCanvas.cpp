@@ -78,6 +78,11 @@ void YCamvas::DrawCube(const YVector& Pos, const YVector4& Color, float length /
 	DrawLine(point6 * length + Pos, point7 * length + Pos, Color);
 }
 
+void YCamvas::DrawRay(const YRay& ray, const YVector4& Color, float weidth /*= 0.3f*/)
+{
+	DrawLine(ray.origin_, ray.origin_ + ray.direction_ * 100000.0f,Color);
+}
+
 void YCamvas::Update()
 {
 	AllocGPUResource();

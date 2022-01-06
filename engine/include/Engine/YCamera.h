@@ -1,6 +1,7 @@
 #pragma once
 #include "Math/YMatrix.h"
 #include "Math/YRotator.h"
+#include "Math/YRay.h"
 #include <memory>
 
 struct CameraElementProxy
@@ -46,6 +47,9 @@ public:
 	void SetRotation(const YRotator& rotator);
 	virtual void Update();
 	virtual std::unique_ptr<CameraElementProxy> GetProxy();
+	YRay GetWorldRayFromScreen(const YVector2& ScreenCoord) const;
+
+
 protected:
 	YVector position_;
 	YRotator rotaion_;

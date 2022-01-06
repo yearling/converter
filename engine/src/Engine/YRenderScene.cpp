@@ -1,4 +1,5 @@
 #include "Engine/YRenderScene.h"
+#include "Engine/YWindowEventManger.h"
 YRenderScene::YRenderScene()
 {
 
@@ -51,4 +52,21 @@ std::unique_ptr<YRenderScene> YScene::GenerateOneFrame() const
 
 
 	return one_frame;
+}
+
+void YScene::RegisterEvents()
+{
+	g_windows_event_manager->windows_size_changed_funcs_.push_back([this](int x, int y) {
+		this->OnViewPortChange(x, y);
+	});
+}
+
+void YScene::OnViewPortChange(int width, int height)
+{
+	view_port_.width_ = width;
+	view_port_.height_ = height;
+	if (perspective_camera_components_)
+	{
+		perspective_camera_components_->OnViewPortChanged(view_port_);
+	}
 }

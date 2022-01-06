@@ -4,6 +4,7 @@
 #include <cassert>
 #include "Engine/YLog.h"
 #include "RHI/DirectX11/D3D11Texture.h"
+#include "Engine/YWindowEventManger.h"
 
 D3D11Device* g_device = nullptr;
 D3D11Device::D3D11Device() {}
@@ -207,6 +208,11 @@ void D3D11Device::PreRender() {
 	if (FAILED(hr = d3d_device_->CreateRenderTargetView(back_buffer, 0, &main_RTVs_))) {
 		ERROR_INFO("d3d device  create render target view failed!");
 	}
+}
+
+void D3D11Device::RegisterEvents()
+{
+	g_windows_event_manager->windows_size_changed_funcs_.push_back([](int x, int y) {g_device->OnResize(x, y);});
 }
 
 bool D3D11Device::ComplieShaderFromFile(const std::string& file_name, const std::string& entry_point, const std::string& shader_model,

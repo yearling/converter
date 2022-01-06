@@ -7,6 +7,8 @@
 #include "Math/YRotator.h"
 #include "Math/YTransform.h"
 #include "json.h"
+#include "Engine/YViewPort.h"
+#include "Math/YBox.h"
 class YRenderScene;
 class SActor;
 class SSceneComponent;
@@ -76,6 +78,7 @@ public:
 	void SetLocalRotation(const YRotator& rotator);
 	YVector GetLocalScale() const { return local_scale_; }
 	void SetLocalScale(const YVector& scale);
+	YBox GetBounds() const { return bounds_; }
 protected:
 	void UpdateComponentToWorldWithParentRecursive();
 	void PropagateTransformUpdate();
@@ -83,7 +86,7 @@ protected:
 	void UpdateChildTransforms();
 protected:
 	//todo 
-	//FBoxSphereBounds Bounds;
+	YBox bounds_;
 	YVector local_translation_;
 	YRotator local_rotation_;
 	/**
@@ -91,7 +94,7 @@ protected:
 	*	Note that scaling is always applied in local space (no shearing etc)
 	*/
 	YVector local_scale_;
-
+	
 	YTransform component_to_world_;
 	bool is_component_to_world_update_ = false;
 	SSceneComponent* parent_component_{ nullptr };
@@ -111,6 +114,7 @@ public:
 	virtual void RegisterToScene(class YScene* scene);
 	bool LoadFromJson(const Json::Value& RootJson)override;
 	~SRenderComponent();
+	virtual void OnViewPortChanged(const YViewPort& new_view_port);
 
 };
 
@@ -162,5 +166,6 @@ public:
 	virtual bool PostLoadOp();
 	void OnTransformChange() override;
 	void Update(double deta_time) override;
+	void OnViewPortChanged(const YViewPort& new_view_port) override;
 	std::unique_ptr<class PerspectiveCamera> camera_;
 };

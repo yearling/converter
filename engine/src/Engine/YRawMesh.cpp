@@ -76,6 +76,14 @@ int YLODMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_id
 
 
 
+void YLODMesh::ComputeAABB()
+{
+	for (YMeshVertex& v : vertex_position)
+	{
+		aabb += v.position;
+	}
+}
+
 YMeshEdge::YMeshEdge()
 {
 	VertexIDs[0] = -1;

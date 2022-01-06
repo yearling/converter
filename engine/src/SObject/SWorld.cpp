@@ -107,3 +107,4 @@ std::vector<TRefCountPtr<SActor>> SWorld::GetAllActorsWithComponent(const std::v
 	}
 	return tmp;
 }
+

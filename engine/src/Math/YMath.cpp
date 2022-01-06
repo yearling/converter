@@ -2,6 +2,7 @@
 #include "Math/YVector.h"
 #include "Math/YMatrix.h"
 #include "Math/YBox.h"
+#include "Math/YRay.h"
 float YMath::Atan2(float y, float x)
 {
 	//return atan2f(Y,X);
@@ -181,8 +182,11 @@ bool YMath::LineBoxIntersection(const YBox& box, const YVector& start, const YVe
 	}
 }
 
-bool YMath::LineBoxIntersection(const YBox& box, const YVector& start, const YVector& direction)
+//bool YMath::LineBoxIntersection(const YBox& box, const YVector& start, const YVector& direction)
+bool YMath::LineBoxIntersection(const YBox& box, const YRay& ray)
 {
+	const YVector start = ray.origin_;
+	const YVector direction = ray.direction_;
 	YVector time;
 	YVector rece_vec = direction.Reciprocal();
 	bool start_is_outside = false;
@@ -276,7 +280,7 @@ bool YMath::LineBoxIntersection(const YBox& box, const YVector& start, const YVe
 	if (start_is_outside)
 	{
 		const float max_time = YMath::Max(YMath::Max(time.x, time.y), time.z);
-		if (max_time >= 0.0f && max_time <= 1.0f)
+		if (max_time >= 0.0f)
 		{
 			const YVector hit = start + direction * max_time;
 			const float BOX_SIDE_THRESHOLD = 0.1f;

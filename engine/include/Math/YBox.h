@@ -12,7 +12,7 @@ public:
 	YVector max_;
 	uint8_t is_valid_;
 public:
-	YBox() {}
+	YBox():is_valid_(0){}
 	explicit YBox(EForceInit)
 	{
 		Init();

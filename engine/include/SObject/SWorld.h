@@ -19,7 +19,7 @@ public:
 	static void SetWorld(TRefCountPtr<SWorld>& world);
 	//todo load camera
 
-	YScene* GetScene() const { return scene_.get(); }
+	YScene* GetMainScene() const { return scene_.get(); }
 	inline std::vector<TRefCountPtr<SActor>> GetAllActors() { return actors_; }
 	std::vector<TRefCountPtr<SActor>> GetAllActorsWithComponent(const std::vector<SComponent::EComponentType> component_types)const;
 protected:

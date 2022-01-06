@@ -6,6 +6,7 @@
 #include "YMath.h"
 #include "math/YVector.h"
 #include "YFile.h"
+#include "Math/YBox.h"
 
 const int INVALID_ID = -1;
 struct YMeshVertex
@@ -81,10 +82,12 @@ public:
 	std::vector< YMeshEdge> edges;
 	std::vector<YMeshPolygonGroup> polygon_groups;
 	std::unordered_map<int, std::string> polygon_group_imported_material_slot_name;
-
+	
+	YBox aabb;
 	int GetVertexPairEdge(int vertex_id0, int vertex_id1);
 	int CreateEdge(int vertex_id_0, int vertex_id_1);
 	int CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_ids, std::vector<int>& out_edges);
+	void ComputeAABB();
 };
 
 MemoryFile& operator<<(MemoryFile& mem_file,  YLODMesh& lod_mesh);

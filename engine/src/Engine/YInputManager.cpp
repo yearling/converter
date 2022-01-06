@@ -55,3 +55,11 @@ void InputManger::OnMouseWheel(int x, int y, float z_delta)
 	}
 }
 
+void InputManger::OnEventLButtonDown(int x, int y)
+{
+	for (auto& func : mouse_LButton_down_funcs_)
+	{
+		func(x, y);
+	}
+}
+

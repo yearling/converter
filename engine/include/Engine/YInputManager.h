@@ -26,6 +26,7 @@ public:
 	void OnEventKeyUp(char c);
 	void OnMouseMove(int x, int y);
 	void OnMouseWheel(int x, int y, float z_delta);
+	void OnEventLButtonDown(int x, int y);
 };
 
 extern InputManger* g_input_manager;

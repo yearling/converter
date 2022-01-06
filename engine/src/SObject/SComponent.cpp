@@ -72,6 +72,7 @@ void SSceneComponent::UpdateBound()
 	//Bounds.BoxExtent = FVector(0, 0, 0);
 	//Bounds.Origin = component_to_world.GetTranslation();
 	//Bounds.SphereRadius = 0.0;
+	bounds_.Init();
 }
 
 void SSceneComponent::UpdateChildTransforms()
@@ -243,6 +244,11 @@ bool SRenderComponent::LoadFromJson(const Json::Value& RootJson)
 }
 
 SRenderComponent::~SRenderComponent()
+{
+
+}
+
+void SRenderComponent::OnViewPortChanged(const YViewPort& new_view_port)
 {
 
 }
@@ -461,4 +467,9 @@ void SPerspectiveCameraComponent::OnTransformChange()
 void SPerspectiveCameraComponent::Update(double deta_time)
 {
 	camera_->Update();
+}
+
+void SPerspectiveCameraComponent::OnViewPortChanged(const YViewPort& new_view_port)
+{
+	camera_->SetAspect((float)new_view_port.width_ / (float)new_view_port.height_);
 }

@@ -12,6 +12,8 @@
 #include "Render/YRenderInterface.h"
 #include "Render/YForwardRenderer.h"
 #include "SObject/SComponent.h"
+#include "Engine/YWindowEventManger.h"
+#include "Utility/YPickupOps.h"
 ID3D11DeviceContext* g_deviceContext(nullptr);
 IDXGISwapChain* g_swapChain(nullptr);
 bool is_resizing = false;
@@ -20,6 +22,7 @@ ID3D11RenderTargetView* g_renderTargetView(nullptr);
 std::unique_ptr<D3D11Device> device = nullptr;
 std::vector<std::unique_ptr<YStaticMesh>> g_test_mesh;
 std::unique_ptr<CameraController> camera_controller;
+std::unique_ptr< YPickupShowMove> pickup;
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time;
 std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
 std::unique_ptr<IRenderInterface> renderer;
@@ -27,7 +30,6 @@ AverageSmooth<float> fps(1000);
 bool show_demo_window = false;
 bool show_another_window = false;
 bool show_normal = false;
-YVector light_dir(0.0, 0.0, 0.0);
 bool InitIMGUI()
 {
 	// Setup Dear ImGui context
@@ -68,9 +70,13 @@ bool InitD3D()
 	//inmput manager
 	g_input_manager = new InputManger();
 
-	// camera controller
+	// windows_event_manager
+	g_windows_event_manager = new WindowEventManager();
+	
+	device->RegisterEvents();
 
-
+	pickup = std::make_unique<YPickupShowMove>();
+	pickup->RegiesterEventProcess();
 	// import fbx
 #if 1
 	//if (!OpenFbx())
@@ -91,37 +97,24 @@ bool InitD3D()
 	//	}
 	//}
 
-	//caculate light
-	YVector z_ori = YVector(0.f, 0.f, 1.0f);
-	YVector dir = YVector(-1.0f, -1.0f, 1.0f).GetSafeNormal();
-	YVector axis = z_ori ^ dir;
-	axis = axis.GetSafeNormal();
-	YQuat rotator = YQuat(axis, YMath::RadiansToDegrees(YMath::Acos(z_ori | dir)));
-	light_dir = rotator.Euler();
 	InitIMGUI();
-	//YVector light_dir_calc = rotator.ToMatrix().TransformVector(YVector::forward_vector);
 
 	//load world
 	std::string world_map_path = "map/world.json";
 	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
 	SWorld::SetWorld(new_world);
 	new_world->PostLoadOp();
+	new_world->GetMainScene()->RegisterEvents();
 	{
-		std::vector<TRefCountPtr<SActor>> camera_actor = SWorld::GetWorld()->GetAllActorsWithComponent({ SComponent::PerspectiveCameraComponent });
-		if (!camera_actor.empty())
+		SPerspectiveCameraComponent* camera_component =  SWorld::GetWorld()->GetMainScene()->GetPerspectiveCameraComponent();
+		if (camera_component)
 		{
-			std::vector< SPerspectiveCameraComponent*> camera_component;
-			camera_actor[0]->RecurisveGetTypeComponent(SComponent::PerspectiveCameraComponent, camera_component);
-			if (!camera_component.empty())
-			{
-				{
-					camera_controller = std::make_unique<FPSCameraController>();
-					camera_controller->SetCamera(camera_component[0]->camera_.get());
-					camera_controller->RegiesterEventProcess();
-				}
-			}
+			camera_controller = std::make_unique<FPSCameraController>();
+			camera_controller->SetCamera(camera_component->camera_.get());
+			camera_controller->RegiesterEventProcess();
 		}
 	}
+
 	renderer = std::make_unique<YForwardRenderer>();
 	if (!renderer->Init())
 	{
@@ -129,6 +122,7 @@ bool InitD3D()
 		return false;
 	}
 	game_start_time = std::chrono::high_resolution_clock::now();
+	g_windows_event_manager->OnWindowSizeChange(g_winWidth, g_winHeight);
 	return true;
 }
 
@@ -261,9 +255,9 @@ void DrawUI()
 void Update(double delta_time)
 {
 	camera_controller->Update(delta_time);
-
-
 	SWorld::GetWorld()->Update(delta_time);
+	pickup->Update(delta_time);
+	
 }
 void Render()
 {
@@ -285,7 +279,7 @@ void Render()
 	Update(delta_time);
 
 	DrawUtility::DrawGrid();
-	DrawUtility::DrawWorldCoordinate(SWorld::GetWorld()->GetScene());
+	DrawUtility::DrawWorldCoordinate(SWorld::GetWorld()->GetMainScene());
 	//render
 	std::unique_ptr<YRenderScene> render_scene = SWorld::GetWorld()->GenerateRenderScene();
 	render_scene->deta_time = delta_time;
@@ -309,23 +303,6 @@ void Release()
 	renderer->Clearup();
 }
 
-void OnResize()
-{
-	device->OnResize(g_winWidth, g_winHeight);
-	{
-		std::vector<TRefCountPtr<SActor>> camera_actor = SWorld::GetWorld()->GetAllActorsWithComponent({ SComponent::PerspectiveCameraComponent });
-		if (!camera_actor.empty())
-		{
-			std::vector< SPerspectiveCameraComponent*> camera_component;
-			camera_actor[0]->RecurisveGetTypeComponent(SComponent::PerspectiveCameraComponent, camera_component);
-			if (!camera_component.empty())
-			{
-				camera_component[0]->camera_->SetAspect((float)g_winWidth / (float)g_winHeight);
-			}
-		}
-	}
-}
-
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -340,6 +317,9 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 	switch (msg)
 	{
+	case WM_LBUTTONDOWN:
+		g_input_manager->OnEventLButtonDown(x, y);
+		break;
 	case WM_RBUTTONDOWN:
 		SetCapture(hwnd);
 		g_input_manager->OnEventRButtonDown(x, y);
@@ -385,12 +365,12 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			}
 			case SIZE_MAXIMIZED:
 			{
-				OnResize();
+				g_windows_event_manager->OnWindowSizeChange(g_winWidth, g_winHeight);
 				break;
 			}
 			case SIZE_RESTORED:
 			{
-				OnResize();
+				g_windows_event_manager->OnWindowSizeChange(g_winWidth, g_winHeight);
 				break;
 			}
 			default:

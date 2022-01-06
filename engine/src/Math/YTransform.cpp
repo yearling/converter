@@ -44,6 +44,12 @@ YMatrix YTransform::ToMatrix() const
 	trans_mat.m[3][2] = translation.z;
 	return  scale_mat * rotation_mat * trans_mat;
 }
+
+YVector YTransform::TransformPosition(const YVector& v)
+{
+	return ToMatrix().TransformPosition(v);
+}
+
 void YTransform::Multiply(YTransform* OutTransform, const YTransform* A, const YTransform* B)
 {
 	//	When Q = quaternion, S = single scalar scale, and T = translation

@@ -1,6 +1,7 @@
 #pragma once
 #include "Math/YVector.h"
 #include "RHI/DirectX11/D3D11VertexFactory.h"
+#include "Math/YRay.h"
 
 class YCamvas
 {
@@ -9,6 +10,7 @@ public:
 	virtual ~YCamvas();
 	void DrawLine(const YVector& start, const  YVector& end, const  YVector4& color);
 	void DrawCube(const YVector& Pos, const YVector4& Color, float length = 0.3f);
+	void DrawRay(const YRay& ray, const YVector4& Color, float weidth = 0.3f);
 	void Update();
 	void Render(CameraBase* camera);
 	void Render(class RenderParam* render_param);

@@ -69,7 +69,7 @@ YBox YBox::TransformBy(const YMatrix& m) const
 	}
 	YVector ori_center = GetCenter();
 	YVector ori_extent = GetExtent();
-	YVector new_center = m.TransformPosition(ori_extent);
+	YVector new_center = m.TransformPosition(ori_center);
 	YVector new_extent = m.TransformVector(ori_extent).GetAbs();
 	YBox new_box(new_center-new_extent,new_center+ new_extent);
 	return new_box;

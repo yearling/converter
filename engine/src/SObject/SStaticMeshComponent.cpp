@@ -63,3 +63,11 @@ YStaticMesh* SStaticMeshComponent::GetMesh()
 	return static_mesh_.get();
 }
 
+void SStaticMeshComponent::UpdateBound()
+{
+	if (static_mesh_)
+	{
+		bounds_ = static_mesh_->raw_meshes[0].aabb.TransformBy(component_to_world_);
+	}
+}
+
