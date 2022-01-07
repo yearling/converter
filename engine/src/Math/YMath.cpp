@@ -185,6 +185,12 @@ bool YMath::LineBoxIntersection(const YBox& box, const YVector& start, const YVe
 //bool YMath::LineBoxIntersection(const YBox& box, const YVector& start, const YVector& direction)
 bool YMath::LineBoxIntersection(const YBox& box, const YRay& ray)
 {
+	float time;
+	return LineBoxIntersection(box, ray, time);
+}
+
+bool YMath::LineBoxIntersection(const YBox& box, const class YRay& ray, float& time_out)
+{
 	const YVector start = ray.origin_;
 	const YVector direction = ray.direction_;
 	YVector time;
@@ -193,7 +199,7 @@ bool YMath::LineBoxIntersection(const YBox& box, const YRay& ray)
 	if (start.x < box.min_.x)
 	{
 		start_is_outside = true;
-		if (direction.x>0.f)
+		if (direction.x > 0.f)
 		{
 			time.x = (box.min_.x - start.x) * rece_vec.x;
 		}
@@ -205,7 +211,7 @@ bool YMath::LineBoxIntersection(const YBox& box, const YRay& ray)
 	else if (start.x > box.max_.x)
 	{
 		start_is_outside = true;
-		if (direction.x <0.f)
+		if (direction.x < 0.f)
 		{
 			time.x = (box.max_.x - start.x) * rece_vec.x;
 		}
@@ -251,7 +257,7 @@ bool YMath::LineBoxIntersection(const YBox& box, const YRay& ray)
 	if (start.z < box.min_.z)
 	{
 		start_is_outside = true;
-		if (direction.z>0.f)
+		if (direction.z > 0.f)
 		{
 			time.z = (box.min_.z - start.z) * rece_vec.z;
 		}
@@ -276,7 +282,8 @@ bool YMath::LineBoxIntersection(const YBox& box, const YRay& ray)
 	{
 		time.z = 0.0f;
 	}
-
+	
+	time_out = YMath::Max(YMath::Max(time.x, time.y), time.z);
 	if (start_is_outside)
 	{
 		const float max_time = YMath::Max(YMath::Max(time.x, time.y), time.z);

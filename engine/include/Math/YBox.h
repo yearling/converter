@@ -83,6 +83,7 @@ public:
 	{
 		return (IsInside(other.min_) && IsInside(other.max_));
 	}
+	
 public:
 	YBox TransformBy(const YMatrix& m) const;
 	YBox TransformBy(const YTransform& m) const;

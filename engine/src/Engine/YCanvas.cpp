@@ -53,7 +53,7 @@ YCamvas::~YCamvas()
 
 }
 
-void YCamvas::DrawCube(const YVector& Pos, const YVector4& Color, float length /*= 0.3f*/)
+void YCamvas::DrawCube(const YVector& Pos, const YVector4& Color, float length /*= 0.3f*/, bool solid/*=true*/)
 {
 	YVector point0(-1, 1, -1);
 	YVector point1(1, 1, -1);
@@ -64,23 +64,48 @@ void YCamvas::DrawCube(const YVector& Pos, const YVector4& Color, float length /
 	YVector point6(1, -1, 1);
 	YVector point7(-1, -1, 1);
 
-	DrawLine(point0 * length + Pos, point1 * length + Pos, Color);
-	DrawLine(point0 * length + Pos, point3 * length + Pos, Color);
-	DrawLine(point0 * length + Pos, point4 * length + Pos, Color);
-	DrawLine(point1 * length + Pos, point2 * length + Pos, Color);
-	DrawLine(point1 * length + Pos, point5 * length + Pos, Color);
-	DrawLine(point2 * length + Pos, point3 * length + Pos, Color);
-	DrawLine(point2 * length + Pos, point6 * length + Pos, Color);
-	DrawLine(point3 * length + Pos, point7 * length + Pos, Color);
-	DrawLine(point4 * length + Pos, point5 * length + Pos, Color);
-	DrawLine(point4 * length + Pos, point7 * length + Pos, Color);
-	DrawLine(point5 * length + Pos, point6 * length + Pos, Color);
-	DrawLine(point6 * length + Pos, point7 * length + Pos, Color);
+	DrawLine(point0 * length + Pos, point1 * length + Pos, Color, solid);
+	DrawLine(point0 * length + Pos, point3 * length + Pos, Color, solid);
+	DrawLine(point0 * length + Pos, point4 * length + Pos, Color, solid);
+	DrawLine(point1 * length + Pos, point2 * length + Pos, Color, solid);
+	DrawLine(point1 * length + Pos, point5 * length + Pos, Color, solid);
+	DrawLine(point2 * length + Pos, point3 * length + Pos, Color, solid);
+	DrawLine(point2 * length + Pos, point6 * length + Pos, Color, solid);
+	DrawLine(point3 * length + Pos, point7 * length + Pos, Color, solid);
+	DrawLine(point4 * length + Pos, point5 * length + Pos, Color, solid);
+	DrawLine(point4 * length + Pos, point7 * length + Pos, Color, solid);
+	DrawLine(point5 * length + Pos, point6 * length + Pos, Color, solid);
+	DrawLine(point6 * length + Pos, point7 * length + Pos, Color, solid);
 }
 
-void YCamvas::DrawRay(const YRay& ray, const YVector4& Color, float weidth /*= 0.3f*/)
+void YCamvas::DrawRay(const YRay& ray, const YVector4& Color, bool solid /*= true*/)
 {
-	DrawLine(ray.origin_, ray.origin_ + ray.direction_ * 100000.0f,Color);
+	DrawLine(ray.origin_, ray.origin_ + ray.direction_ * 100000.0f,Color,solid);
+}
+
+void YCamvas::DrawAABB(const YBox& box, const YVector4& Color, bool solid /*= true*/)
+{
+	YVector  v0(box.min_.x, box.max_.y, box.min_.z); 
+	YVector  v1(box.min_.x, box.min_.y, box.min_.z);
+	YVector  v2(box.max_.x, box.min_.y, box.min_.z);
+	YVector  v3(box.max_.x, box.max_.y, box.min_.z); 
+	YVector  v4(box.max_.x, box.min_.y, box.max_.z); 
+	YVector  v5(box.max_.x, box.max_.y, box.max_.z);
+	YVector  v6(box.min_.x, box.max_.y, box.max_.z);
+	YVector  v7(box.min_.x, box.min_.y, box.max_.z); 
+
+	DrawLine(v0, v1, Color, solid);
+	DrawLine(v1, v2, Color, solid);
+	DrawLine(v2, v3, Color, solid);
+	DrawLine(v3, v0, Color, solid);
+	DrawLine(v0, v6, Color, solid);
+	DrawLine(v6, v5, Color, solid);
+	DrawLine(v5, v3, Color, solid);
+	DrawLine(v1, v7, Color, solid);
+	DrawLine(v7, v4, Color, solid);
+	DrawLine(v4, v2, Color, solid);
+	DrawLine(v6, v7, Color, solid);
+	DrawLine(v5, v4, Color, solid);
 }
 
 void YCamvas::Update()
@@ -91,13 +116,32 @@ void YCamvas::Update()
 	std::vector<unsigned int> color_tmp;
 	points_tmp.reserve(lines_.size() * 2);
 	color_tmp.reserve(lines_.size() * 2);
+	
+	solid_index_ = 0;
 	for (LineDesc& desc : lines_)
 	{
-		points_tmp.push_back(desc.start);
-		points_tmp.push_back(desc.end);
-		color_tmp.push_back(YMath::GetIntColor(desc.color));
-		color_tmp.push_back(YMath::GetIntColor(desc.color));
+		if (desc.solid_)
+		{
+			points_tmp.push_back(desc.start);
+			points_tmp.push_back(desc.end);
+			color_tmp.push_back(YMath::GetIntColor(desc.color));
+			color_tmp.push_back(YMath::GetIntColor(desc.color));
+			solid_index_ += 2;
+		}
 	}
+	transparent_index = 0;
+	for (LineDesc& desc : lines_)
+	{
+		if (!desc.solid_)
+		{
+			points_tmp.push_back(desc.start);
+			points_tmp.push_back(desc.end);
+			color_tmp.push_back(YMath::GetIntColor(desc.color));
+			color_tmp.push_back(YMath::GetIntColor(desc.color));
+			transparent_index += 2;
+		}
+	}
+
 	//update
 	if (points_tmp.size())
 	{
@@ -152,14 +196,17 @@ void YCamvas::Render(RenderParam* render_param)
 	vertex_shader_->BindResource("g_view", render_param->camera_proxy->view_matrix_);
 	vertex_shader_->Update();
 	pixel_shader_->Update();
-	dc->Draw((unsigned int)lines_.size() * 2, 0);
-
+	dc->Draw((unsigned int)solid_index_, 0);
+	dc->OMSetDepthStencilState(ds_no_test_, 0);
+	dc->Draw((unsigned int)transparent_index, solid_index_);
 	lines_.clear();
+	solid_index_ = 0;
+	transparent_index = 0;
 }
 
-void YCamvas::DrawLine(const YVector& start, const YVector& end, const YVector4& color)
+void YCamvas::DrawLine(const YVector& start, const YVector& end, const YVector4& color, bool solid)
 {
-	lines_.push_back(LineDesc(start, end, color));
+	lines_.push_back(LineDesc(start, end, color,solid));
 }
 
 bool YCamvas::AllocGPUResource()
@@ -193,6 +240,10 @@ bool YCamvas::AllocGPUResource()
 			g_device->CreateDepthStencileState(ds_, true);
 		}
 
+		if (!ds_no_test_)
+		{
+			g_device->CreateDepthStencileStateNoWriteNoTest(ds_no_test_);
+		}
 		// vs
 		{
 			vertex_shader_ = std::make_unique<D3DVertexShader>();
