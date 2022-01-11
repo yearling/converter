@@ -97,6 +97,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 		return -1;
 	}
 
+	SetWindowPos(g_hWnd, HWND_TOP, 1, 1, 1, 1, SWP_NOMOVE | SWP_NOSIZE);
 	return Run();
 }
 

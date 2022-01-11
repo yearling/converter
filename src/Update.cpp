@@ -14,6 +14,7 @@
 #include "SObject/SComponent.h"
 #include "Engine/YWindowEventManger.h"
 #include "Utility/YPickupOps.h"
+#include "imgui_internal.h"
 ID3D11DeviceContext* g_deviceContext(nullptr);
 IDXGISwapChain* g_swapChain(nullptr);
 bool is_resizing = false;
@@ -38,7 +39,10 @@ bool InitIMGUI()
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
+	//io.BackendFlags = ImGuiBackendFlags_PlatformHasViewports | ImGuiBackendFlags_RendererHasViewports | ImGuiBackendFlags_HasMouseCursors;
+	io.ConfigWindowsResizeFromEdges = true;
+	io.ConfigViewportsNoTaskBarIcon = true;
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsLight();
@@ -47,6 +51,8 @@ bool InitIMGUI()
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(g_hWnd);
 	ImGui_ImplDX11_Init(device->GetDevice(), device->GetDC());
+
+	
 	return true;
 }
 bool InitD3D()
@@ -184,12 +190,106 @@ bool LoadMesh()
 	g_test_mesh.push_back(std::move(mesh_to_load));
 	return true;
 }
+bool my_tool_active = true;
+bool m_editor_begun = false;
 void DrawUI()
 {
 	// Start the Dear ImGui frame
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	// Set window flags
+	const auto window_flags =
+		//ImGuiWindowFlags_MenuBar |
+		ImGuiWindowFlags_NoDocking |
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoCollapse |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoBringToFrontOnFocus |
+		ImGuiWindowFlags_NoNavFocus;
+
+	// Set window position and size
+	//float offset_y = _editor::widget_menu_bar ? (_editor::widget_menu_bar->GetHeight() + _editor::widget_menu_bar->GetPadding()) : 0;
+	float offset_y = 0;
+	const ImGuiViewport* viewport = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + offset_y));
+	ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, viewport->Size.y - offset_y));
+	ImGui::SetNextWindowViewport(viewport->ID);
+
+	// Set window style
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::SetNextWindowBgAlpha(0.0f);
+
+	// Begin window
+	std::string name = "##main_window";
+	bool open = true;
+	m_editor_begun = ImGui::Begin(name.c_str(), &open, window_flags);
+	ImGui::PopStyleVar(3);
+
+	// Begin dock space
+	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DockingEnable && m_editor_begun)
+	{
+		// Dock space
+		const auto window_id = ImGui::GetID(name.c_str());
+		if (!ImGui::DockBuilderGetNode(window_id))
+		{
+			// Reset current docking state
+			ImGui::DockBuilderRemoveNode(window_id);
+			ImGui::DockBuilderAddNode(window_id, ImGuiDockNodeFlags_None);
+			ImGui::DockBuilderSetNodeSize(window_id, ImGui::GetMainViewport()->Size);
+
+			// DockBuilderSplitNode(ImGuiID node_id, ImGuiDir split_dir, float size_ratio_for_node_at_dir, ImGuiID* out_id_dir, ImGuiID* out_id_other);
+			ImGuiID dock_main_id = window_id;
+			ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
+			const ImGuiID dock_right_down_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.6f, nullptr, &dock_right_id);
+			ImGuiID dock_down_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.25f, nullptr, &dock_main_id);
+			const ImGuiID dock_down_right_id = ImGui::DockBuilderSplitNode(dock_down_id, ImGuiDir_Right, 0.6f, nullptr, &dock_down_id);
+
+			// Dock windows
+			ImGui::DockBuilderDockWindow("World", dock_right_id);
+			ImGui::DockBuilderDockWindow("Properties", dock_right_down_id);
+			ImGui::DockBuilderDockWindow("Console", dock_down_id);
+			ImGui::DockBuilderDockWindow("Assets", dock_down_right_id);
+			ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
+
+			ImGui::DockBuilderFinish(dock_main_id);
+		}
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+		ImGui::DockSpace(window_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+		ImGui::PopStyleVar();
+	}
+	if (m_editor_begun)
+	{
+		ImGui::End();
+	}
+#if 0
+	//ImGui::Begin("My First Tool", &my_tool_active, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("My First Tool", nullptr, ImGuiWindowFlags_MenuBar);
+	if (ImGui::BeginMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Open..", "Ctrl+O")) { /* Do stuff */ }
+			if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
+			if (ImGui::MenuItem("Close", "Ctrl+W")) { my_tool_active = false; }
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Edit"))
+		{
+			if (ImGui::MenuItem("open..", "Ctrl+O")) { /* Do stuff */ }
+			if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
+			if (ImGui::MenuItem("Close", "Ctrl+W")) { my_tool_active = false; }
+			ImGui::EndMenu();
+		}
+
+		ImGui::EndMenuBar();
+	}
+	ImGui::End();
 
 	// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
 	if (show_demo_window)
@@ -245,11 +345,12 @@ void DrawUI()
 			show_another_window = false;
 		ImGui::End();
 	}
-
+#endif
 	// Rendering
 	ImGui::Render();
 
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	ImGui::UpdatePlatformWindows();
 }
 
 void Update(double delta_time)
