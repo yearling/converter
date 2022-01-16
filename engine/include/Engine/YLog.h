@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <cassert>
+#include <functional>
 enum LogType {
 	EVerbos = 0,
 	EWarning = 1,
@@ -14,6 +15,9 @@ enum LogType {
 extern std::string g_verbo_log;
 extern std::string g_warning_log;
 extern std::string g_error_log;
+extern std::vector<std::function<void(const std::string& str)>> g_verbo_log_funcs_;
+extern std::vector<std::function<void(const std::string& str)>> g_warning_log_funcs_;
+extern std::vector<std::function<void(const std::string& str)>> g_error_log_funcs_;
 
 template <typename ...Args>
 void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...args) {
@@ -36,26 +40,37 @@ void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...
 	switch (log_type)
 	{
 	case LogType::EVerbos:
-		g_verbo_log += stream.str();
 		(stream << ... << std::forward<Args>(args)) << '\n';
+		g_verbo_log += stream.str();
+		for (auto& func : g_verbo_log_funcs_)
+		{
+			func(stream.str());
+		}
 
 		break;
 	case LogType::EWarning:
 		stream << fileName << "(" << line << ") : ";
 		(stream << ... << std::forward<Args>(args)) << '\n';
 		g_warning_log += stream.str();
+		for (auto& func : g_warning_log_funcs_)
+		{
+			func(stream.str());
+		}
 		break;
 	case LogType::EError:
 		stream << fileName << "(" << line << ") : ";
 		(stream << ... << std::forward<Args>(args)) << '\n';
 		g_error_log += stream.str();
+		for (auto& func : g_error_log_funcs_)
+		{
+			func(stream.str());
+		}
 		break;
 	}
 #	if defined(_MSC_VER)
 	OutputDebugStringA(stream.str().c_str());
 	std::cout << stream.str();
 #endif
-
 # if defined(DEBUG) | defined(_DEBUG)
 	if (log_type == LogType::EError)
 	{

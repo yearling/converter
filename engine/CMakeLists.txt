@@ -43,4 +43,4 @@ file(GLOB_RECURSE HLSL_LIST "src/*.hlsl")
 set(all_files ${HLSL_LIST} ${HEAD_LIST} ${SRC_LIST} )
 source_group_by_dir(all_files)
 
-add_library(solidangle STATIC ${SRC_LIST} ${HEAD_LIST})
+add_library(engine STATIC ${SRC_LIST} ${HEAD_LIST})

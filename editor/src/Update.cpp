@@ -15,6 +15,7 @@
 #include "Engine/YWindowEventManger.h"
 #include "Utility/YPickupOps.h"
 #include "imgui_internal.h"
+#include "YEditor.h"
 ID3D11DeviceContext* g_deviceContext(nullptr);
 IDXGISwapChain* g_swapChain(nullptr);
 bool is_resizing = false;
@@ -27,34 +28,12 @@ std::unique_ptr< YPickupShowMove> pickup;
 std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time;
 std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
 std::unique_ptr<IRenderInterface> renderer;
+std::unique_ptr<Editor> g_editor;
 AverageSmooth<float> fps(1000);
 bool show_demo_window = false;
 bool show_another_window = false;
 bool show_normal = false;
-bool InitIMGUI()
-{
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
-	//io.BackendFlags = ImGuiBackendFlags_PlatformHasViewports | ImGuiBackendFlags_RendererHasViewports | ImGuiBackendFlags_HasMouseCursors;
-	io.ConfigWindowsResizeFromEdges = true;
-	io.ConfigViewportsNoTaskBarIcon = true;
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsLight();
-	//ImGui::StyleColorsClassic();
 
-	// Setup Platform/Renderer backends
-	ImGui_ImplWin32_Init(g_hWnd);
-	ImGui_ImplDX11_Init(device->GetDevice(), device->GetDC());
-
-	
-	return true;
-}
 bool InitD3D()
 {
 	// open console for debug
@@ -103,23 +82,10 @@ bool InitD3D()
 	//	}
 	//}
 
-	InitIMGUI();
+	//InitIMGUI();
 
 	//load world
-	std::string world_map_path = "map/world.json";
-	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
-	SWorld::SetWorld(new_world);
-	new_world->PostLoadOp();
-	new_world->GetMainScene()->RegisterEvents();
-	{
-		SPerspectiveCameraComponent* camera_component =  SWorld::GetWorld()->GetMainScene()->GetPerspectiveCameraComponent();
-		if (camera_component)
-		{
-			camera_controller = std::make_unique<FPSCameraController>();
-			camera_controller->SetCamera(camera_component->camera_.get());
-			camera_controller->RegiesterEventProcess();
-		}
-	}
+
 
 	renderer = std::make_unique<YForwardRenderer>();
 	if (!renderer->Init())
@@ -129,6 +95,23 @@ bool InitD3D()
 	}
 	game_start_time = std::chrono::high_resolution_clock::now();
 	g_windows_event_manager->OnWindowSizeChange(g_winWidth, g_winHeight);
+	g_editor = std::make_unique<Editor>();
+	g_editor->Init(g_hWnd);
+
+	std::string world_map_path = "map/world.json";
+	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
+	SWorld::SetWorld(new_world);
+	new_world->PostLoadOp();
+	new_world->GetMainScene()->RegisterEvents();
+	{
+		SPerspectiveCameraComponent* camera_component = SWorld::GetWorld()->GetMainScene()->GetPerspectiveCameraComponent();
+		if (camera_component)
+		{
+			camera_controller = std::make_unique<FPSCameraController>();
+			camera_controller->SetCamera(camera_component->camera_.get());
+			camera_controller->RegiesterEventProcess();
+		}
+	}
 	return true;
 }
 
@@ -387,7 +370,8 @@ void Render()
 	render_scene->game_time = game_time;
 	renderer->Render(std::move(render_scene));
 	// 正式的场景绘制工作
-	DrawUI();
+	//DrawUI();
+	g_editor->Update(delta_time);
 	device->Present();
 }
 void Release()

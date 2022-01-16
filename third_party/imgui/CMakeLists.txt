@@ -11,7 +11,10 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 endif(MSVC)
 
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include 
+					${CMAKE_CURRENT_SOURCE_DIR}/../../engine/include)
+
+
 
 set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../libs)
 add_library(imgui STATIC ${LIB_SRCS} ${LIB_INCLUDES})

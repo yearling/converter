@@ -12,6 +12,8 @@ public:
 	YVector2(YVector2&&) = default;
 	YVector2& operator=(YVector2&&) = default;
 	YVector2(float in_x, float in_y);
+	bool operator==(const YVector2& v) const;
+	bool operator!=(const YVector2& v) const;
 };
 
 struct YVector

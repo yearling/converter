@@ -6,6 +6,16 @@ YVector2::YVector2(float in_x, float in_y)
 
 }
 
+bool YVector2::operator!=(const YVector2& v) const
+{
+	return !(*this == v);
+}
+
+bool YVector2::operator==(const YVector2& v) const
+{
+	return (x == v.x) && (y == v.y);
+}
+
 YVector::YVector(float in_x, float in_y, float in_z)
 	: x(in_x), y(in_y), z(in_z)
 {
