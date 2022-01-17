@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <set>
 #include "Engine/YReferenceCount.h"
+#include "Utility/YPath.h"
 class SObjectManager
 {
 public:

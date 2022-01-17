@@ -49,6 +49,7 @@ std::unique_ptr<YRenderScene> YScene::GenerateOneFrame() const
 	}
 	assert(one_frame->camera_element);
 	
+	one_frame->view_port_ = view_port_;
 
 
 	return one_frame;
@@ -63,6 +64,8 @@ void YScene::RegisterEvents()
 
 void YScene::OnViewPortChange(int width, int height)
 {
+	view_port_.left_top_x = 0;
+	view_port_.left_top_y = 0;
 	view_port_.width_ = width;
 	view_port_.height_ = height;
 	if (perspective_camera_components_)

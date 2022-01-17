@@ -38,6 +38,7 @@ public:
 	int GetDeviceHeight() const;
 	void PreRender();
 	void RegisterEvents();
+	ID3D11Texture2D* GetSwapChainColorBuffer();
 public:
 	// shader
 	bool ComplieShaderFromFile(const std::string& file_name, const std::string& entry_point, const std::string& shader_model,
@@ -63,7 +64,7 @@ public:
 		TComPtr<ID3D11Texture2D>& tex2D, TComPtr<ID3D11ShaderResourceView>& srv);
 	// SRV,RTV
 	bool Create2DTextureRTV_SRV(UINT width, UINT height, DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D,
-		const std::string& alias /*=""*/);
+		const std::string& alias ="");
 	// SRV
 	bool CreateSRVForTexture2D(DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D, TComPtr<ID3D11ShaderResourceView>& srv);
 	// VB
@@ -84,18 +85,18 @@ public:
 	bool CreateDepthStencileState(TComPtr<ID3D11DepthStencilState>& ds, bool Write /*= true*/);
 	bool CreateDepthStencileStateNoWriteNoTest(TComPtr<ID3D11DepthStencilState>& ds);
 	bool CreateRenderTargetView(DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& texture, TComPtr<ID3D11RenderTargetView>& rtv,
-		const std::string& alias /*= ""*/);
+		const std::string& alias = "");
 	bool CreateBufferSRV_UAV(int ByteWidth, TComPtr<ID3D11Buffer>& buffer, const std::string& alias /*= ""*/);
 
 	bool CreateSRVForBuffer(DXGI_FORMAT format, UINT number, TComPtr<ID3D11Buffer> buffer, TComPtr<ID3D11ShaderResourceView>& srv,
 		const std::string& alias /*= ""*/);
 
 	bool Create2DTextureDSV_SRV(UINT width, UINT height, DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D,
-		const std::string& alias /*= ""*/);
+		const std::string& alias = "");
 	bool CreateDepth2DTexture(UINT width, UINT height, DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D,
-		const std::string& alias /*= ""*/);
+		const std::string& alias = "");
 	bool CreateDSVForTexture2D(DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D, TComPtr<ID3D11DepthStencilView>& dsv,
-		const std::string& alias /*= ""*/);
+		const std::string& alias = "");
 
 	bool Create2DTextureArrayDSV_SRV(UINT width, UINT height, DXGI_FORMAT format, UINT ArraySize, TComPtr<ID3D11Texture2D>& tex2D,
 		const std::string& alias /*= ""*/);

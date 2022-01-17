@@ -12,17 +12,39 @@ bool YForwardRenderer::Init()
 
 bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 {
-	
 	render_scene_ = std::move(render_scene);
+	const int scene_width = render_scene_->view_port_.GetWidth();
+	const int scene_height = render_scene_->view_port_.GetHeight();
+	if (!rts_)
+	{
+		rts_ = std::make_unique<D3D11RenderTarget>();
+		if (!rts_->CreateRenderTarget(PF_R8G8B8A8, PF_D24S8, scene_width, scene_height))
+		{
+			rts_ = nullptr;
+			return false;
+		}
+	}
+
+	if (!rts_->OnResize(scene_width, scene_height))
+	{
+		ERROR_INFO("Forward renderer create RT failed!");
+	}
+
+	g_device->SetViewPort(render_scene_->view_port_.left_top_x, render_scene_->view_port_.left_top_y, scene_width, scene_height);
+
+	rts_->BindRenderTargets();
+	rts_->ClearColor(YVector4(0.0f, 0.0f, 0.0f, 1.0f));
+	rts_->ClearDepthStencil(1.0, 0);
+/*
 	ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
 	ID3D11DepthStencilView* main_dsv = g_device->GetMainDSV();
 	g_device->SetRenderTarget(main_rtv, main_dsv);
-	g_device->SetViewPort(0, 0, g_device->GetDeviceWidth(), g_device->GetDeviceHeight());
 	ID3D11Device* raw_device = g_device->GetDevice();
 	ID3D11DeviceContext* raw_dc = g_device->GetDC();
 	float color[4] = { 0.f, 0.f, 0.f, 1.0f };
 	raw_dc->ClearRenderTargetView(main_rtv, reinterpret_cast<float*>(color));
 	raw_dc->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+	*/
 
 	RenderParam render_param;
 	render_param.camera_proxy = render_scene_->camera_element.get();
@@ -39,6 +61,13 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 
 	g_Canvas->Update();
 	g_Canvas->Render(&render_param);
+
+
+	// copy back to main rtv
+	g_device->GetDC()->CopyResource( g_device->GetSwapChainColorBuffer(),rts_->GetColorBuffer());
+	ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
+	ID3D11DepthStencilView* main_dsv = g_device->GetMainDSV();
+	g_device->SetRenderTarget(main_rtv, main_dsv);
 	return true;
 }
 

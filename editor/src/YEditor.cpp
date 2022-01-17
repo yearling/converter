@@ -6,6 +6,7 @@
 #include "imgui_internal.h"
 #include "YConsoleWidget.h"
 #include "Engine/YLog.h"
+#include "YViewportWidget.h"
 //= EDITOR OPTIONS ========================================================================================
 // Shapes
 const float k_roundness = 2.0f;
@@ -202,6 +203,7 @@ bool Editor::Init(HWND hwnd)
 	ImGui_ApplyStyle();
 	
 	widgets_.emplace_back(std::make_unique<Widget_Console>(this));
+	widgets_.emplace_back(std::make_unique<ViewportWidget>(this));
 	return true;
 }
 

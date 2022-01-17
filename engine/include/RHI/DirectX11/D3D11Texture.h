@@ -1,6 +1,7 @@
 #pragma once
 #include "RHI/DirectX11/D3D11Device.h"
 #include "RHI/DirectX11/D3D11Shader.h"
+#include "Render/YPixelFormat.h"
 enum TextureType
 {
 	Texture2D = 0,
@@ -17,11 +18,6 @@ enum TextureUsage
 	TU_Num
 };
 
-enum PixelFormat
-{
-	PF_R8G8B8 = 0,
-	PF_R8G8B8A8 = 1,
-};
 class D3DTexture {
 public:
 	D3DTexture();

@@ -215,6 +215,17 @@ void D3D11Device::RegisterEvents()
 	g_windows_event_manager->windows_size_changed_funcs_.push_back([](int x, int y) {g_device->OnResize(x, y);});
 }
 
+ID3D11Texture2D* D3D11Device::GetSwapChainColorBuffer()
+{
+	ID3D11Texture2D* back_buffer;
+	HRESULT hr = S_OK;
+	if (FAILED(hr = d3d_swap_chain_->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&back_buffer)))) {
+		ERROR_INFO("d3d swap chain GetBuffer failed!");
+		return false;
+	}
+	return back_buffer;
+}
+
 bool D3D11Device::ComplieShaderFromFile(const std::string& file_name, const std::string& entry_point, const std::string& shader_model,
 	TComPtr<ID3DBlob>& blob, bool ColomMajor /*= true*/) {
 	HRESULT hr = S_OK;
