@@ -65,8 +65,7 @@ bool YApplication::WindowCreate(int width, int height)
 
 	if (!RegisterClass(&wndcls))
 	{
-		ERROR_INFO("Register window failed!");
-		return false;
+		WARNING_INFO("register window class failed!");
 	}
 	DWORD WindowsWithTitleAndBoderStyle = WS_TILEDWINDOW | WS_SIZEBOX;
 	DWORD WindowsPOPStyle = WS_POPUP;

@@ -32,11 +32,14 @@ public:
 	virtual int Run();
 	virtual void Exit();
 	virtual void SetInstance(HINSTANCE hIns) { instance_ = hIns; }
+	virtual bool IsEditor() const { return is_editor; }
+	std::vector<std::unique_ptr<YWindow>>& GetWindows() { return windows_; }
 protected:
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	virtual LRESULT MyProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) throw();
 protected:
 	std::vector<std::unique_ptr<YWindow>> windows_;
 	HINSTANCE instance_ = nullptr;
+	bool is_editor = false;
 
 };

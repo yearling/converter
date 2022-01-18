@@ -40,6 +40,12 @@ file(GLOB_RECURSE HEAD_LIST "include/*.h" )
 # hlsl files
 file(GLOB_RECURSE HLSL_LIST "src/*.hlsl")
 
+
+if (BuildType STREQUAL "editor")
+	message(STATUS "Editor lib")
+    # 添加编译宏
+add_compile_definitions(EDITOR)
+endif()
 set(all_files ${HLSL_LIST} ${HEAD_LIST} ${SRC_LIST} )
 source_group_by_dir(all_files)
 

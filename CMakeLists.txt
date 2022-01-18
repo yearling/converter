@@ -1,6 +1,7 @@
 # 版本要求
 cmake_minimum_required(VERSION 3.12.1)
 
+SET( BuildType "editor")
 #按照visual studio的目录结构分组
 macro(source_group_by_dir source_files)
     if(MSVC)
@@ -47,7 +48,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 
 
 # 添加编译宏
-add_compile_definitions(FBXSDK_SHARED)
+add_compile_definitions(FBXSDK_SHARED EDITOR)
 
 # 添加c++标准
 if(MSVC)

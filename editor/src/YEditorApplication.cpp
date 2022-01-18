@@ -12,7 +12,7 @@
 
 EditorApplication::EditorApplication()
 {
-
+	YApplication::is_editor = true;
 }
 
 EditorApplication::~EditorApplication()
@@ -116,58 +116,16 @@ LRESULT EditorApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 
 bool EditorApplication::Initial()
 {
-	device = D3D11Device::CreateD3D11Device();
-	const int defaut_windows_width = 1920;
-	const int defaut_windows_height = 1080;
-	//inmput manager
-	g_input_manager = new InputManger();
-
-	// windows_event_manager
-	g_windows_event_manager = new WindowEventManager();
 
 	WindowCreate(defaut_windows_width, defaut_windows_height);
-	YWindow* main_window = windows_[0].get();
-	//create swap chain
-	HWND current_window_hwnd = main_window->GetHWND();
-	if (!device->CreateSwapChain((void*)&current_window_hwnd))
-	{
-		ERROR_INFO("create swap chain failed!");
-	}
-	//resize
-	device->OnResize(defaut_windows_width, defaut_windows_height);
-	//canvas
-	g_Canvas = new YCamvas();
-
-	device->RegisterEvents();
-
-	pickup = std::make_unique<YPickupShowMove>();
-	pickup->RegiesterEventProcess();
-	renderer = std::make_unique<YForwardRenderer>();
-	if (!renderer->Init())
-	{
-		ERROR_INFO("forward render init failed");
-		return false;
-	}
-	game_start_time = std::chrono::high_resolution_clock::now();
-	g_editor = std::make_unique<Editor>();
-	g_editor->Init(current_window_hwnd);
-
-	std::string world_map_path = "map/world.json";
-	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
-	SWorld::SetWorld(new_world);
-	new_world->PostLoadOp();
-	new_world->GetMainScene()->RegisterEvents();
-	{
-		SPerspectiveCameraComponent* camera_component = SWorld::GetWorld()->GetMainScene()->GetPerspectiveCameraComponent();
-		if (camera_component)
-		{
-			camera_controller = std::make_unique<FPSCameraController>();
-			camera_controller->SetCamera(camera_component->camera_.get());
-			camera_controller->RegiesterEventProcess();
-		}
-	}
-
-	g_windows_event_manager->OnWindowSizeChange(defaut_windows_width, defaut_windows_height);
+	//create engine
+	YEngine* engine = YEngine::GetEngine();
+	engine->SetApplication(this);
+	engine->Init();
+	// create editor
+	g_editor = std::make_unique<Editor>(engine);
+	g_editor->Init(windows_[0]->GetHWND());
+	return true;
 }
 
 void EditorApplication::Render()
@@ -179,43 +137,15 @@ void EditorApplication::Render()
 		delta_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time).count();
 		delta_time *= 0.000001; // to second
 		last_frame_time = current_time;
-		fps.SmoothAcc((float)(1.0f / delta_time));
-
 		game_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - game_start_time).count();
 		game_time *= 0.000001;
 	}
-	//LOG_INFO("fps: ", fps.Average());
-
-	//update
-	//Update(delta_time);
-	camera_controller->Update(delta_time);
-	SWorld::GetWorld()->Update(delta_time);
-	pickup->Update(delta_time);
-
-	DrawUtility::DrawGrid();
-	DrawUtility::DrawWorldCoordinate(SWorld::GetWorld()->GetMainScene());
-	//render
-	std::unique_ptr<YRenderScene> render_scene = SWorld::GetWorld()->GenerateRenderScene();
-	render_scene->deta_time = delta_time;
-	render_scene->game_time = game_time;
-	renderer->Render(std::move(render_scene));
-	// 正式的场景绘制工作
-	//DrawUI();
 	g_editor->Update(delta_time);
-	device->Present();
 }
+
 void EditorApplication::Exit()
 {
-	// Cleanup
-	ImGui_ImplDX11_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
-
-	delete g_Canvas;
-	g_Canvas = nullptr;
-	delete g_input_manager;
-	g_input_manager = nullptr;
-	renderer->Clearup();
+	g_editor->Close();
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int cmdShow)

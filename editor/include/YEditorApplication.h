@@ -6,6 +6,7 @@
 #include "Render/YRenderInterface.h"
 #include "YEditor.h"
 #include "Utility/YAverageSmooth.h"
+#include "Engine/YEngine.h"
 
 class EditorApplication :public YApplication
 {
@@ -16,6 +17,7 @@ public:
 	void Render() override;
 	bool Initial() override;
 	void Exit() override;
+	
 	std::unique_ptr<D3D11Device> device;
 	std::unique_ptr<CameraController> camera_controller;
 	std::unique_ptr< YPickupShowMove> pickup;
@@ -23,6 +25,6 @@ public:
 	std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
 	std::unique_ptr<IRenderInterface> renderer;
 	std::unique_ptr<Editor> g_editor;
-	AverageSmooth<float> fps;
-
+	const int defaut_windows_width = 1920;
+	const int defaut_windows_height = 1080;
 };

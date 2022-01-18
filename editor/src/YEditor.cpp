@@ -138,9 +138,11 @@ static bool ShutdownIMGUI()
 	return true;
 }
 
-Editor::Editor()
+
+Editor::Editor(YEngine* engine)
+	:engine_(engine)
 {
-	
+
 }
 
 Editor::~Editor()
@@ -150,35 +152,16 @@ Editor::~Editor()
 
 void Editor::Update(double delta_time)
 {
+
+	engine_->Update();
+
 	// Start the Dear ImGui frame
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 
 	BeginWindow();
-
-	//test
-	//ImGui::Begin("My First Tool", nullptr, ImGuiWindowFlags_MenuBar);
-	//if (ImGui::BeginMenuBar())
-	//{
-	//	if (ImGui::BeginMenu("File"))
-	//	{
-	//		if (ImGui::MenuItem("Open..", "Ctrl+O")) { /* Do stuff */ }
-	//		if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
-	//		ImGui::EndMenu();
-	//	}
-
-	//	if (ImGui::BeginMenu("Edit"))
-	//	{
-	//		if (ImGui::MenuItem("open..", "Ctrl+O")) { /* Do stuff */ }
-	//		if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
-	//		ImGui::EndMenu();
-	//	}
-
-	//	ImGui::EndMenuBar();
-	//}
-	//ImGui::End();
-	
+		
 	for (std::unique_ptr<Widget>& widget : widgets_)
 	{
 		widget->Update(delta_time);
@@ -189,9 +172,13 @@ void Editor::Update(double delta_time)
 		ImGui::End();
 	}
 
+
 	// ImGui - End/Render
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	
+	g_device->Present();
+
 	ImGui::UpdatePlatformWindows();
 	ImGui::RenderPlatformWindowsDefault();
 }
@@ -205,6 +192,17 @@ bool Editor::Init(HWND hwnd)
 	widgets_.emplace_back(std::make_unique<Widget_Console>(this));
 	widgets_.emplace_back(std::make_unique<ViewportWidget>(this));
 	return true;
+}
+
+void Editor::Close()
+{
+	// Cleanup
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+
+	YEngine* engine = YEngine::GetEngine();
+	engine->ShutDown();
 }
 
 void Editor::BeginWindow()
