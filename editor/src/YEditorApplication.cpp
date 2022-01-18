@@ -25,7 +25,7 @@ LRESULT EditorApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 {
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
-
+	//WARNING_INFO("run into Editor msg process");
 	int x = (int)(short)LOWORD(lParam);
 	int y = (int)(short)HIWORD(lParam);
 
@@ -114,6 +114,61 @@ LRESULT EditorApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 	return YApplication::MyProc(hwnd, msg, wParam, lParam);
 }
 
+bool EditorApplication::Initial()
+{
+	device = D3D11Device::CreateD3D11Device();
+	const int defaut_windows_width = 1920;
+	const int defaut_windows_height = 1080;
+	//inmput manager
+	g_input_manager = new InputManger();
+
+	// windows_event_manager
+	g_windows_event_manager = new WindowEventManager();
+
+	WindowCreate(defaut_windows_width, defaut_windows_height);
+	YWindow* main_window = windows_[0].get();
+	//create swap chain
+	HWND current_window_hwnd = main_window->GetHWND();
+	if (!device->CreateSwapChain((void*)&current_window_hwnd))
+	{
+		ERROR_INFO("create swap chain failed!");
+	}
+	//resize
+	device->OnResize(defaut_windows_width, defaut_windows_height);
+	//canvas
+	g_Canvas = new YCamvas();
+
+	device->RegisterEvents();
+
+	pickup = std::make_unique<YPickupShowMove>();
+	pickup->RegiesterEventProcess();
+	renderer = std::make_unique<YForwardRenderer>();
+	if (!renderer->Init())
+	{
+		ERROR_INFO("forward render init failed");
+		return false;
+	}
+	game_start_time = std::chrono::high_resolution_clock::now();
+	g_editor = std::make_unique<Editor>();
+	g_editor->Init(current_window_hwnd);
+
+	std::string world_map_path = "map/world.json";
+	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
+	SWorld::SetWorld(new_world);
+	new_world->PostLoadOp();
+	new_world->GetMainScene()->RegisterEvents();
+	{
+		SPerspectiveCameraComponent* camera_component = SWorld::GetWorld()->GetMainScene()->GetPerspectiveCameraComponent();
+		if (camera_component)
+		{
+			camera_controller = std::make_unique<FPSCameraController>();
+			camera_controller->SetCamera(camera_component->camera_.get());
+			camera_controller->RegiesterEventProcess();
+		}
+	}
+
+	g_windows_event_manager->OnWindowSizeChange(defaut_windows_width, defaut_windows_height);
+}
 
 void EditorApplication::Render()
 {
@@ -149,65 +204,6 @@ void EditorApplication::Render()
 	g_editor->Update(delta_time);
 	device->Present();
 }
-
-bool EditorApplication::Initial()
-{
-	device = D3D11Device::CreateD3D11Device();
-	const int defaut_windows_width = 1920;
-	const int defaut_windows_height = 1080;
-	//inmput manager
-	g_input_manager = new InputManger();
-
-	// windows_event_manager
-	g_windows_event_manager = new WindowEventManager();
-
-	WindowCreate(defaut_windows_width, defaut_windows_height);
-	YWindow* main_window = windows_[0].get();
-	//create swap chain
-	HWND current_window_hwnd = main_window->GetHWND();
-	if (!device->CreateSwapChain((void*)&current_window_hwnd))
-	{
-		ERROR_INFO("create swap chain failed!");
-	}
-	//resize
-	device->OnResize(defaut_windows_width, defaut_windows_height);
-	//canvas
-	g_Canvas = new YCamvas();
-
-
-
-	device->RegisterEvents();
-
-	pickup = std::make_unique<YPickupShowMove>();
-	pickup->RegiesterEventProcess();
-	renderer = std::make_unique<YForwardRenderer>();
-	if (!renderer->Init())
-	{
-		ERROR_INFO("forward render init failed");
-		return false;
-	}
-	game_start_time = std::chrono::high_resolution_clock::now();
-	g_editor = std::make_unique<Editor>();
-	g_editor->Init(current_window_hwnd);
-
-	std::string world_map_path = "map/world.json";
-	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
-	SWorld::SetWorld(new_world);
-	new_world->PostLoadOp();
-	new_world->GetMainScene()->RegisterEvents();
-	{
-		SPerspectiveCameraComponent* camera_component = SWorld::GetWorld()->GetMainScene()->GetPerspectiveCameraComponent();
-		if (camera_component)
-		{
-			camera_controller = std::make_unique<FPSCameraController>();
-			camera_controller->SetCamera(camera_component->camera_.get());
-			camera_controller->RegiesterEventProcess();
-		}
-	}
-
-	g_windows_event_manager->OnWindowSizeChange(defaut_windows_width, defaut_windows_height);
-}
-
 void EditorApplication::Exit()
 {
 	// Cleanup

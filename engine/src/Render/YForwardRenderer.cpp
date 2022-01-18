@@ -35,16 +35,18 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 	rts_->BindRenderTargets();
 	rts_->ClearColor(YVector4(0.0f, 0.0f, 0.0f, 1.0f));
 	rts_->ClearDepthStencil(1.0, 0);
-/*
-	ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
-	ID3D11DepthStencilView* main_dsv = g_device->GetMainDSV();
-	g_device->SetRenderTarget(main_rtv, main_dsv);
-	ID3D11Device* raw_device = g_device->GetDevice();
-	ID3D11DeviceContext* raw_dc = g_device->GetDC();
-	float color[4] = { 0.f, 0.f, 0.f, 1.0f };
-	raw_dc->ClearRenderTargetView(main_rtv, reinterpret_cast<float*>(color));
-	raw_dc->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	*/
+
+
+	//
+	//ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
+	//ID3D11DepthStencilView* main_dsv = g_device->GetMainDSV();
+	//g_device->SetRenderTarget(main_rtv, main_dsv);
+	//ID3D11Device* raw_device = g_device->GetDevice();
+	//ID3D11DeviceContext* raw_dc = g_device->GetDC();
+	//float color[4] = { 0.f, 0.f, 0.f, 1.0f };
+	//raw_dc->ClearRenderTargetView(main_rtv, reinterpret_cast<float*>(color));
+	//raw_dc->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+
 
 	RenderParam render_param;
 	render_param.camera_proxy = render_scene_->camera_element.get();
@@ -64,7 +66,10 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 
 
 	// copy back to main rtv
-	g_device->GetDC()->CopyResource( g_device->GetSwapChainColorBuffer(),rts_->GetColorBuffer());
+	TComPtr<ID3D11Texture2D> swap_chain_buffer;
+	swap_chain_buffer.Attach(g_device->GetSwapChainColorBuffer());
+	g_device->GetDC()->CopyResource( swap_chain_buffer,rts_->GetColorBuffer());
+	
 	ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
 	ID3D11DepthStencilView* main_dsv = g_device->GetMainDSV();
 	g_device->SetRenderTarget(main_rtv, main_dsv);
@@ -74,5 +79,10 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 bool YForwardRenderer::Clearup()
 {
 	return true;
+}
+
+YForwardRenderer::~YForwardRenderer()
+{
+	Clearup();
 }
 

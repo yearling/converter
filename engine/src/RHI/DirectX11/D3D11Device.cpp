@@ -119,6 +119,15 @@ bool D3D11Device::CreateSwapChain(void* wnd) {
 
 bool D3D11Device::OnResize(int width, int height) {
 
+
+	if (width == width_ && height == height_) {
+		return true;
+	}
+
+	//release reference
+	{
+		main_RTVs_.Reset();
+	}
 	if (d3d_dc_)
 	{
 		d3d_dc_->ClearState();
@@ -127,9 +136,6 @@ bool D3D11Device::OnResize(int width, int height) {
 	assert(d3d_swap_chain_);
 	if (!d3d_swap_chain_) {
 		return false;
-	}
-	if (width == width_ && height == height_) {
-		return true;
 	}
 
 	main_RTVs_.Reset();

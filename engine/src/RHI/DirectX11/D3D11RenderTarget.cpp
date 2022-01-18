@@ -116,6 +116,10 @@ bool D3D11RenderTarget::CreateRenderTarget(PixelFormat color_format, PixelFormat
 		return false;
 	}
 
+	if (depth_buffer_srv_)
+	{
+		//depth_buffer_srv_ = nullptr;
+	}
 	if (!g_device->CreateSRVForTexture2D(DXGI_FORMAT_R24_UNORM_X8_TYPELESS, depth_buffer_, depth_buffer_srv_))
 	{
 		ERROR_INFO("Create shader resource view failed !, width ", width_, " height ", height_, "format: ", (int)DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
