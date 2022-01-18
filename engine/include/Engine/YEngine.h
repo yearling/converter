@@ -29,6 +29,7 @@ public:
 	bool Init();
 	void Update();
 	void ShutDown();
+	void TestLoad();
 	IRenderInterface* GetRender() const { return renderer.get(); }
 
 private:

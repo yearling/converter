@@ -42,23 +42,6 @@ bool YEngine::Init()
 		return false;
 	}
 	game_start_time = std::chrono::high_resolution_clock::now();
-
-
-	std::string world_map_path = "map/world.json";
-	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
-	SWorld::SetWorld(new_world);
-	new_world->PostLoadOp();
-	new_world->GetMainScene()->RegisterEvents();
-	{
-		SPerspectiveCameraComponent* camera_component = SWorld::GetWorld()->GetMainScene()->GetPerspectiveCameraComponent();
-		if (camera_component)
-		{
-			camera_controller = std::make_unique<FPSCameraController>();
-			camera_controller->SetCamera(camera_component->camera_.get());
-			camera_controller->RegiesterEventProcess();
-		}
-	}
-
 	g_windows_event_manager->OnWindowSizeChange(width, height);
 	return true;
 }
@@ -105,6 +88,28 @@ void YEngine::ShutDown()
 	delete g_input_manager;
 	g_input_manager = nullptr;
 	renderer->Clearup();
+}
+
+void YEngine::TestLoad()
+{
+	std::string world_map_path = "map/world.json";
+	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
+	SWorld::SetWorld(new_world);
+	new_world->PostLoadOp();
+	new_world->GetMainScene()->RegisterEvents();
+	{
+		SPerspectiveCameraComponent* camera_component = SWorld::GetWorld()->GetMainScene()->GetPerspectiveCameraComponent();
+		if (camera_component)
+		{
+			camera_controller = std::make_unique<FPSCameraController>();
+			camera_controller->SetCamera(camera_component->camera_.get());
+			camera_controller->RegiesterEventProcess();
+		}
+	}
+	std::unique_ptr<YWindow>& main_window = app_->GetWindows()[0];
+	int width = main_window->GetWidth();
+	int height = main_window->GetHeight();
+	g_windows_event_manager->OnWindowSizeChange(width, height);
 }
 
 void YEngine::SetApplication(class YApplication* app)

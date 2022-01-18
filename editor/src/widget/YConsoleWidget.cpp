@@ -40,7 +40,6 @@ Widget_Console::Widget_Console(Editor* editor) :Widget(editor)
 			tmp.error_level = 2;
 			AddLogPackage(tmp);
 		});
-	m_padding = YVector2(0.0, 0.0);
 }
 
 void Widget_Console::UpdateVisible(double delta_time)

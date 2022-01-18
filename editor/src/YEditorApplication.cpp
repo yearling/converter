@@ -129,6 +129,7 @@ bool EditorApplication::Initial()
 	// create editor
 	g_editor = std::make_unique<Editor>(engine);
 	g_editor->Init(windows_[0]->GetHWND());
+	engine->TestLoad();
 	return true;
 }
 
