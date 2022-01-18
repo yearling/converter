@@ -1,4 +1,4 @@
-#include "YConsoleWidget.h"
+#include "widget/YConsoleWidget.h"
 #include "YEditor.h"
 #include <thread>
 #include <chrono>

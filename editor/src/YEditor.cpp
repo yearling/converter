@@ -4,9 +4,9 @@
 #include "imgui_impl_dx11.h"
 #include "RHI/DirectX11/D3D11Device.h"
 #include "imgui_internal.h"
-#include "YConsoleWidget.h"
+#include "widget/YConsoleWidget.h"
 #include "Engine/YLog.h"
-#include "YViewportWidget.h"
+#include "widget/YViewportWidget.h"
 //= EDITOR OPTIONS ========================================================================================
 // Shapes
 const float k_roundness = 2.0f;
