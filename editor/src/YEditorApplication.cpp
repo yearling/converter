@@ -8,6 +8,7 @@
 #include "SObject/SWorld.h"
 #include "Render/YForwardRenderer.h"
 #include "SObject/SObjectManager.h"
+#include "Engine/YLog.h"
 
 
 EditorApplication::EditorApplication()
@@ -26,9 +27,14 @@ LRESULT EditorApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
 	//WARNING_INFO("run into Editor msg process");
-	int x = (int)(short)LOWORD(lParam);
-	int y = (int)(short)HIWORD(lParam);
-
+	POINT p;
+	static POINT last_p = {};
+	const BOOL b = GetCursorPos(&p);
+	// under some unknown (permission denied...) rare circumstances GetCursorPos fails, we returns last known position
+	if (!b) p = last_p;
+	last_p = p;
+	int x = p.x;
+	int y = p.y;
 	switch (msg)
 	{
 	case WM_LBUTTONDOWN:
@@ -69,7 +75,6 @@ LRESULT EditorApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 	{
 		int g_winWidth = LOWORD(lParam);
 		int g_winHeight = HIWORD(lParam);
-		if (device)
 		{
 			switch (wParam)
 			{
@@ -78,13 +83,12 @@ LRESULT EditorApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 				break;
 			}
 			case SIZE_MAXIMIZED:
-			{
-				g_windows_event_manager->OnWindowSizeChange(g_winWidth, g_winHeight);
-				break;
-			}
 			case SIZE_RESTORED:
 			{
-				g_windows_event_manager->OnWindowSizeChange(g_winWidth, g_winHeight);
+				if (g_windows_event_manager)
+				{
+					g_windows_event_manager->OnWindowSizeChange(g_winWidth, g_winHeight);
+				}
 				break;
 			}
 			default:

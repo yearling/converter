@@ -6,7 +6,7 @@
 #include "Math/YVector.h"
 #include "Engine/YLog.h"
 
-Widget_Console::Widget_Console(Editor* editor):Widget(editor)
+Widget_Console::Widget_Console(Editor* editor) :Widget(editor)
 {
 	m_title = "Console";
 
@@ -40,6 +40,7 @@ Widget_Console::Widget_Console(Editor* editor):Widget(editor)
 			tmp.error_level = 2;
 			AddLogPackage(tmp);
 		});
+	m_padding = YVector2(0.0, 0.0);
 }
 
 void Widget_Console::UpdateVisible(double delta_time)
@@ -48,7 +49,7 @@ void Widget_Console::UpdateVisible(double delta_time)
 	if (ImGui::Button("Clear")) { Clear(); } ImGui::SameLine();
 
 	// Lambda for info, warning, error filter buttons
-	const auto button_log_type_visibility_toggle = [this]( uint32_t index)
+	const auto button_log_type_visibility_toggle = [this](uint32_t index)
 	{
 		bool& visibility = m_log_type_visibility[index];
 		ImGui::PushStyleColor(ImGuiCol_Button, visibility ? ImGui::GetStyle().Colors[ImGuiCol_Button] : ImGui::GetStyle().Colors[ImGuiCol_FrameBg]);
@@ -65,9 +66,9 @@ void Widget_Console::UpdateVisible(double delta_time)
 	};
 
 	// Log category visibility buttons
-	button_log_type_visibility_toggle( 0);
+	button_log_type_visibility_toggle(0);
 	button_log_type_visibility_toggle(1);
-	button_log_type_visibility_toggle( 2);
+	button_log_type_visibility_toggle(2);
 
 
 	// Text filter
@@ -78,8 +79,8 @@ void Widget_Console::UpdateVisible(double delta_time)
 	ImGui::Separator();
 
 	// Wait for reading to finish
-	while (m_is_reading) { 
-		std::this_thread::sleep_for(std::chrono::milliseconds(16)); 
+	while (m_is_reading) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(16));
 	}
 
 	m_is_reading = true;
@@ -90,7 +91,7 @@ void Widget_Console::UpdateVisible(double delta_time)
 		ImGuiTableFlags_BordersOuter |
 		ImGuiTableFlags_ScrollX |
 		ImGuiTableFlags_ScrollY;
-	static const ImVec2 size = ImVec2(-1.0f,-1.0f);
+	static const ImVec2 size = ImVec2(-1.0f, -1.0f);
 
 	// Content
 	if (ImGui::BeginTable("##widget_console_content", 1, table_flags, size))

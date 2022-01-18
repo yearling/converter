@@ -17,6 +17,8 @@ public:
 	}
 	bool Init(HWND hwnd);
 	void Close();
+
+	YEngine* GetEngine() const { return engine_; }
 protected:
 	void BeginWindow();
 	bool m_editor_begun = false; 

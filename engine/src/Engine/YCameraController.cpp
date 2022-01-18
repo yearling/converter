@@ -58,7 +58,7 @@ void FPSCameraController::Update(double delta_time)
 	{
 		forward_speed_local += speed_base_;
 	}
-	
+
 	if (key_down_['S'])
 	{
 		forward_speed_local -= speed_base_;

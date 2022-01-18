@@ -14,7 +14,7 @@ public:
 	int  GetWidth() const;
 	int GetHeight() const;
 protected:
-	HWND hwnd_=nullptr;
+	HWND hwnd_ = nullptr;
 	int width_ = -1;
 	int height_ = -1;
 };

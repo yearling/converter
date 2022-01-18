@@ -3,7 +3,7 @@
 #include "imgui_internal.h"
 
 Widget::Widget(Editor* editor)
-	:m_editor(editor),m_window(nullptr)
+	:m_editor(editor), m_window(nullptr)
 {
 
 }
@@ -23,9 +23,9 @@ void Widget::Update(double delta_time)
 			return;
 
 		//Size
-		if (m_size != YVector2(k_widget_default_propery, k_widget_default_propery))
+		if (m_size_initial != YVector2(k_widget_default_propery, k_widget_default_propery))
 		{
-			ImGui::SetNextWindowSize(m_size, ImGuiCond_FirstUseEver);
+			ImGui::SetNextWindowSize(m_size_initial, ImGuiCond_FirstUseEver);
 		}
 
 		// max size
@@ -42,7 +42,7 @@ void Widget::Update(double delta_time)
 		}
 
 		//Alpha
-		if (m_padding != YVector2(k_widget_default_propery, k_widget_default_propery))
+		if (m_alpha != k_widget_default_propery)
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, m_alpha);
 			m_var_pushes++;
@@ -51,10 +51,10 @@ void Widget::Update(double delta_time)
 		//position
 		if (m_position != YVector2(k_widget_default_propery, k_widget_default_propery))
 		{
-		/*	if (m_position == YVector2(k_widget_position_screen_center, k_widget_position_screen_center))
-			{
-				m_position.x = 
-			}*/
+			/*	if (m_position == YVector2(k_widget_position_screen_center, k_widget_position_screen_center))
+				{
+					m_position.x =
+				}*/
 			ImVec2 pivot_center = ImVec2(0.5f, 0.5f);
 			ImGui::SetNextWindowPos(m_position, ImGuiCond_FirstUseEver, pivot_center);
 		}
@@ -97,12 +97,12 @@ void Widget::Update(double delta_time)
 				// Pop style variables
 				ImGui::PopStyleVar(m_var_pushes);
 				m_var_pushes = 0;
-				
+
 			}
 		}
 	}
 
-	
+
 }
 
 void Widget::UpdateAlways(double delta_time)

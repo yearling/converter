@@ -66,13 +66,16 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 
 
 	// copy back to main rtv
-	TComPtr<ID3D11Texture2D> swap_chain_buffer;
-	swap_chain_buffer.Attach(g_device->GetSwapChainColorBuffer());
-	g_device->GetDC()->CopyResource( swap_chain_buffer,rts_->GetColorBuffer());
+	//TComPtr<ID3D11Texture2D> swap_chain_buffer;
+	//swap_chain_buffer.Attach(g_device->GetSwapChainColorBuffer());
+	//g_device->GetDC()->CopyResource( swap_chain_buffer,rts_->GetColorBuffer());
 	
 	ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
 	ID3D11DepthStencilView* main_dsv = g_device->GetMainDSV();
 	g_device->SetRenderTarget(main_rtv, main_dsv);
+	YVector4 clear_color = YVector4(0.0f, 0.0f, 0.0f, 1.0f);
+	g_device->GetDC()->ClearRenderTargetView(main_rtv, &clear_color.x);
+	g_device->GetDC()->ClearDepthStencilView(main_dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0, 0);
 	return true;
 }
 
@@ -84,5 +87,10 @@ bool YForwardRenderer::Clearup()
 YForwardRenderer::~YForwardRenderer()
 {
 	Clearup();
+}
+
+D3D11RenderTarget* YForwardRenderer::GetRTs() const
+{
+	return rts_.get();
 }
 

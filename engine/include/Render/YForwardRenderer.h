@@ -15,6 +15,7 @@ public:
 
 	bool Clearup() override;
 	~YForwardRenderer() override;
+	D3D11RenderTarget* GetRTs() const;
 protected:
 	std::unique_ptr<YRenderScene> render_scene_;
 	std::unique_ptr<D3D11RenderTarget> rts_;

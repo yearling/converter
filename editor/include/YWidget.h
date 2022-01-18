@@ -30,7 +30,7 @@ public:
 	const auto& GetTitle()      const { return m_title; }
 	bool& GetVisible() { return m_is_visible; }
 	void SetVisible(bool is_visible) { m_is_visible = is_visible; }
-
+	
 protected:
 	bool m_is_window = true;
 	bool m_is_visible = true;
@@ -38,7 +38,7 @@ protected:
 	float m_height = 0;
 	float m_alpha = -1.0f;
 	YVector2 m_position = { k_widget_default_propery,k_widget_default_propery };
-	YVector2 m_size = { k_widget_default_propery,k_widget_default_propery };
+	YVector2 m_size_initial = { k_widget_default_propery,k_widget_default_propery };
 	YVector2 m_size_min = { k_widget_default_propery,k_widget_default_propery };
 	YVector2 m_size_max = { k_widget_default_propery,k_widget_default_propery };
 	YVector2 m_padding = { k_widget_default_propery,k_widget_default_propery };

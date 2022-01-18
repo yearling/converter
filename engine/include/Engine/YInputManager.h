@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <functional>
+#include "Math/YVector.h"
 
 class InputManger
 {
@@ -27,6 +28,9 @@ public:
 	void OnMouseMove(int x, int y);
 	void OnMouseWheel(int x, int y, float z_delta);
 	void OnEventLButtonDown(int x, int y);
+	void SetEditorViewportOffset(YVector2 offset);
+protected:
+	YVector2 relative_to_viewport;
 };
 
 extern InputManger* g_input_manager;

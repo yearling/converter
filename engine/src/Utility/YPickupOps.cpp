@@ -152,7 +152,7 @@ void YPickupShowMove::RayCast(int x, int y)
 	{
 		if (YMath::LineBoxIntersection(static_mesh_component->GetBounds(), ray))
 		{
-			LOG_INFO("pick up mesh:", static_mesh_component->GetMesh()->model_name);
+			//LOG_INFO("pick up mesh:", static_mesh_component->GetMesh()->model_name);
 			if (ray_cast_to_triangle)
 			{
 				YLODMesh& lod_mesh = static_mesh_component->GetMesh()->raw_meshes[0];

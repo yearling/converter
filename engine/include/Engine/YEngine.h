@@ -13,7 +13,7 @@ class IRenderInterface;
 class YEngine
 {
 public:
-	static YEngine* GetEngine()
+	inline static YEngine* GetEngine()
 	{
 		static YEngine instance;
 		return &instance;
@@ -29,6 +29,8 @@ public:
 	bool Init();
 	void Update();
 	void ShutDown();
+	IRenderInterface* GetRender() const { return renderer.get(); }
+
 private:
 	YEngine() = default;
 	~YEngine() = default;
@@ -39,9 +41,8 @@ private:
 	std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
 	std::unique_ptr<IRenderInterface> renderer;
 	AverageSmooth<float> fps;
-
 public:
 	void SetApplication(class YApplication* app);
 private:
-	class YApplication* app_=nullptr;
+	class YApplication* app_ = nullptr;
 };
