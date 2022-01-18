@@ -118,7 +118,7 @@ bool D3D11RenderTarget::CreateRenderTarget(PixelFormat color_format, PixelFormat
 
 	if (depth_buffer_srv_)
 	{
-		//depth_buffer_srv_ = nullptr;
+		depth_buffer_srv_ = nullptr;
 	}
 	if (!g_device->CreateSRVForTexture2D(DXGI_FORMAT_R24_UNORM_X8_TYPELESS, depth_buffer_, depth_buffer_srv_))
 	{
