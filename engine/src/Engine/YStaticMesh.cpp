@@ -261,7 +261,7 @@ bool YStaticMesh::AllocGpuResource()
 		//device_->CreateDepthStencileStateNoWriteNoTest(ds_);
 	}
 	if (!sampler_state_) {
-		sampler_state_ = g_device->GetSamplerState(SF_MIN_MAG_MIP_LINEAR, AM_WRAP);
+		sampler_state_ = g_device->GetSamplerState(SF_BiLinear, SA_Wrap);
 	}
 	vertex_factory_ = std::move(static_mesh_vertex_factory);
 	allocated_gpu_resource = true;

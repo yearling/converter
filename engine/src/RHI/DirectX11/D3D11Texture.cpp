@@ -59,13 +59,17 @@ static int GetPixelSize(DXGI_FORMAT format) {
 	if (format == DXGI_FORMAT_R8G8B8A8_UNORM) {
 		return 4;
 	}
+	else
+	{
+		assert(0);
+	}
 	return 0;
 }
 D3DTexture2D::D3DTexture2D(TextureUsage usage) {}
 
 D3DTexture2D::~D3DTexture2D() {}
 
-bool D3DTexture2D::Create(D3D11Device* d3d_device, PixelFormat pixel_format, int width, int height, int mip_count, int sample_count,
+bool D3DTexture2D::Create( PixelFormat pixel_format, int width, int height, int mip_count, int sample_count,
 	TextureUsage texture_usage, const unsigned char* data) {
 	DXGI_FORMAT dxgi_pixel_format = PixelFormatToDXPixelFormat(pixel_format);
 	if (dxgi_pixel_format == DXGI_FORMAT_UNKNOWN) {
@@ -78,9 +82,9 @@ bool D3DTexture2D::Create(D3D11Device* d3d_device, PixelFormat pixel_format, int
 	sub_data.pSysMem = (void*)data;
 	sub_data.SysMemPitch = row_bytes;
 	sub_data.SysMemSlicePitch = total_byte;
-	bool is_rtv = static_cast<bool>(texture_usage & TextureUsage::RenderTarget);
-	bool is_dsv = static_cast<bool>(texture_usage & TextureUsage::DepthStencil);
-	bool is_srv = static_cast<bool>(texture_usage & TextureUsage::ShaderResource);
+	bool is_rtv = static_cast<bool>(texture_usage & TextureUsage::TU_RenderTarget);
+	bool is_dsv = static_cast<bool>(texture_usage & TextureUsage::TU_DepthStencil);
+	bool is_srv = static_cast<bool>(texture_usage & TextureUsage::TU_ShaderResource);
 
 	if (is_rtv && is_srv) {
 		// rt and srv
@@ -96,7 +100,7 @@ bool D3DTexture2D::Create(D3D11Device* d3d_device, PixelFormat pixel_format, int
 	}
 	else if (is_srv) {
 		// only srv
-		if (!d3d_device->Create2DTextureWithSRV(width, height, dxgi_pixel_format, mip_count, sample_count, &sub_data, d3d_texture2d_,
+		if (!g_device->Create2DTextureWithSRV(width, height, dxgi_pixel_format, mip_count, sample_count, &sub_data, d3d_texture2d_,
 			srv_)) {
 			ERROR_INFO("D3D11 Create2DTextureWithSRV Texture2D failed!");
 			return false;
@@ -124,43 +128,76 @@ D3DTexture::D3DTexture() {}
 D3DTexture::~D3DTexture() {}
 
 
-D3DTextureSampler::D3DTextureSampler() : fileter_type_(SF_NUM), address_mode_(AM_NUM) {}
+D3DTextureSampler::D3DTextureSampler() : fileter_type_(SF_NUM), address_mode_u_(SA_NUM),address_mode_v_(SA_NUM),address_mode_w_(SA_NUM){}
 
-D3DTextureSampler::D3DTextureSampler(SampleFilterType filter_type, TextureAddressMode adress_mode)
-	: fileter_type_(filter_type), address_mode_(adress_mode) {}
+D3DTextureSampler::D3DTextureSampler(SamplerFilterType filter_type, SamplerAddressMode adress_mode)
+	: fileter_type_(filter_type), address_mode_u_(adress_mode),address_mode_v_(adress_mode),address_mode_w_(adress_mode) {}
+
+D3DTextureSampler::D3DTextureSampler(SamplerFilterType filter_type, SamplerAddressMode address_mode_u, SamplerAddressMode adress_mode_v, SamplerAddressMode adress_mode_w)
+	: fileter_type_(filter_type), address_mode_u_(address_mode_u), address_mode_v_(adress_mode_v), address_mode_w_(adress_mode_w) {}
 
 D3DTextureSampler::~D3DTextureSampler() {}
 
-SampleFilterType D3DTextureSampler::GetSampleFilterType() const { return fileter_type_; }
+SamplerAddressMode D3DTextureSampler::GetSampleAddressModelU() const
+{
+	return address_mode_u_;
+}
 
-TextureAddressMode D3DTextureSampler::GetTextureAddressMode() const { return address_mode_; }
+SamplerAddressMode D3DTextureSampler::GetSampleAddressModelV() const
+{
+	return address_mode_v_;
+}
+
+SamplerAddressMode D3DTextureSampler::GetSampleAddressModelW() const
+{
+	return address_mode_w_;
+}
+
+SamplerFilterType D3DTextureSampler::GetSamplerFilterType() const
+{
+	return fileter_type_;
+}
 
 ID3D11SamplerState* D3DTextureSampler::GetSampler() const { return sample_state_; }
 
-D3DTextureSamplerManager::D3DTextureSamplerManager(D3D11Device* device) : device_(device) {}
+D3DTextureSamplerManager::D3DTextureSamplerManager() {}
 
-D3DTextureSamplerManager::~D3DTextureSamplerManager() {}
+D3DTextureSamplerManager::~D3DTextureSamplerManager() {
 
-D3DTextureSampler* D3DTextureSamplerManager::GetTextureSampler(SampleFilterType filter_type, TextureAddressMode address_mode) {
-	if (filter_type == SF_NUM || address_mode == AM_NUM) {
+}
+
+D3DTextureSampler* D3DTextureSamplerManager::GetTextureSampler(SamplerFilterType filter_type, SamplerAddressMode address_model_u, SamplerAddressMode address_model_v, SamplerAddressMode address_model_w)
+{
+	if (filter_type == SF_NUM || address_model_u == SA_NUM || address_model_v == SA_NUM || address_model_w == SA_NUM)
+	{
+		WARNING_INFO("Create Sampler Invalid parameter");
 		return nullptr;
 	}
-	if (address_mode == AM_BORDER) {
+
+	if (address_model_u == SA_Board || address_model_v == SA_Board || address_model_w == SA_Board)
+	{
+		ERROR_INFO("Sampler state not support  texture filter type: board");
 		return nullptr;
 	}
+	const unsigned int address_u = (unsigned int)address_model_u;
+	const unsigned int address_v = (unsigned int)address_model_v;
+	const unsigned int address_w = (unsigned int)address_model_w;
+	const unsigned int filter = (unsigned int)filter_type;
+	const unsigned int hash = address_u << 24 | address_v << 16 | address_w << 8 | filter;
+	if (!samples_.count(hash))
+	{
+		std::unique_ptr<D3DTextureSampler> sampler = std::make_unique<D3DTextureSampler>(filter_type, address_model_u, address_model_v, address_model_w);
 
-	if (!samples_[filter_type][address_mode]) {
-		std::unique_ptr<D3DTextureSampler> sample = std::make_unique<D3DTextureSampler>(filter_type, address_mode);
 		D3D11_SAMPLER_DESC desc;
 		memset(&desc, 0, sizeof(D3D11_SAMPLER_DESC));
 		switch (filter_type) {
-		case SF_MIN_MAG_MIP_LINEAR:
+		case SF_BiLinear:
 			desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 			break;
-		case SF_MIN_MAG_MIP_POINT:
+		case SF_Nearest:
 			desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 			break;
-		case SF_ANISOTROPIC:
+		case SF_Tilinear:
 			desc.Filter = D3D11_FILTER_ANISOTROPIC;
 			break;
 		default:
@@ -168,47 +205,73 @@ D3DTextureSampler* D3DTextureSamplerManager::GetTextureSampler(SampleFilterType 
 			break;
 		}
 
-		switch (address_mode) {
-		case AM_WRAP:
+		switch (address_u) {
+		case SA_Wrap:
 			desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-			desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-			desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 			break;
-		case AM_MIRROR:
+		case SA_Mirror:
 			desc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
-			desc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
-			desc.AddressW = D3D11_TEXTURE_ADDRESS_MIRROR;
 			break;
-		case AM_CLAMP:
+		case SA_Clamp:
 			desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-			desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-			desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 			break;
-		case AM_BORDER:
+		case SA_Board:
 			assert(0);
 			break;
 		default:
 			assert(0);
 			break;
 		}
+
+		switch (address_v) {
+		case SA_Wrap:
+			desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+			break;
+		case SA_Mirror:
+			desc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
+			break;
+		case SA_Clamp:
+			desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+			break;
+		case SA_Board:
+			assert(0);
+			break;
+		default:
+			assert(0);
+			break;
+		}
+
+		switch (address_w) {
+		case SA_Wrap:
+			desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+			break;
+		case SA_Mirror:
+			desc.AddressW = D3D11_TEXTURE_ADDRESS_MIRROR;
+			break;
+		case SA_Clamp:
+			desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+			break;
+		case SA_Board:
+			assert(0);
+			break;
+		default:
+			assert(0);
+			break;
+		}
+
 		desc.MipLODBias = 0;
 		desc.MaxAnisotropy = 16;
 		desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 		desc.MinLOD = 0;
 		desc.MaxLOD = D3D11_FLOAT32_MAX;
 		TComPtr<ID3D11SamplerState> sample_state_tmp;
-		HRESULT hr = device_->GetDevice()->CreateSamplerState(&desc, &sample_state_tmp);
+		HRESULT hr = g_device->GetDevice()->CreateSamplerState(&desc, &sample_state_tmp);
 		if (hr != S_OK) {
-			ERROR_INFO("create sampler state failed!");
+			ERROR_INFO("create sampler state failed! filter: ",filter," address_u: ", address_u," address_v: ",address_v," address_w: ",address_w);
 			return nullptr;
 		}
-		sample->sample_state_ = sample_state_tmp;
-		samples_[filter_type][address_mode] = std::move(sample);
-		return samples_[filter_type][address_mode].get();
+		sampler->sample_state_ = sample_state_tmp;
+		samples_.insert_or_assign(hash, std::move(sampler));
 	}
-	else {
-		return samples_[filter_type][address_mode].get();
-	}
-	return nullptr;
+	return samples_[hash].get();
 }
-

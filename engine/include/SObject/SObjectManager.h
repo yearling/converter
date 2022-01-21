@@ -36,7 +36,13 @@ public:
 		std::string PackagePathNoSuffix = PackagePath;
 		// todo
 		//FPaths::NormalizeFilename(PackagePathNoSuffix);
-		std::string package_name = YPath::GetBaseFilename(PackagePathNoSuffix, false);
+		std::string package_name = YPath::GetBaseFilename(PackagePath, false);
+		std::string extent_name = YPath::GetFileExtension(PackagePath);
+		if (extent_name != SObject::asset_extension && extent_name != SObject::json_extension)
+		{
+			package_name = PackagePath;
+		}
+
 		auto find_result = GetManager().unify_objects_.find(package_name);
 		if (find_result == GetManager().unify_objects_.end())
 		{

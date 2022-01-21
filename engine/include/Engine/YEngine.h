@@ -42,6 +42,11 @@ private:
 	std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
 	std::unique_ptr<IRenderInterface> renderer;
 	AverageSmooth<float> fps;
+
+
+protected:
+	bool InitThridParty();
+	void ShutDownThridParty();
 public:
 	void SetApplication(class YApplication* app);
 private:

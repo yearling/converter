@@ -52,7 +52,7 @@ bool SObject::LoadFromPackage(const std::string& Path)
 	}
 	else
 	{
-		ERROR_INFO("load package ", Path ,"failed!, unknown type");
+		ERROR_INFO("load package ", Path ,"failed!, file not exist");
 		return false;
 	}
 
@@ -85,6 +85,11 @@ const std::string SObject::asset_extension_with_dot = ".yasset";
 const std::string SObject::json_extension = "json";
 
 const std::string SObject::json_extension_with_dot = ".json";
+
+const std::string& SObject::GetName() const
+{
+	return name_;
+}
 
 bool SObject::LoadFromMemoryFile(std::unique_ptr<MemoryFile> mem_file)
 {

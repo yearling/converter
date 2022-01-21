@@ -28,7 +28,7 @@ std::unique_ptr<D3D11Device>D3D11Device::CreateD3D11Device() {
 	device->d3d_device_.Attach(d3d_device);
 	device->d3d_dc_.Attach(d3d_dc);
 
-	device->sample_state_mamager_ = std::make_unique<D3DTextureSamplerManager>(device.get());
+	device->sample_state_mamager_ = std::make_unique<D3DTextureSamplerManager>();
 	g_device = device.get();
 	return std::move(device);
 }
@@ -325,7 +325,7 @@ bool D3D11Device::CreateConstantBufferDefault(int size, TComPtr<ID3D11Buffer>& b
 	return true;
 }
 
-bool D3D11Device::Create2DTextureSRV(UINT width, UINT height, DXGI_FORMAT format, int mip_level,
+bool D3D11Device::Create2DTextureSRV(UINT width, UINT height, DXGI_FORMAT format, bool autogen_mipmap,
 	int sample_count, D3D11_SUBRESOURCE_DATA* data, TComPtr<ID3D11Texture2D>& tex2D) {
 	HRESULT hr = S_OK;
 	D3D11_TEXTURE2D_DESC desc;
@@ -337,8 +337,8 @@ bool D3D11Device::Create2DTextureSRV(UINT width, UINT height, DXGI_FORMAT format
 	desc.Usage = D3D11_USAGE_DEFAULT;
 	// to auto generate mip map, sould use shader resource and render target flag 
 	// https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_resource_misc_flag
-	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-	desc.MipLevels = 0;
+	desc.BindFlags = autogen_mipmap? D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET : D3D11_BIND_SHADER_RESOURCE;
+	desc.MipLevels = autogen_mipmap?0:1;
 	desc.SampleDesc.Count = sample_count;
 	desc.SampleDesc.Quality = 0;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
@@ -351,17 +351,20 @@ bool D3D11Device::Create2DTextureSRV(UINT width, UINT height, DXGI_FORMAT format
 }
 
 
-bool D3D11Device::Create2DTextureWithSRV(UINT width, UINT height, DXGI_FORMAT format, int mip_level, int sample_count,
+bool D3D11Device::Create2DTextureWithSRV(UINT width, UINT height, DXGI_FORMAT format, bool autogen_mipmap, int sample_count,
 	D3D11_SUBRESOURCE_DATA* data, TComPtr<ID3D11Texture2D>& tex2D,
 	TComPtr<ID3D11ShaderResourceView>& srv) {
-	if (!Create2DTextureSRV(width, height, format, mip_level, sample_count, data, tex2D)) {
+	if (!Create2DTextureSRV(width, height, format, autogen_mipmap, sample_count, data, tex2D)) {
 		return false;
 	}
 	if (!CreateSRVForTexture2D(format, tex2D, srv)) {
 		return false;
 	}
-	d3d_dc_->UpdateSubresource(tex2D, 0, nullptr, data->pSysMem, data->SysMemPitch, data->SysMemSlicePitch);
-	d3d_dc_->GenerateMips(srv);
+	if (autogen_mipmap)
+	{
+		d3d_dc_->UpdateSubresource(tex2D, 0, nullptr, data->pSysMem, data->SysMemPitch, data->SysMemSlicePitch);
+		d3d_dc_->GenerateMips(srv);
+	}
 	return true;
 }
 
@@ -459,9 +462,8 @@ bool D3D11Device::CreateIndexBuffer(UINT ByteWidth, const void* pData, TComPtr<I
 	return true;
 }
 
-D3DTextureSampler* D3D11Device::GetSamplerState(SampleFilterType filter_type, TextureAddressMode address_mode) {
-	//return sample_state_mamager_->GetTextureSampler(filter_type, address_mode);
-	return nullptr;
+D3DTextureSampler* D3D11Device::GetSamplerState(SamplerFilterType filter_type, SamplerAddressMode address_mode) {
+	return sample_state_mamager_->GetTextureSampler(filter_type, address_mode, address_mode, address_mode);
 }
 
 bool D3D11Device::CreateSamplerLinearWrap(TComPtr<ID3D11SamplerState>& sample, const std::string& alias /*=""*/) {

@@ -28,9 +28,10 @@ SET(FBX_BIN ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64)
 SET(ENGINE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/engine)
 SET(EDITOR_PATH ${CMAKE_CURRENT_SOURCE_DIR}/editor)
 SET(FBXIMPORTER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/importer)
+SET(FREEIMGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/engine/third_party/freeimage)
 
 #第三方库头文件
-SET(THIRD_PARTY_INCLUDE ${THIRD_PARTY}/fbxsdk/include)
+SET(THIRD_PARTY_INCLUDE ${THIRD_PARTY}/fbxsdk/include ${FREEIMGE_PATH}/include)
 
 #add_subdirectory(${THIRD_PARTY}/jsoncpp)
 add_subdirectory(${THIRD_PARTY}/imgui)
@@ -73,7 +74,8 @@ source_group_by_dir(all_files)
 
 #link target
 target_link_libraries(
-    editor debug  ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/debug/libfbxsdk.lib   optimized ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/release/libfbxsdk.lib 
+    editor debug  ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/debug/libfbxsdk.lib ${FREEIMGE_PATH}/lib/FreeImaged.lib
+    optimized ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/release/libfbxsdk.lib ${FREEIMGE_PATH}/lib/FreeImage.lib
 )
 #或者用下面的方法
 # target_link_libraries(editor $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/../editor/3rdlib/Debug/LinearMath.lib> $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/../editor/3rdlib/Release/LinearMath.lib>)
@@ -109,6 +111,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 add_custom_command(
 		TARGET editor POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:${FBX_BIN}/debug/libfbxsdk.dll> $<$<CONFIG:Release>:${FBX_BIN}/release/libfbxsdk.dll> 	$<TARGET_FILE_DIR:editor>
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:${FREEIMGE_PATH}/lib/FreeImaged.dll> $<$<CONFIG:Release>:${FREEIMGE_PATH}/lib/FreeImage.dll> 	$<TARGET_FILE_DIR:editor>
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/engine/src/Shader/ 	$<TARGET_FILE_DIR:editor>/Shader
         COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE_DIR:editor>/imgui.ini
 )

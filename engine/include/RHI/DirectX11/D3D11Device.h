@@ -13,9 +13,48 @@
 class D3DTextureSampler;
 class D3DTextureSamplerManager;
 
-enum SampleFilterType { SF_MIN_MAG_MIP_LINEAR = 0, SF_MIN_MAG_MIP_POINT, SF_ANISOTROPIC, SF_NUM };
+enum TextureType
+{
+	Texture_Unknown = 0,
+	Texture2D = 1,
+	Textrue3D = 2,
+	TextureCube = 3,
+	TT_Num
+};
 
-enum TextureAddressMode { AM_WRAP, AM_MIRROR, AM_CLAMP, AM_BORDER, AM_NUM };
+enum TextureUsage
+{
+	TU_NONE=0,
+	TU_RenderTarget = 1,
+	TU_DepthStencil = 2,
+	TU_ShaderResource = 4
+};
+
+enum SamplerAddressMode
+{
+	SA_Wrap = 0,
+	SA_Mirror = 1,
+	SA_Clamp = 2,
+	SA_Board = 3,
+	SA_NUM=4	
+};
+
+enum SamplerFilterType
+{
+	SF_Nearest = 0,//FILTER_MIN_MAG_MIP_POINT = 0,
+	SF_BiLinear = 1,
+	SF_Tilinear = 2,
+	SF_NUM = 3
+};
+enum SamplerType
+{
+	GlobalWrapLinear = 1,
+	GlobalClampLinear = 2,
+	GlobalMirrorLinear = 3,
+	GlobalBoardLinear = 4,
+	Custom = 4
+};
+
 class D3D11Device {
 private:
 	D3D11Device(const D3D11Device&) = delete;
@@ -58,9 +97,9 @@ public:
 	bool CreateConstantBufferDefault(int size, TComPtr<ID3D11Buffer>& buffer, const std::string& alias /*= ""*/);
 
 	// Texture
-	bool Create2DTextureSRV(UINT width, UINT height, DXGI_FORMAT format, int mip_level, int sample_count, D3D11_SUBRESOURCE_DATA* data,
+	bool Create2DTextureSRV(UINT width, UINT height, DXGI_FORMAT format, bool autogen_mipmap, int sample_count, D3D11_SUBRESOURCE_DATA* data,
 		TComPtr<ID3D11Texture2D>& tex2D);
-	bool Create2DTextureWithSRV(UINT width, UINT height, DXGI_FORMAT format, int mip_level, int sample_count, D3D11_SUBRESOURCE_DATA* data,
+	bool Create2DTextureWithSRV(UINT width, UINT height, DXGI_FORMAT format, bool autogen_mipmap, int sample_count, D3D11_SUBRESOURCE_DATA* data,
 		TComPtr<ID3D11Texture2D>& tex2D, TComPtr<ID3D11ShaderResourceView>& srv);
 	// SRV,RTV
 	bool Create2DTextureRTV_SRV(UINT width, UINT height, DXGI_FORMAT format, TComPtr<ID3D11Texture2D>& tex2D,
@@ -75,7 +114,7 @@ public:
 	bool CreateIndexBuffer(UINT ByteWidth, const void* pData, TComPtr<ID3D11Buffer>& buffer);
 
 	// Sampler
-	D3DTextureSampler* GetSamplerState(SampleFilterType filter_type, TextureAddressMode address_mode);
+	D3DTextureSampler* GetSamplerState(SamplerFilterType filter_type, SamplerAddressMode address_mode);
 	bool CreateSamplerLinearWrap(TComPtr<ID3D11SamplerState>& sample, const std::string& alias /*=""*/);
 	bool CreateSamplerPointWrap(TComPtr<ID3D11SamplerState>& sample, const std::string& alias /*= ""*/);
 	bool CreateSamplerLinearClamp(TComPtr<ID3D11SamplerState>& sample, const std::string& alias /*=""*/);

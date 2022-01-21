@@ -266,4 +266,5 @@ struct YMath
 	static bool LineBoxIntersection(const YBox& box, const YVector& start, const YVector& end, const YVector& direction);
 	static bool LineBoxIntersection(const YBox& box, const class YRay& ray);
 	static bool LineBoxIntersection(const YBox& box, const class YRay& ray,float & time);
+	static inline bool IsPowerOfTwo(int size) { return (size > 0) && ((size & (size - 1)) == 0); }
 };

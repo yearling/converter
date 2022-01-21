@@ -22,10 +22,11 @@ public:
 	static const std::string  asset_extension_with_dot;
 	static const std::string  json_extension;
 	static const std::string  json_extension_with_dot;
-
+	const std::string& GetName() const; 
 protected:
 	SObject();
 	virtual bool LoadFromPackage(const std::string& Path);
+	std::string name_;
 private:
 	friend class SObjectManager;
 };

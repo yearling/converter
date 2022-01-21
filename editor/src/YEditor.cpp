@@ -264,6 +264,11 @@ void Editor::BeginWindow()
 			ImGui::DockBuilderDockWindow("Console", dock_down_id);
 			ImGui::DockBuilderDockWindow("Assets", dock_down_right_id);
 			ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
+			ImGuiDockNode* viewport_dock_node = ImGui::DockBuilderGetNode(dock_main_id);
+			if (viewport_dock_node)
+			{
+				viewport_dock_node->WantHiddenTabBarToggle = true;
+			}
 
 			ImGui::DockBuilderFinish(dock_main_id);
 		}

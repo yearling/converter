@@ -74,7 +74,7 @@ void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...
 # if defined(DEBUG) | defined(_DEBUG)
 	if (log_type == LogType::EError)
 	{
-		assert(0);
+		//assert(0);
 	}
 #endif
 }

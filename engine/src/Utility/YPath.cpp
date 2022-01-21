@@ -73,7 +73,7 @@ std::string YPath::GetFileExtension(const std::string& path, bool include_dot)
 	}
 	else
 	{
-		return path.substr(include_dot ? pos - 1 : pos);
+		return path.substr(include_dot ? pos : pos+1);
 	}
 }
 

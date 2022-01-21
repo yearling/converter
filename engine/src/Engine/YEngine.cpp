@@ -9,6 +9,8 @@
 #include "SObject/SWorld.h"
 #include "SObject/SObjectManager.h"
 #include "Engine/YCanvasUtility.h"
+#include "FreeImage.h"
+#include "SObject/STexture.h"
 
 bool YEngine::Init()
 {
@@ -43,6 +45,12 @@ bool YEngine::Init()
 	}
 	game_start_time = std::chrono::high_resolution_clock::now();
 	g_windows_event_manager->OnWindowSizeChange(width, height);
+
+	if (!InitThridParty())
+	{
+		ERROR_INFO("Third party libaray initial failed!");
+		return false;
+	}
 	return true;
 }
 
@@ -88,6 +96,7 @@ void YEngine::ShutDown()
 	delete g_input_manager;
 	g_input_manager = nullptr;
 	renderer->Clearup();
+	ShutDownThridParty();
 }
 
 void YEngine::TestLoad()
@@ -110,6 +119,35 @@ void YEngine::TestLoad()
 	int width = main_window->GetWidth();
 	int height = main_window->GetHeight();
 	g_windows_event_manager->OnWindowSizeChange(width, height);
+
+	std::string test_pic = "textures/uv.png";
+	TRefCountPtr<STexture> texture = SObjectManager::ConstructUnifyFromPackage<STexture>(test_pic);
+	if (texture)
+	{
+		texture->UploadGPUBuffer();
+	}
+}
+
+static void FreeImageErrorHandler(FREE_IMAGE_FORMAT fif, const char* message) {
+	if (fif != FIF_UNKNOWN) {
+		WARNING_INFO( FreeImage_GetFormatFromFIF(fif), "format ", message);
+	}
+}
+
+bool YEngine::InitThridParty()
+{
+	//free image
+	FreeImage_Initialise(false);
+	const char* free_imge_version = FreeImage_GetVersion();
+	LOG_INFO("Free Image Version: ", free_imge_version);
+	FreeImage_SetOutputMessage(FreeImageErrorHandler);
+	return true;
+}
+
+void YEngine::ShutDownThridParty()
+{
+	//free image
+	FreeImage_DeInitialise();
 }
 
 void YEngine::SetApplication(class YApplication* app)
