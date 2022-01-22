@@ -73,12 +73,8 @@ set(all_files ${HLSL_LIST} ${HEAD_LIST} ${SRC_LIST} )
 source_group_by_dir(all_files)
 
 #link target
-target_link_libraries(
-    editor debug  ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/debug/libfbxsdk.lib ${FREEIMGE_PATH}/lib/FreeImaged.lib
-    optimized ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/release/libfbxsdk.lib ${FREEIMGE_PATH}/lib/FreeImage.lib
-)
-#或者用下面的方法
-# target_link_libraries(editor $<$<CONFIG:Debug>:${CMAKE_SOURCE_DIR}/../editor/3rdlib/Debug/LinearMath.lib> $<$<CONFIG:Release>:${CMAKE_SOURCE_DIR}/../editor/3rdlib/Release/LinearMath.lib>)
+target_link_libraries(editor $<$<CONFIG:Debug>:${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/debug/libfbxsdk.lib> $<$<CONFIG:Release>:${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/release/libfbxsdk.lib>)
+target_link_libraries(editor $<$<CONFIG:Debug>:${FREEIMGE_PATH}/lib/FreeImaged.lib> $<$<CONFIG:Release>:${FREEIMGE_PATH}/lib/FreeImage.lib>)
 
 # 支持windows窗口
 set_target_properties(
