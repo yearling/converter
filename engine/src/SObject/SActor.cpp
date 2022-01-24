@@ -7,6 +7,11 @@ SActor::SActor()
 {
 }
 
+SActor::SActor(SObject* parent):SObject(parent)
+{
+
+}
+
 SActor::~SActor()
 {
 
@@ -20,7 +25,7 @@ bool SActor::LoadFromJson(const Json::Value& root_json)
 		//actors
 		Json::Value root_component_value = root_json["root_component"];
 		{
-			TRefCountPtr new_root_component = SComponent::ComponentFactory(root_component_value);
+			TRefCountPtr new_root_component = SComponent::ComponentFactory(root_component_value,this);
 			if (new_root_component)
 			{
 				root_component_ = new_root_component;

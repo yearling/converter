@@ -1,6 +1,51 @@
 #include "Utility/YPath.h"
 #include "Platform/Windows/YSysUtility.h"
+#include "Engine/YLog.h"
 const std::string YPath::separators = "\\/";
+
+bool YPath::IsAssetAbsolutePath(const std::string& path)
+{
+	if (path.empty())
+	{
+		return false;
+	}
+	else
+	{
+		return path[0] == '/';
+	}
+}
+
+bool YPath::IsAssetExist(const std::string& path)
+{
+	if (path.empty())
+	{
+		WARNING_INFO("find asset name empty");
+		return false;
+	}
+	if (path[0] != '/')
+	{
+		ERROR_INFO("asset path is not absolute path");
+		return false;
+	}
+	std::string file_path = path.substr(1);
+	return YPath::FileExists(file_path);
+}
+
+std::string YPath::ConverAssetPathToFilePath(const std::string& asset_path)
+{
+	if (asset_path.empty())
+		return asset_path;
+
+	if (asset_path[0] != '/')
+	{
+		return asset_path;
+	}
+	else
+	{
+		return asset_path.substr(1);
+	}
+}
+
 std::vector<std::string> YPath::GetFilePathsSeperate(const std::string& path)
 {
 	std::vector<std::string> file_pathes;

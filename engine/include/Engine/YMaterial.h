@@ -16,7 +16,7 @@ enum MaterialDomain
 	MD_UserInterface = 5
 };
 
-enum BlendModel
+enum BlendMode
 {
 	BM_Opaque = 0,
 	BM_Mask = 1,
@@ -43,13 +43,13 @@ enum ShadingModel
 struct SRenderState
 {
 	MaterialDomain material_domain = MaterialDomain::MD_Surface;
-	BlendModel blend_model = BlendModel::BM_Opaque;
+	BlendMode blend_model = BlendMode::BM_Opaque;
 	ShadingModel shading_model = ShadingModel::SM_DefaultLit;
 	bool two_side = false;
 };
 
-typedef std::variant<float, YVector4, YVector2, YVector, std::string, YMatrix> MaterialParam;
 
+typedef std::variant<float, YVector4, YVector2, YVector, std::string, YMatrix> MaterialParam;
 struct YMaterial
 {
 public:
@@ -64,8 +64,7 @@ public:
 	const SRenderState& GetRenderState() const;
 protected:
 	virtual void SetRenderState(const SRenderState& render_state);
-	std::string name;
+	std::string name_;
 	std::unordered_map<std::string, MaterialParam> paramters_;
 	SRenderState render_state_;
-	bool dynamic_ = false;
 };

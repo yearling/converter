@@ -86,6 +86,7 @@ void SSceneComponent::UpdateChildTransforms()
 
 bool SSceneComponent::LoadFromJson(const Json::Value& root_json)
 {
+	assert(parent_);
 	if (root_json.isMember("local_translation"))
 	{
 		YJsonHelper::ConvertJsonToVector(root_json["local_translation"],local_translation_);
@@ -106,7 +107,7 @@ bool SSceneComponent::LoadFromJson(const Json::Value& root_json)
 		for (int i = 0; i <(int) root_json["children"].size(); ++i)
 		{
 			const Json::Value& value = root_json["children"][i];
-			TRefCountPtr<SSceneComponent> new_component = SComponent::ComponentFactory(value);
+			TRefCountPtr<SSceneComponent> new_component = SComponent::ComponentFactory(value,this);
 			if (new_component)
 			{
 				child_components_.push_back(new_component);
@@ -167,7 +168,7 @@ std::unordered_map<std::string, std::function<SSceneComponent*()> > register_com
 	{"DirectionLight",[]() { return new SDirectionLightComponent(); }},
 	{"PerspectiveCamera",[]() { return new SPerspectiveCameraComponent(); }}
 };
-TRefCountPtr<SSceneComponent> SComponent::ComponentFactory(const Json::Value& RootJson)
+TRefCountPtr<SSceneComponent> SComponent::ComponentFactory(const Json::Value& RootJson, SObject* parent)
 {
 	if (RootJson.isMember("type"))
 	{
@@ -177,6 +178,7 @@ TRefCountPtr<SSceneComponent> SComponent::ComponentFactory(const Json::Value& Ro
 			return nullptr;
 		}
 		TRefCountPtr<SSceneComponent> new_component = register_component_map[compoennt_type_name]();
+		new_component->SetParent(parent);
 		if (!new_component->LoadFromJson(RootJson))
 		{
 			return nullptr;

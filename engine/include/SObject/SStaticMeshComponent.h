@@ -2,6 +2,8 @@
 #include "SObject/SComponent.h"
 #include "Engine/YStaticMesh.h"
 #include <memory>
+#include "SObject/SMaterial.h"
+#include "SStaticMesh.h"
 class SStaticMeshComponent:public SRenderComponent
 {
 public:
@@ -14,5 +16,7 @@ public:
 	YStaticMesh* GetMesh();
 	void UpdateBound() override;
 protected:
-	std::unique_ptr<YStaticMesh> static_mesh_;
+	//std::unique_ptr<YStaticMesh> static_mesh_;
+	//std::vector<TRefCountPtr<SMaterial>> materials_;
+	TRefCountPtr<SStaticMesh> static_mesh_;
 };

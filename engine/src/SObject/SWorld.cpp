@@ -8,6 +8,11 @@ SWorld::SWorld()
 
 }
 
+SWorld::SWorld(SObject* parent):SObject(parent)
+{
+
+}
+
 SWorld::~SWorld()
 {
 
@@ -22,7 +27,7 @@ bool SWorld::LoadFromJson(const Json::Value& RootJson)
 		for (int actor_index = 0; actor_index < (int)actors.size(); ++actor_index)
 		{
 			const Json::Value actor_json = actors[actor_index];
-			TRefCountPtr<SActor> actor_ins = SObjectManager::ConstructInstance<SActor>();
+			TRefCountPtr<SActor> actor_ins = SObjectManager::ConstructInstance<SActor>(this);
 			if (!actor_ins->LoadFromJson(actor_json))
 			{
 				ERROR_INFO("load SActor failed! json file \n", actor_json.toStyledString());

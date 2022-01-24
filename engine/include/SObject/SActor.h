@@ -10,6 +10,7 @@ class SActor :public SObject
 {
 public:
 	SActor();
+	SActor(SObject* parent);
 	virtual ~SActor();
 	static constexpr  bool IsInstance() { return true; }
 	//virtual bool LoadFromJson(const TSharedPtr<FJsonObject>&RootJson);

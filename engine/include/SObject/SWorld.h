@@ -9,6 +9,7 @@ class SWorld :public SObject
 {
 public:
 	SWorld();
+	SWorld(SObject* parent);
 	virtual ~SWorld();
 	static constexpr bool IsInstance() { return false; };
 	virtual bool LoadFromJson(const Json::Value& RootJson);

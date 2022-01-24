@@ -7,12 +7,15 @@ class STexture :public SObject
 {
 
 public:
+	STexture();
+	STexture(SObject* parent);
+	~STexture() override;
 	static constexpr bool IsInstance() { return false; };
 	void SaveToPackage(const std::string& Path) override;
 	bool PostLoadOp() override;
 	void Update(double deta_time) override;
     bool LoadFromMemoryFile(std::unique_ptr<MemoryFile> mem_file) override;
-	bool LoadFromPackage(const std::string& Path) override;
+	bool LoadFromPackage(const std::string& path) override;
 	TextureType GetTextureType()const;
 	PixelFormat GetPixelFormat()const;
 	int GetMipMapLevel() const;

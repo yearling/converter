@@ -101,8 +101,8 @@ void YEngine::ShutDown()
 
 void YEngine::TestLoad()
 {
-	std::string world_map_path = "map/world.json";
-	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructUnifyFromPackage<SWorld>(world_map_path);
+	std::string world_map_path = "/map/world.json";
+	TRefCountPtr<SWorld> new_world = SObjectManager::ConstructFromPackage<SWorld>(world_map_path,nullptr);
 	SWorld::SetWorld(new_world);
 	new_world->PostLoadOp();
 	new_world->GetMainScene()->RegisterEvents();
@@ -120,8 +120,8 @@ void YEngine::TestLoad()
 	int height = main_window->GetHeight();
 	g_windows_event_manager->OnWindowSizeChange(width, height);
 
-	std::string test_pic = "textures/uv.png";
-	TRefCountPtr<STexture> texture = SObjectManager::ConstructUnifyFromPackage<STexture>(test_pic);
+	std::string test_pic = "/textures/uv.png";
+	TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic,nullptr);
 	if (texture)
 	{
 		texture->UploadGPUBuffer();

@@ -41,7 +41,7 @@ public:
 	SActor* GetParentActor()const;
 
 	//Create Factory
-	static TRefCountPtr<SSceneComponent> ComponentFactory(const Json::Value& RootJson);
+	static TRefCountPtr<SSceneComponent> ComponentFactory(const Json::Value& RootJson,SObject* parent);
 
 protected:
 	virtual bool LoadChildFromJson(const Json::Value& root_json);

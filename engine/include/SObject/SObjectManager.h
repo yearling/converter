@@ -12,27 +12,26 @@ class SObjectManager
 public:
 	SObjectManager();
 	template<typename ClassType, typename...T>
-	static TRefCountPtr<ClassType> ConstructInstance(T&&... Args)
+	static TRefCountPtr<ClassType> ConstructInstance(SObject* parent,T&&... Args)
 	{
 		assert(ClassType::IsInstance());
-		TRefCountPtr<ClassType> Obj(new ClassType(Forward<T>(Args)...), true);
+		TRefCountPtr<ClassType> Obj(new ClassType(parent,Forward<T>(Args)...), true);
 		GetManager().instanced_objects_.insert(TRefCountPtr<SObject>(Obj.GetReference(), true));
 		return Obj;
 	}
 
 	template<typename ClassType, typename...T>
-	static TRefCountPtr<ClassType> ConstructUnique(T&&... Args)
+	static TRefCountPtr<ClassType> ConstructFromPackage(const std::string& PackagePath,SObject* parent, T&&... Args)
 	{
 		assert(!ClassType::IsInstance());
-		TRefCountPtr<ClassType> Obj(new ClassType(Forward<T>(Args)...), true);
-		GetManager().instanced_objects_.insert(TRefCountPtr<SObject>(Obj.GetReference(), true));
-		return Obj;
-	}
-
-	template<typename ClassType, typename...T>
-	static TRefCountPtr<ClassType> ConstructUnifyFromPackage(const std::string& PackagePath, T&&... Args)
-	{
-		assert(!ClassType::IsInstance());
+		if (parent == nullptr)
+		{
+			if (!YPath::IsAssetAbsolutePath(PackagePath))
+			{
+				ERROR_INFO(PackagePath, " should be an absolute path, because it's parent is nullptr");
+				return nullptr;
+			}
+		}
 		std::string PackagePathNoSuffix = PackagePath;
 		// todo
 		//FPaths::NormalizeFilename(PackagePathNoSuffix);
@@ -42,11 +41,16 @@ public:
 		{
 			package_name = PackagePath;
 		}
-
+		// get absolute path package_name 
+		if (!YPath::IsAssetAbsolutePath(package_name))
+		{
+			assert(parent);
+			package_name = YPath::PathCombine(parent->GetAbsoluteCurDir(), package_name);
+		}
 		auto find_result = GetManager().unify_objects_.find(package_name);
 		if (find_result == GetManager().unify_objects_.end())
 		{
-			TRefCountPtr<ClassType> Obj((new ClassType(Forward<T>(Args)...)), true);
+			TRefCountPtr<ClassType> Obj((new ClassType(parent,Forward<T>(Args)...)), true);
 			if (Obj->LoadFromPackage(package_name))
 			{
 				GetManager().unify_objects_[package_name] = TRefCountPtr<SObject>(Obj.GetReference());

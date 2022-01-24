@@ -1,7 +1,8 @@
 #include "SObject/SStaticMeshComponent.h"
 #include "Engine/YRenderScene.h"
+#include "SObject/SObjectManager.h"
 
-SStaticMeshComponent::SStaticMeshComponent():
+SStaticMeshComponent::SStaticMeshComponent() :
 	SRenderComponent(EComponentType::StaticMeshComponent)
 {
 
@@ -18,16 +19,20 @@ bool SStaticMeshComponent::LoadFromJson(const Json::Value& RootJson)
 	if (RootJson.isMember("model"))
 	{
 		std::string model_path = RootJson["model"].asString();
-		static_mesh_ = std::make_unique<YStaticMesh>();
-		if (static_mesh_->LoadV0(model_path))
+		TRefCountPtr<SStaticMesh> static_mesh = SObjectManager::ConstructFromPackage<SStaticMesh>(model_path, this);
+		if (!static_mesh)
 		{
-			LOG_INFO("Static mesh load success! ",model_path);
-			return true;
+			ERROR_INFO("load static mesh ", model_path, "failed!");
+			return false;
 		}
+		static_mesh_ = static_mesh;
 	}
-	static_mesh_ = nullptr;
-	LOG_INFO("Static mesh load failed! ");
-	return false;
+	else
+	{
+		ERROR_INFO("SstaticMeshComponent do not have a model");
+		return false;
+	}
+	return true;
 }
 
 bool SStaticMeshComponent::PostLoadOp()
@@ -35,14 +40,7 @@ bool SStaticMeshComponent::PostLoadOp()
 	SRenderComponent::PostLoadOp();
 	if (static_mesh_)
 	{
-		if (static_mesh_->AllocGpuResource())
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		static_mesh_->PostLoadOp();
 	}
 	return true;
 }
@@ -60,14 +58,14 @@ void SStaticMeshComponent::RegisterToScene(class YScene* scene)
 
 YStaticMesh* SStaticMeshComponent::GetMesh()
 {
-	return static_mesh_.get();
+	return static_mesh_->GetStaticMesh();
 }
 
 void SStaticMeshComponent::UpdateBound()
 {
 	if (static_mesh_)
 	{
-		bounds_ = static_mesh_->raw_meshes[0].aabb.TransformBy(component_to_world_);
+		bounds_ = static_mesh_->GetStaticMesh()->raw_meshes[0].aabb.TransformBy(component_to_world_);
 	}
 }
 

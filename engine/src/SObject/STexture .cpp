@@ -208,6 +208,22 @@ struct FreeImageHelper
 		return false;
 	}
 };
+
+STexture::STexture()
+{
+
+}
+
+STexture::STexture(SObject* parent):SObject(parent)
+{
+
+}
+
+STexture::~STexture()
+{
+
+}
+
 void STexture::SaveToPackage(const std::string& Path)
 {
 }

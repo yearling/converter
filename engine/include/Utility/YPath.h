@@ -41,4 +41,10 @@ struct YPath
 	static void CreateDirectoryRecursive(const std::string& dir_path);
 	static const char directory_seperater = '/';
 	static const std::string separators;
+	
+	// asset absolutely path begin with '/'
+	static bool IsAssetAbsolutePath(const std::string& path);
+	// remove '/' at the begin of the path
+	static bool IsAssetExist(const std::string& path);
+	static std::string ConverAssetPathToFilePath(const std::string& asset_path);
 };

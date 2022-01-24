@@ -301,39 +301,26 @@ bool YStaticMesh::SaveV0(const std::string& dir)
 bool YStaticMesh::LoadV0(const std::string& file_path)
 {
 	// read model.json
-	const std::string model_json_path = file_path + SObject::json_extension_with_dot;
-	Json::Value json_root;
-	if (!YJsonHelper::LoadJsonFromFile(model_json_path, json_root))
+	model_name = file_path;
+	std::string parent_dir_path = YPath::GetPath(file_path);
+	std::string static_mesh_asset_path = file_path + SObject::asset_extension_with_dot;
+	YFile file_to_read(static_mesh_asset_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_BINARY));
+	std::unique_ptr<MemoryFile> mem_file = file_to_read.ReadFile();
+	if (mem_file)
 	{
+		int version = 0;
+		(*mem_file) << version;
+		(*mem_file) << raw_meshes;
+
+		for (auto& mesh : raw_meshes)
+		{
+			mesh.ComputeAABB();
+		}
+		return true;
+	}
+	else
+	{
+		ERROR_INFO("static mesh load ", static_mesh_asset_path, " failed!");
 		return false;
 	}
-	
-	if (json_root.isMember("model_asset"))
-	{
-		std::string static_mesh_asset = json_root["model_asset"].asString();
-		model_name = static_mesh_asset;
-		std::string parent_dir_path = YPath::GetPath(file_path);
-		std::string static_mesh_asset_path = YPath::PathCombine(parent_dir_path, static_mesh_asset);
-		static_mesh_asset_path += SObject::asset_extension_with_dot;
-		YFile file_to_read(static_mesh_asset_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_BINARY));
-		std::unique_ptr<MemoryFile> mem_file = file_to_read.ReadFile();
-		if (mem_file)
-		{
-			int version = 0;
-			(*mem_file) << version;
-			(*mem_file) << raw_meshes;
-
-			for (auto& mesh : raw_meshes)
-			{
-				mesh.ComputeAABB();
-			}
-			return true;
-		}
-		else
-		{
-			ERROR_INFO("static mesh load ", static_mesh_asset_path, " failed!");
-			return false;
-		}
-	}
-	return true;
 }

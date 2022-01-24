@@ -23,10 +23,16 @@ public:
 	static const std::string  json_extension;
 	static const std::string  json_extension_with_dot;
 	const std::string& GetName() const; 
+	std::string GetAbsolutePath() const;
+	SObject* GetParent() const;
+	void SetParent(SObject* parent);
 protected:
 	SObject();
-	virtual bool LoadFromPackage(const std::string& Path);
+	explicit SObject(SObject* parent);
+	virtual bool LoadFromPackage(const std::string& path);
+	std::string GetAbsoluteCurDir() const;
 	std::string name_;
+	SObject* parent_ = nullptr;
 private:
 	friend class SObjectManager;
 };
