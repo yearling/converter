@@ -59,12 +59,15 @@ public:
 	virtual void SetFloat(const std::string& name, float value);
 	virtual void SetVector4(const std::string& name, const YVector4& value);
 	virtual void SetTexture(const std::string& name, const std::string& pic_path);
-	virtual void SetSampler(const std::string& name, SamplerType sample_type);
-	virtual void SetSampler(const std::string& name, SamplerAddressMode address_mode_x, SamplerAddressMode address_mode_y, SamplerFilterType filter_mode);
 	const SRenderState& GetRenderState() const;
+	bool AllocGpuResource();
 protected:
 	virtual void SetRenderState(const SRenderState& render_state);
 	std::string name_;
 	std::unordered_map<std::string, MaterialParam> paramters_;
 	SRenderState render_state_;
+
+
+protected:
+	std::vector<unsigned char> constance_buffer;
 };

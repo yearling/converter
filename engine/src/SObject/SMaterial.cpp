@@ -165,6 +165,7 @@ bool SMaterial::PostLoadOp()
 	material_ = std::make_unique<YMaterial>();
 	material_->paramters_ = parameters_;
 	material_->render_state_ = render_state_;
+	material_ ->AllocGpuResource();
 	return true;
 }
 

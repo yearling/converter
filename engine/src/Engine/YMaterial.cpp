@@ -21,20 +21,15 @@ void YMaterial::SetTexture(const std::string& name, const std::string& pic_path)
 
 }
 
-void YMaterial::SetSampler(const std::string& name, SamplerType sample_type)
-{
-
-}
-
-void YMaterial::SetSampler(const std::string& name, SamplerAddressMode address_mode_x, SamplerAddressMode address_mode_y, SamplerFilterType filter_mode)
-{
-
-}
-
 const SRenderState& YMaterial::GetRenderState() const
 {
 
 	return render_state_;
+}
+
+bool YMaterial::AllocGpuResource()
+{
+	return true;
 }
 
 void YMaterial::SetRenderState(const SRenderState& render_state)
