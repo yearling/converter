@@ -19,9 +19,8 @@ macro(source_group_by_dir source_files)
 endmacro(source_group_by_dir)
 
 
-SET(THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+SET(THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 
-add_subdirectory(${THIRD_PARTY}/jsoncpp)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../libs)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${THIRD_PARTY}/jsoncpp/include ${THIRD_PARTY}/freeimage/include)

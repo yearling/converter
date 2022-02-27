@@ -27,7 +27,8 @@ SET(THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 SET(FBX_BIN ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64)
 SET(ENGINE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../engine)
 SET(FBXIMPORTER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../importer)
-SET(FREEIMGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../engine/third_party/freeimage)
+SET(FREEIMGE_PATH ${THIRD_PARTY}/freeimage)
+SET(JSONCPP_PATH ${THIRD_PARTY}/jsoncpp)
 SET(GAME_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
 #第三方库头文件
@@ -37,12 +38,13 @@ SET(THIRD_PARTY_INCLUDE ${THIRD_PARTY}/fbxsdk/include ${FREEIMGE_PATH}/include)
 add_subdirectory(${THIRD_PARTY}/imgui ${THIRD_PARTY}/imgui/${PROJECT_NAME}/build)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../engine ${CMAKE_CURRENT_SOURCE_DIR}/../engine/${PROJECT_NAME}/build)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../importer ${CMAKE_CURRENT_SOURCE_DIR}/../importer/${PROJECT_NAME}/build)
+add_subdirectory(${THIRD_PARTY}/jsoncpp ${THIRD_PARTY}/jsoncpp/${PROJECT_NAME}/build)
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/third_party/jsoncpp)
 #当前工程include目录
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include 
                     ${THIRD_PARTY_INCLUDE} 
                     ${ENGINE_PATH}/include 
-                    ${ENGINE_PATH}/third_party/jsoncpp/include
+                    ${JSONCPP_PATH}/include
                     ${FBXIMPORTER_PATH}/include
                     )
 
