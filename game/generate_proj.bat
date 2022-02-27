@@ -1,0 +1,1 @@
+cmake -G "Visual Studio 16 2019" -Bbuild  -A x64

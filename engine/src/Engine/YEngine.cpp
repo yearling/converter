@@ -85,6 +85,7 @@ void YEngine::Update()
 	render_scene->deta_time = delta_time;
 	render_scene->game_time = game_time;
 	renderer->Render(std::move(render_scene));
+
 	// 正式的场景绘制工作
 	//DrawUI();
 }

@@ -1,8 +1,8 @@
-# °æ±¾ÒªÇó
+ï»¿# ç‰ˆæœ¬è¦æ±‚
 cmake_minimum_required(VERSION 3.12.1)
 
 SET( BuildType "editor")
-#°´ÕÕvisual studioµÄÄ¿Â¼½á¹¹·Ö×é
+#æŒ‰ç…§visual studioçš„ç›®å½•ç»“æ„åˆ†ç»„
 macro(source_group_by_dir source_files)
     if(MSVC)
         set(sgbd_cur_dir ${CMAKE_CURRENT_SOURCE_DIR})
@@ -19,26 +19,26 @@ macro(source_group_by_dir source_files)
     endif(MSVC)
 endmacro(source_group_by_dir)
 
-# ¹¤³ÌÃû
+# å·¥ç¨‹å
 project(editor)
 
-#µÚÈı·½¿âÂ·¾¶
-SET(THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+#ç¬¬ä¸‰æ–¹åº“è·¯å¾„
+SET(THIRD_PARTY ${CMAKE_CURRENT_SOURCE_DIR}/../third_party)
 SET(FBX_BIN ${THIRD_PARTY}/fbxsdk/lib/vs2017/x64)
-SET(ENGINE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/engine)
-SET(EDITOR_PATH ${CMAKE_CURRENT_SOURCE_DIR}/editor)
-SET(FBXIMPORTER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/importer)
-SET(FREEIMGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/engine/third_party/freeimage)
+SET(ENGINE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../engine)
+SET(EDITOR_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+SET(FBXIMPORTER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../importer)
+SET(FREEIMGE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../engine/third_party/freeimage)
 
-#µÚÈı·½¿âÍ·ÎÄ¼ş
+#ç¬¬ä¸‰æ–¹åº“å¤´æ–‡ä»¶
 SET(THIRD_PARTY_INCLUDE ${THIRD_PARTY}/fbxsdk/include ${FREEIMGE_PATH}/include)
 
 #add_subdirectory(${THIRD_PARTY}/jsoncpp)
-add_subdirectory(${THIRD_PARTY}/imgui)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/importer)
+add_subdirectory(${THIRD_PARTY}/imgui ${THIRD_PARTY}/imgui/${PROJECT_NAME}/build)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../engine ${CMAKE_CURRENT_SOURCE_DIR}/../engine/${PROJECT_NAME}/build)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../importer ${CMAKE_CURRENT_SOURCE_DIR}/../importer/${PROJECT_NAME}/build)
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine/third_party/jsoncpp)
-#µ±Ç°¹¤³ÌincludeÄ¿Â¼
+#å½“å‰å·¥ç¨‹includeç›®å½•
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include 
                     ${THIRD_PARTY_INCLUDE} 
                     ${ENGINE_PATH}/include 
@@ -48,10 +48,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     )
 
 
-# Ìí¼Ó±àÒëºê
+# æ·»åŠ ç¼–è¯‘å®
 add_compile_definitions(FBXSDK_SHARED EDITOR)
 
-# Ìí¼Óc++±ê×¼
+# æ·»åŠ c++æ ‡å‡†
 if(MSVC)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR")
 else(MSVC)
@@ -65,10 +65,10 @@ file(GLOB_RECURSE HEAD_LIST "${EDITOR_PATH}/include/*.h" )
 # hlsl files
 file(GLOB_RECURSE HLSL_LIST "${EDITOR_PATH}/src/*.hlsl")
 # message(${HLSL_LIST})
-# Ìí¼Óµ½¹¤³Ì
+# æ·»åŠ åˆ°å·¥ç¨‹
 add_executable(editor ${SRC_LIST} ${HEAD_LIST})
 
-# ´´½¨visual studio Ä¿Â¼
+# åˆ›å»ºvisual studio ç›®å½•
 set(all_files ${HLSL_LIST} ${HEAD_LIST} ${SRC_LIST} )
 source_group_by_dir(all_files)
 
@@ -76,20 +76,20 @@ source_group_by_dir(all_files)
 target_link_libraries(editor $<$<CONFIG:Debug>:${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/debug/libfbxsdk.lib> $<$<CONFIG:Release>:${THIRD_PARTY}/fbxsdk/lib/vs2017/x64/release/libfbxsdk.lib>)
 target_link_libraries(editor $<$<CONFIG:Debug>:${FREEIMGE_PATH}/lib/FreeImaged.lib> $<$<CONFIG:Release>:${FREEIMGE_PATH}/lib/FreeImage.lib>)
 
-# Ö§³Öwindows´°¿Ú
+# æ”¯æŒwindowsçª—å£
 set_target_properties(
 		editor
 		PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:WINDOWS /ignore:4099"
 				   LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS /ignore:4099"
 	)
 
-# ÉèÖÃdebugÄ¿Â¼
+# è®¾ç½®debugç›®å½•
 set_target_properties(editor PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Debug)
 
-# ÉèÖÃ¿ªÊ¼¹¤³Ì
+# è®¾ç½®å¼€å§‹å·¥ç¨‹
 set_property (DIRECTORY PROPERTY VS_STARTUP_PROJECT editor)
 
-# ÉèÖÃÒªÁ´½ÓµÄ¿â
+# è®¾ç½®è¦é“¾æ¥çš„åº“
 target_link_libraries(editor d3d11)
 target_link_libraries(editor dxgi)
 target_link_libraries(editor dxguid)	
@@ -108,7 +108,7 @@ add_custom_command(
 		TARGET editor POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:${FBX_BIN}/debug/libfbxsdk.dll> $<$<CONFIG:Release>:${FBX_BIN}/release/libfbxsdk.dll> 	$<TARGET_FILE_DIR:editor>
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:${FREEIMGE_PATH}/lib/FreeImaged.dll> $<$<CONFIG:Release>:${FREEIMGE_PATH}/lib/FreeImage.dll> 	$<TARGET_FILE_DIR:editor>
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/engine/src/Shader/ 	$<TARGET_FILE_DIR:editor>/Shader
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../engine/src/Shader/ 	$<TARGET_FILE_DIR:editor>/Shader
         COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE_DIR:editor>/imgui.ini
 )
 
