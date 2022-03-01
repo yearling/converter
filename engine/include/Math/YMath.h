@@ -267,4 +267,10 @@ struct YMath
 	static bool LineBoxIntersection(const YBox& box, const class YRay& ray);
 	static bool LineBoxIntersection(const YBox& box, const class YRay& ray,float & time);
 	static inline bool IsPowerOfTwo(int size) { return (size > 0) && ((size & (size - 1)) == 0); }
+	template <typename T>
+	inline constexpr bool IsAligned(T Val, uint64_t Alignment)
+	{
+		return !((uint64_t)Val & (Alignment - 1));
+	}
+
 };

@@ -11,18 +11,18 @@
 #include "Engine/YLog.h"
 
 
-EditorApplication::EditorApplication()
+GameApplication::GameApplication()
 {
 	YApplication::is_editor = false;
 }
 
-EditorApplication::~EditorApplication()
+GameApplication::~GameApplication()
 {
 
 }
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT EditorApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) throw()
+LRESULT GameApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) throw()
 {
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam))
 		return true;
@@ -119,7 +119,7 @@ LRESULT EditorApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
 	return YApplication::MyProc(hwnd, msg, wParam, lParam);
 }
 
-bool EditorApplication::Initial()
+bool GameApplication::Initial()
 {
 
 	WindowCreate(defaut_windows_width, defaut_windows_height);
@@ -134,7 +134,7 @@ bool EditorApplication::Initial()
 	return true;
 }
 
-void EditorApplication::Render()
+void GameApplication::Render()
 {
 	double delta_time = 0.0;
 	double game_time = 0.0;
@@ -159,7 +159,7 @@ void EditorApplication::Render()
 	g_device->Present();
 }
 
-void EditorApplication::Exit()
+void GameApplication::Exit()
 {
 	// g_editor->Close();
 	YEngine* engine = YEngine::GetEngine();
@@ -168,7 +168,7 @@ void EditorApplication::Exit()
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int cmdShow)
 {
-	EditorApplication app;
+	GameApplication app;
 	app.SetInstance(hInstance);
 	app.Initial();
 	app.Run();

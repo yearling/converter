@@ -50,7 +50,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 
 
 # 添加编译宏
-add_compile_definitions(FBXSDK_SHARED GAME)
+add_compile_definitions(FBXSDK_SHARED GAME PLATFORM_WINDOWS=1)
 
 # 添加c++标准
 if(MSVC)

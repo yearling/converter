@@ -7,11 +7,11 @@
 #include "Utility/YAverageSmooth.h"
 #include "Engine/YEngine.h"
 
-class EditorApplication :public YApplication
+class GameApplication :public YApplication
 {
 public:
-	EditorApplication();
-	~EditorApplication() override;
+	GameApplication();
+	~GameApplication() override;
 	virtual LRESULT MyProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) throw();
 	void Render() override;
 	bool Initial() override;

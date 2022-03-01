@@ -1,0 +1,1 @@
+1. editor 与 game 最大的区别在于， 为了使用多窗口，editor的坐标使用是全屏幕的绝对坐标， 而game用的是窗口空间的坐标，在窗口的YApplication::MyPro可以看的出区别
