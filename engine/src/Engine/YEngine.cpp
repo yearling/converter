@@ -11,6 +11,7 @@
 #include "Engine/YCanvasUtility.h"
 #include "FreeImage.h"
 #include "SObject/STexture.h"
+#include "Engine/TaskGraphInterfaces.h"
 
 bool YEngine::Init()
 {
@@ -51,6 +52,10 @@ bool YEngine::Init()
 		ERROR_INFO("Third party libaray initial failed!");
 		return false;
 	}
+
+	// initialize task graph sub-system with potential multiple threads
+	FTaskGraphInterface::Startup(FPlatformProcess::NumberOfCores());
+	FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
 	return true;
 }
 
@@ -98,6 +103,7 @@ void YEngine::ShutDown()
 	g_input_manager = nullptr;
 	renderer->Clearup();
 	ShutDownThridParty();
+	FTaskGraphInterface::Get().Shutdown();
 }
 
 void YEngine::TestLoad()

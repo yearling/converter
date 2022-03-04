@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <sysinfoapi.h>
 #include "Platform/Windows/WindowsRunnableThread.h"
+#include "Math/YMath.h"
 
 FEvent* FPlatformProcess::CreateSynchEvent(bool bIsManualReset)
 {
@@ -109,14 +110,24 @@ bool FWindowsPlatformProcess::SupportsMultithreading()
 
 int FWindowsPlatformProcess::NumberOfWorkerThreadsToSpawn()
 {
-	static int MaxGameThreads = 4;
-	static int MaxThreads = 16;
+	static int32_t MaxServerWorkerThreads = 4;
+	static int32_t MaxWorkerThreads = 26;
 
 	int NumberOfCores = FWindowsPlatformProcess::NumberOfCores();
-	//int MaxWorkerThreadsWanted = (IsRunningGame() || IsRunningDedicatedServer() || IsRunningClientOnly()) ? MaxGameThreads : MaxThreads;
-	int MaxWorkerThreadsWanted = MaxThreads;
-	// need to spawn at least one worker thread (see FTaskGraphImplementation)
-	return (std::max)((std::min)(NumberOfCores - 1, MaxWorkerThreadsWanted), 1);
+	int NumberofCoreIncludingHyperthreads = FWindowsPlatformProcess::NumberOfCoresIncludingHyperthreads();
+	int NumberOfThreads = 0;
+
+	if (NumberofCoreIncludingHyperthreads > NumberOfCores)
+	{
+		NumberOfThreads = NumberofCoreIncludingHyperthreads - 2;
+	}
+	else
+	{
+		NumberOfThreads = NumberOfCores - 1;
+	}
+	//int32 MaxWorkerThreadsWanted = IsRunningDedicatedServer() ? MaxServerWorkerThreads : MaxWorkerThreads;
+	int MaxWorkerThreadsWanted = MaxWorkerThreads;
+	return YMath::Max(YMath::Min(NumberOfThreads, MaxWorkerThreadsWanted), 1);
 }
 
 int FWindowsPlatformProcess::NumberOfCores()

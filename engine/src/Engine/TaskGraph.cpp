@@ -1,4 +1,4 @@
-// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
+﻿// Copyright 1998-2017 Epic Games, Inc. All Rights Reserved.
 
 
 #include "Engine/TaskGraphInterfaces.h"
@@ -13,7 +13,8 @@
 
 static int GNumWorkerThreadsToIgnore = 0;
 #define verify(x) if(!x){ abort();}
-#if (PLATFORM_XBOXONE || PLATFORM_PS4 || PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_LINUX) && !IS_PROGRAM && WITH_ENGINE && !UE_SERVER
+// 注意手机与console pc的区别
+#if (PLATFORM_XBOXONE || PLATFORM_PS4 || WIN32 || PLATFORM_MAC || PLATFORM_LINUX)
 #define CREATE_HIPRI_TASK_THREADS (1)
 #define CREATE_BACKGROUND_TASK_THREADS (1)
 #else
@@ -23,57 +24,57 @@ static int GNumWorkerThreadsToIgnore = 0;
 
 namespace ENamedThreads
 {
-	 Type RenderThread = ENamedThreads::GameThread; // defaults to game and is set and reset by the render thread itself
-	 Type RenderThread_Local = ENamedThreads::GameThread_Local; // defaults to game local and is set and reset by the render thread itself
-	 int bHasBackgroundThreads = CREATE_BACKGROUND_TASK_THREADS;
-	 int bHasHighPriorityThreads = CREATE_HIPRI_TASK_THREADS;
+	  std::atomic<Type> FRenderThreadStatics::RenderThread(ENamedThreads::GameThread); // defaults to game and is set and reset by the render thread itself
+	  std::atomic<Type> FRenderThreadStatics::RenderThread_Local(ENamedThreads::GameThread_Local); // defaults to game local and is set and reset by the render thread itself
+	  int32_t bHasBackgroundThreads = CREATE_BACKGROUND_TASK_THREADS;
+	  int32_t bHasHighPriorityThreads = CREATE_HIPRI_TASK_THREADS;
 }
 
 #if CREATE_HIPRI_TASK_THREADS || CREATE_BACKGROUND_TASK_THREADS
-static void ThreadSwitchForABTest(const TArray<FString>& Args)
-{
-	if (Args.Num() == 2)
-	{
-#if CREATE_HIPRI_TASK_THREADS
-		ENamedThreads::bHasHighPriorityThreads = !!FCString::Atoi(*Args[0]);
-#endif
-#if CREATE_BACKGROUND_TASK_THREADS
-		ENamedThreads::bHasBackgroundThreads = !!FCString::Atoi(*Args[1]);
-#endif
-	}
-	else
-	{
-		UE_LOG(LogConsoleResponse, Display, TEXT("This command requires two arguments, both 0 or 1 to control the use of high priority and background priority threads, respectively."));
-	}
-	UE_LOG(LogConsoleResponse, Display, TEXT("High priority task threads: %d    Bacxkground priority threads: %d"), ENamedThreads::bHasHighPriorityThreads, ENamedThreads::bHasBackgroundThreads);
-}
-
-static FAutoConsoleCommand ThreadSwitchForABTestCommand(
-	TEXT("TaskGraph.ABTestThreads"),
-	TEXT("Takes two 0/1 arguments. Equivalent to setting TaskGraph.UseHiPriThreads and TaskGraph.UseBackgroundThreads, respectively. Packages as one command for use with the abtest command."),
-	FConsoleCommandWithArgsDelegate::CreateStatic(&ThreadSwitchForABTest)
-);
+//static void ThreadSwitchForABTest(const TArray<FString>& Args)
+//{
+//	if (Args.Num() == 2)
+//	{
+//#if CREATE_HIPRI_TASK_THREADS
+//		ENamedThreads::bHasHighPriorityThreads = !!FCString::Atoi(*Args[0]);
+//#endif
+//#if CREATE_BACKGROUND_TASK_THREADS
+//		ENamedThreads::bHasBackgroundThreads = !!FCString::Atoi(*Args[1]);
+//#endif
+//	}
+//	else
+//	{
+//		UE_LOG(LogConsoleResponse, Display, TEXT("This command requires two arguments, both 0 or 1 to control the use of high priority and background priority threads, respectively."));
+//	}
+//	UE_LOG(LogConsoleResponse, Display, TEXT("High priority task threads: %d    Bacxkground priority threads: %d"), ENamedThreads::bHasHighPriorityThreads, ENamedThreads::bHasBackgroundThreads);
+//}
+//
+//static FAutoConsoleCommand ThreadSwitchForABTestCommand(
+//	TEXT("TaskGraph.ABTestThreads"),
+//	TEXT("Takes two 0/1 arguments. Equivalent to setting TaskGraph.UseHiPriThreads and TaskGraph.UseBackgroundThreads, respectively. Packages as one command for use with the abtest command."),
+//	FConsoleCommandWithArgsDelegate::CreateStatic(&ThreadSwitchForABTest)
+//);
 
 #endif 
 
 
-#if CREATE_BACKGROUND_TASK_THREADS
-static FAutoConsoleVariableRef CVarUseBackgroundThreads(
-	TEXT("TaskGraph.UseBackgroundThreads"),
-	ENamedThreads::bHasBackgroundThreads,
-	TEXT("If > 0, then use background threads, otherwise run background tasks on normal priority task threads. Used for performance tuning."),
-	ECVF_Cheat
-);
-#endif
-
-#if CREATE_HIPRI_TASK_THREADS
-static FAutoConsoleVariableRef CVarUseHiPriThreads(
-	TEXT("TaskGraph.UseHiPriThreads"),
-	ENamedThreads::bHasHighPriorityThreads,
-	TEXT("If > 0, then use hi priority task threads, otherwise run background tasks on normal priority task threads. Used for performance tuning."),
-	ECVF_Cheat
-);
-#endif
+//#if CREATE_BACKGROUND_TASK_THREADS
+//static FAutoConsoleVariableRef CVarUseBackgroundThreads(
+//	TEXT("TaskGraph.UseBackgroundThreads"),
+//	ENamedThreads::bHasBackgroundThreads,
+//	TEXT("If > 0, then use background threads, otherwise run background tasks on normal priority task threads. Used for performance tuning."),
+//	ECVF_Cheat
+//);
+//#endif
+//
+//#if CREATE_HIPRI_TASK_THREADS
+//static FAutoConsoleVariableRef CVarUseHiPriThreads(
+//	TEXT("TaskGraph.UseHiPriThreads"),
+//	ENamedThreads::bHasHighPriorityThreads,
+//	TEXT("If > 0, then use hi priority task threads, otherwise run background tasks on normal priority task threads. Used for performance tuning."),
+//	ECVF_Cheat
+//);
+//#endif
 
 #define PROFILE_TASKGRAPH (0)
 #if PROFILE_TASKGRAPH
@@ -698,7 +699,8 @@ public:
 	{
 		if (PriorityIndex != (ENamedThreads::BackgroundThreadPriority >> ENamedThreads::ThreadPriorityShift))
 		{
-			//FMemory::SetupTLSCachesOnCurrentThread();
+			//FMemory::SetupTLSCachesOnCurrentThread(); 
+			// todo 
 		}
 		assert(!QueueIndex);
 		do
@@ -779,6 +781,7 @@ private:
 
 		bool bCountAsStall = true;
 		verify(++Queue.RecursionGuard == 1);
+		bool bDidStall = false;
 		while (1)
 		{
 			FBaseGraphTask* Task = FindWork();
@@ -788,6 +791,7 @@ private:
 				if (FPlatformProcess::SupportsMultithreading())
 				{
 					Queue.StallRestartEvent->Wait((unsigned int)0xffffffff, bCountAsStall);
+					bDidStall = true;
 				}
 				if (Queue.QuitForShutdown || !FPlatformProcess::SupportsMultithreading())
 				{
@@ -798,6 +802,15 @@ private:
 				continue;
 			}
 			TestRandomizedThreads();
+
+#if PLATFORM_XBOXONE || WIN32
+			// the Win scheduler is ill behaved and will sometimes let BG tasks run even when other tasks are ready....kick the scheduler between tasks
+			if (!bDidStall && PriorityIndex == (ENamedThreads::BackgroundThreadPriority >> ENamedThreads::ThreadPriorityShift))
+			{
+				FPlatformProcess::Sleep(0);
+			}
+#endif
+			bDidStall = false;
 			Task->Execute(NewTasks, ENamedThreads::Type(ThreadId));
 			TestRandomizedThreads();
 			if (Queue.bStallForTuning)
@@ -905,8 +918,7 @@ public:
 		bCreatedBackgroundPriorityThreads = !!ENamedThreads::bHasBackgroundThreads;
 
 		int MaxTaskThreads = MAX_THREADS;
-		//int NumTaskThreads = FPlatformProcess::NumberOfWorkerThreadsToSpawn()+1;
-		int NumTaskThreads = 8;
+		int NumTaskThreads = FPlatformProcess::NumberOfWorkerThreadsToSpawn();
 
 		// if we don't want any performance-based threads, then force the task graph to not create any worker threads, and run in game thread
 		if (!FPlatformProcess::SupportsMultithreading())
@@ -997,7 +1009,6 @@ public:
 				Name += (ThreadIndex - (LastExternalThread + 1));
 				ThreadPri = TPri_BelowNormal; // we want normal tasks below normal threads like the game thread
 			}
-			ThreadPri = TPri_Highest;
 #ifndef _DEBUG 
 			unsigned int StackSize = 384 * 1024;
 #else
@@ -1360,7 +1371,7 @@ private:
 	enum
 	{
 		/** Compile time maximum number of threads. Didn't really need to be a compile time constant, but task thread are limited by MAX_LOCK_FREE_LINKS_AS_BITS **/
-		MAX_THREADS = 22 * (CREATE_HIPRI_TASK_THREADS + CREATE_BACKGROUND_TASK_THREADS + 1) + ENamedThreads::ActualRenderingThread + 1,
+		MAX_THREADS = 26 * (CREATE_HIPRI_TASK_THREADS + CREATE_BACKGROUND_TASK_THREADS + 1) + ENamedThreads::ActualRenderingThread + 1,
 		MAX_THREAD_PRIORITIES = 3
 	};
 
@@ -1601,9 +1612,10 @@ void FTaskGraphInterface::BroadcastSlow_OnlyUseForSpecialPurposes(bool bDoTaskTh
 	{
 		Tasks.Add(TGraphTask<FBroadcastTask>::CreateTask().ConstructAndDispatchWhenReady(Callback, ENamedThreads::SetTaskPriority(ENamedThreads::RHIThread, ENamedThreads::HighTaskPriority), nullptr, nullptr, nullptr));
 	}*/
-	if (ENamedThreads::RenderThread != ENamedThreads::GameThread)
+	ENamedThreads::Type RenderThread = ENamedThreads::GetRenderThread();
+	if (RenderThread != ENamedThreads::GameThread)
 	{
-		Tasks.push_back(TGraphTask<FBroadcastTask>::CreateTask().ConstructAndDispatchWhenReady(Callback, ENamedThreads::SetTaskPriority(ENamedThreads::RenderThread, ENamedThreads::HighTaskPriority), nullptr, nullptr, nullptr));
+		Tasks.push_back(TGraphTask<FBroadcastTask>::CreateTask().ConstructAndDispatchWhenReady(Callback, ENamedThreads::SetTaskPriority(RenderThread, ENamedThreads::HighTaskPriority), nullptr, nullptr, nullptr));
 	}
 	Tasks.push_back(TGraphTask<FBroadcastTask>::CreateTask().ConstructAndDispatchWhenReady(Callback, ENamedThreads::GameThread_Local, nullptr, nullptr, nullptr));
 	if (bDoTaskThreads)
