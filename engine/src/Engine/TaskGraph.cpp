@@ -29,7 +29,7 @@ namespace ENamedThreads
 	  int32_t bHasBackgroundThreads = CREATE_BACKGROUND_TASK_THREADS;
 	  int32_t bHasHighPriorityThreads = CREATE_HIPRI_TASK_THREADS;
 }
-
+static int32_t GTestDontCompleteUntilForAlreadyComplete = 1;
 #if CREATE_HIPRI_TASK_THREADS || CREATE_BACKGROUND_TASK_THREADS
 //static void ThreadSwitchForABTest(const TArray<FString>& Args)
 //{
@@ -1472,17 +1472,41 @@ void FGraphEvent::DispatchSubsequents(std::vector<FBaseGraphTask*>& NewTasks, EN
 		// need to save this first and empty the actual tail of the task might be recycled faster than it is cleared.
 		FGraphEventArray TempEventsToWaitFor;
 		std::swap(EventsToWaitFor, TempEventsToWaitFor);
-		// create the Gather...this uses a special version of private CreateTask that "assumes" the subsequent list (which other threads might still be adding too).
-		//DECLARE_CYCLE_STAT(TEXT("FNullGraphTask.DontCompleteUntil"),
-		//STAT_FNullGraphTask_DontCompleteUntil,
-			//STATGROUP_TaskGraphTasks);
 
-		TGraphTask<FNullGraphTask>::CreateTask(FGraphEventRef(this), &TempEventsToWaitFor, CurrentThreadIfKnown).ConstructAndDispatchWhenReady(/*GET_STATID(STAT_FNullGraphTask_DontCompleteUntil), */ENamedThreads::AnyHiPriThreadHiPriTask);
-		return;
+		bool bSpawnGatherTask = true;
+
+		if (GTestDontCompleteUntilForAlreadyComplete)
+		{
+			bSpawnGatherTask = false;
+			for (FGraphEventRef& Item : TempEventsToWaitFor)
+			{
+				if (!Item->IsComplete())
+				{
+					bSpawnGatherTask = true;
+					break;
+				}
+			}
+		}
+
+		if (bSpawnGatherTask)
+		{
+			// create the Gather...this uses a special version of private CreateTask that "assumes" the subsequent list (which other threads might still be adding too).
+			//DECLARE_CYCLE_STAT(TEXT("FNullGraphTask.DontCompleteUntil"),
+			//STAT_FNullGraphTask_DontCompleteUntil,
+				//STATGROUP_TaskGraphTasks);
+
+			ENamedThreads::Type LocalThreadToDoGatherOn = ENamedThreads::AnyHiPriThreadHiPriTask;
+			//if (!GIgnoreThreadToDoGatherOn)
+			//{
+				//LocalThreadToDoGatherOn = ThreadToDoGatherOn;
+			//}
+			TGraphTask<FNullGraphTask>::CreateTask(FGraphEventRef(this), &TempEventsToWaitFor, CurrentThreadIfKnown).ConstructAndDispatchWhenReady(/*GET_STATID(STAT_FNullGraphTask_DontCompleteUntil), */LocalThreadToDoGatherOn);
+			return;
+		}
 	}
 
 	SubsequentList.PopAllAndClose(NewTasks);
-	for (int Index = (int)NewTasks.size() - 1; Index >= 0; Index--) // reverse the order since PopAll is implicitly backwards
+	for (size_t Index = NewTasks.size() - 1; Index >= 0; Index--) // reverse the order since PopAll is implicitly backwards
 	{
 		FBaseGraphTask* NewTask = NewTasks[Index];
 		checkThreadGraph(NewTask);
