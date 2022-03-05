@@ -382,6 +382,7 @@ public:
 	void InitializeForCurrentThread()
 	{
 		FPlatformTLS::SetTlsValue(PerThreadIDTLSSlot, OwnerWorker);
+		LOG_INFO("thread id is ", ThreadId);
 	}
 
 	/** Return the index of this thread. **/
@@ -702,7 +703,7 @@ public:
 			//FMemory::SetupTLSCachesOnCurrentThread(); 
 			// todo 
 		}
-		assert(!QueueIndex);
+		assert(!QueueIndex); // Anythread 的QueueIndex只能是0
 		do
 		{
 			ProcessTasks();
@@ -1506,7 +1507,6 @@ void FGraphEvent::DispatchSubsequents(std::vector<FBaseGraphTask*>& NewTasks, EN
 	}
 
 	SubsequentList.PopAllAndClose(NewTasks);
-	for (size_t Index = NewTasks.size() - 1; Index >= 0; Index--) // reverse the order since PopAll is implicitly backwards
 	for (int Index = (int)(NewTasks.size()) - 1; Index >= 0; Index--) // reverse the order since PopAll is implicitly backwards
 	{
 		FBaseGraphTask* NewTask = NewTasks[Index];

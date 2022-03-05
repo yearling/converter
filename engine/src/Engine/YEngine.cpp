@@ -12,9 +12,62 @@
 #include "FreeImage.h"
 #include "SObject/STexture.h"
 #include "Engine/TaskGraphInterfaces.h"
+#include "Platform/Windows/YSysUtility.h"
+
+
+
+struct RootTask
+{
+public: 
+	RootTask() {};
+	~RootTask() {};
+	static ENamedThreads::Type GetDesiredThread()
+	{
+		return ENamedThreads::GameThread;
+	}
+	static ESubsequentsMode::Type GetSubsequentsMode()
+	{
+		return ESubsequentsMode::FireAndForget;
+	}
+	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
+	{
+		// The arguments are useful for setting up other tasks.
+		// Do work here, probably using SomeArgument.
+		//MyCompletionGraphEvent->DontCompleteUntil(TGraphTask<FSomeChildTask>::CreateTask(NULL, CurrentThread).ConstructAndDispatchWhenReady());
+		LOG_INFO("Root Task");
+	}
+};
+
+
+
+struct BusyTask
+{
+public:
+	BusyTask() {};
+	~BusyTask() {};
+	static ENamedThreads::Type GetDesiredThread()
+	{
+		return ENamedThreads::AnyThread;
+	}
+	static ESubsequentsMode::Type GetSubsequentsMode()
+	{
+		return ESubsequentsMode::FireAndForget;
+	}
+	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
+	{
+		// The arguments are useful for setting up other tasks.
+		// Do work here, probably using SomeArgument.
+		//MyCompletionGraphEvent->DontCompleteUntil(TGraphTask<FSomeChildTask>::CreateTask(NULL, CurrentThread).ConstructAndDispatchWhenReady());
+		LOG_INFO("Busy Task",(int)FTaskGraphInterface::Get().GetCurrentThreadIfKnown());
+		//while (1);
+		::Sleep(10000);
+		TGraphTask< FReturnGraphTask>::CreateTask(NULL, ENamedThreads::AnyThread).ConstructAndDispatchWhenReady(ENamedThreads::GameThread);
+	}
+};
 
 bool YEngine::Init()
 {
+	YSysUtility::AllocWindowsConsole();
 	device_= D3D11Device::CreateD3D11Device();
 	//inmput manager
 	g_input_manager = new InputManger();
@@ -56,6 +109,12 @@ bool YEngine::Init()
 	// initialize task graph sub-system with potential multiple threads
 	FTaskGraphInterface::Startup(FPlatformProcess::NumberOfCores());
 	FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
+	for (int i = 0; i < 14; ++i)
+	{
+		//TGraphTask<BusyTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
+	}
+	TGraphTask<RootTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
+	TGraphTask<BusyTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
 	return true;
 }
 
@@ -76,7 +135,13 @@ void YEngine::Update()
 		game_time *= 0.000001;
 	}
 	//LOG_INFO("fps: ", fps.Average());
-
+	//FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
+	static int reentry = 1;
+	if (reentry == 1)
+	{
+		FTaskGraphInterface::Get().ProcessThreadUntilRequestReturn(ENamedThreads::GameThread);
+		reentry++;
+	}
 	//update
 	//Update(delta_time);
 	camera_controller->Update(delta_time);
