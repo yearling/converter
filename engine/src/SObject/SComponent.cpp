@@ -84,6 +84,15 @@ void SSceneComponent::UpdateChildTransforms()
 }
 
 
+void SSceneComponent::MarkTansformDirty()
+{
+	is_component_to_world_update_ = false;
+	for (TRefCountPtr<SSceneComponent>& child : child_components_)
+	{
+		child->MarkTansformDirty();
+	}
+}
+
 bool SSceneComponent::LoadFromJson(const Json::Value& root_json)
 {
 	assert(parent_);
@@ -132,6 +141,10 @@ bool SSceneComponent::PostLoadOp()
 void SSceneComponent::Update(double deta_time)
 {
 	UpdateComponentToWorld();
+	for (TRefCountPtr<SSceneComponent>& child : child_components_)
+	{
+		child->Update(deta_time);
+	}
 }
 
 void SSceneComponent::RegisterToScene(YScene* scene)
@@ -147,19 +160,19 @@ void SSceneComponent::OnTransformChange()
 void SSceneComponent::SetLocalTranslation(const YVector& v)
 {
 	local_translation_ = v;
-	is_component_to_world_update_ = false;
+	MarkTansformDirty();
 }
 
 void SSceneComponent::SetLocalRotation(const YRotator& rotator)
 {
 	local_rotation_ = rotator;
-	is_component_to_world_update_ = false;
+	MarkTansformDirty();
 }
 
 void SSceneComponent::SetLocalScale(const YVector& scale)
 {
 	local_scale_ = scale;
-	is_component_to_world_update_ = false;
+	MarkTansformDirty();
 }
 
 std::unordered_map<std::string, std::function<SSceneComponent*()> > register_component_map =
