@@ -84,6 +84,7 @@ protected:
 	void PropagateTransformUpdate();
 	virtual void UpdateBound();
 	void UpdateChildTransforms();
+	void MarkTansformDirty();
 protected:
 	//todo 
 	YBox bounds_;
