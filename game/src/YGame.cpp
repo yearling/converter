@@ -150,13 +150,8 @@ void GameApplication::Render()
 	YEngine* engine = YEngine::GetEngine();
 	engine->Update();
 	//g_device->GetDC()->CopyResource(g_device->GetMainRTV(),)
-	ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
-	ID3D11Resource* main_rt_color;
-	main_rtv->GetResource(&main_rt_color);
-	ID3D11Resource* rt_color = dynamic_cast<YForwardRenderer*>(engine->GetRender())->GetRTs()->GetColorBuffer();
-	g_device->GetDC()->CopyResource(main_rt_color, rt_color);
 
-	g_device->Present();
+
 }
 
 void GameApplication::Exit()

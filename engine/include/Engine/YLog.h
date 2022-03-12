@@ -7,6 +7,7 @@
 #include <iostream>
 #include <cassert>
 #include <functional>
+#include <platform/YPlatformCriticalSection.h>
 enum LogType {
 	EVerbos = 0,
 	EWarning = 1,
@@ -18,9 +19,10 @@ extern std::string g_error_log;
 extern std::vector<std::function<void(const std::string& str)>> g_verbo_log_funcs_;
 extern std::vector<std::function<void(const std::string& str)>> g_warning_log_funcs_;
 extern std::vector<std::function<void(const std::string& str)>> g_error_log_funcs_;
-
+extern FCriticalSection g_log_critical_section;
 template <typename ...Args>
 void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...args) {
+	g_log_critical_section.Lock();
 	std::ostringstream stream;
 	std::string log_name;
 
@@ -77,6 +79,7 @@ void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...
 		//assert(0);
 	}
 #endif
+	g_log_critical_section.Unlock();
 }
 
 #define LOG_INFO(...) MyTraceImplTmp(LogType::EVerbos,__LINE__, __FILE__, __VA_ARGS__)

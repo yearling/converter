@@ -6,6 +6,7 @@
 #include "Render/YRenderInterface.h"
 #include "Utility/YPickupOps.h"
 #include "Utility/YAverageSmooth.h"
+#include "TaskGraphInterfaces.h"
 
 class IRenderInterface;
 
@@ -51,4 +52,7 @@ public:
 	void SetApplication(class YApplication* app);
 private:
 	class YApplication* app_ = nullptr;
+	class YRenderThread* render_thread_ = nullptr;
+	uint64_t frame_index = 0;
+	FGraphEventRef render_fence[2] = { nullptr,nullptr };
 };

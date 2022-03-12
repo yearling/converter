@@ -6,3 +6,4 @@ std::string g_error_log;
 std::vector<std::function<void(const std::string& str)>> g_verbo_log_funcs_;
 std::vector<std::function<void(const std::string& str)>> g_warning_log_funcs_;
 std::vector<std::function<void(const std::string& str)>> g_error_log_funcs_;
+FCriticalSection g_log_critical_section;

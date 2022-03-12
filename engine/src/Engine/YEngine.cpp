@@ -13,6 +13,8 @@
 #include "SObject/STexture.h"
 #include "Engine/TaskGraphInterfaces.h"
 #include "Platform/Windows/YSysUtility.h"
+#include "Render/YRenderThread.h"
+#include <thread>
 
 
 
@@ -65,9 +67,54 @@ public:
 	}
 };
 
+
+struct RenderThreadTaskNumber
+{
+public:
+	RenderThreadTaskNumber(uint64_t in_num) :num(in_num) {}
+	~RenderThreadTaskNumber() {}
+	static ENamedThreads::Type GetDesiredThread()
+	{
+		return ENamedThreads::ActualRenderingThread;
+		//return ENamedThreads::AnyThread;
+	}
+	static ESubsequentsMode::Type GetSubsequentsMode()
+	{
+		return ESubsequentsMode::TrackSubsequents;
+	}
+	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
+	{
+		//::Sleep(500);
+		LOG_INFO(" render thread number : ", num);
+	}
+	uint64_t num;
+};
+
+struct RenderThreadTaskLambdaBug
+{
+public:
+	RenderThreadTaskLambdaBug(std::function<void(uint64_t)>&& func,uint64_t in_num) :func_(std::move(func)),num(in_num) {}
+	~RenderThreadTaskLambdaBug() {}
+	static ENamedThreads::Type GetDesiredThread()
+	{
+		return ENamedThreads::ActualRenderingThread;
+		//return ENamedThreads::AnyThread;
+	}
+	static ESubsequentsMode::Type GetSubsequentsMode()
+	{
+		return ESubsequentsMode::TrackSubsequents;
+	}
+	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
+	{
+		//::Sleep(30);
+		func_(num);
+	}
+	std::function<void(uint64_t)> func_;
+	uint64_t num;
+};
 bool YEngine::Init()
 {
-	YSysUtility::AllocWindowsConsole();
+	//YSysUtility::AllocWindowsConsole();
 	device_= D3D11Device::CreateD3D11Device();
 	//inmput manager
 	g_input_manager = new InputManger();
@@ -113,17 +160,45 @@ bool YEngine::Init()
 	{
 		//TGraphTask<BusyTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
 	}
-	TGraphTask<RootTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
-	TGraphTask<BusyTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
+	//TGraphTask<RootTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
+	//TGraphTask<BusyTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
+
+	render_thread_ = new YRenderThread();
+	render_thread_->CreateThread();
+
+	render_fence[0] = nullptr;
+	render_fence[1] = nullptr;
 	return true;
 }
 
 
+static void sleep_for(double dt)
+{
+	static constexpr std::chrono::duration<double> MinSleepDuration(0);
+	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+	while (std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - start).count() < dt) {
+		std::this_thread::sleep_for(MinSleepDuration);
+	}
+}
 
 void YEngine::Update()
 {
+	int current_fence_index = frame_index % 2;
+	//int current_fence_index = 0;
+	sleep_for(0.010);
+	if (render_fence[current_fence_index])
+	{
+		std::chrono::time_point<std::chrono::high_resolution_clock> wait_time_before = std::chrono::high_resolution_clock::now();
+		FTaskGraphInterface::Get().WaitUntilTaskCompletes(render_fence[current_fence_index]);
+		std::chrono::time_point<std::chrono::high_resolution_clock> wait_time_end = std::chrono::high_resolution_clock::now();
+	    double	wiat_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(wait_time_end - wait_time_before).count();
+		wiat_time *= 0.001; //
+		//LOG_INFO("wait time : ", wiat_time);
+		//LOG_INFO("game thread ", frame_index);
+	}
 	double delta_time = 0.0;
 	double game_time = 0.0;
+	static bool first_frame = true;
 	{
 		std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
 		delta_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - last_frame_time).count();
@@ -133,17 +208,23 @@ void YEngine::Update()
 
 		game_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - game_start_time).count();
 		game_time *= 0.000001;
+		if (first_frame)
+		{
+			delta_time = 0.0;
+			first_frame = false;
+		}
 	}
-	//LOG_INFO("fps: ", fps.Average());
+	LOG_INFO("fps: ", fps.Average());
 	//FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
-	static int reentry = 1;
-	if (reentry == 1)
-	{
-		FTaskGraphInterface::Get().ProcessThreadUntilRequestReturn(ENamedThreads::GameThread);
-		reentry++;
-	}
+	//static int reentry = 1;
+	//if (reentry == 1)
+	//{
+	//
+	//	reentry++;
+	//}
 	//update
 	//Update(delta_time);
+	//FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	camera_controller->Update(delta_time);
 	SWorld::GetWorld()->Update(delta_time);
 	pickup->Update(delta_time);
@@ -151,13 +232,42 @@ void YEngine::Update()
 	DrawUtility::DrawGrid();
 	DrawUtility::DrawWorldCoordinate(SWorld::GetWorld()->GetMainScene());
 	//render
-	std::unique_ptr<YRenderScene> render_scene = SWorld::GetWorld()->GenerateRenderScene();
-	render_scene->deta_time = delta_time;
-	render_scene->game_time = game_time;
-	renderer->Render(std::move(render_scene));
+	//std::unique_ptr<YRenderScene> render_scene = SWorld::GetWorld()->GenerateRenderScene();
+	//render_scene->deta_time = delta_time;
+	//render_scene->game_time = game_time;
+	//renderer->Render(std::move(render_scene));
 
+
+	//ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
+	//ID3D11Resource* main_rt_color;
+	//main_rtv->GetResource(&main_rt_color);
+	//ID3D11Resource* rt_color = dynamic_cast<YForwardRenderer*>(this->GetRender())->GetRTs()->GetColorBuffer();
+	//g_device->GetDC()->CopyResource(main_rt_color, rt_color);
+	//g_device->Present();
 	// 正式的场景绘制工作
 	//DrawUI();
+	//TGraphTask<RenderThreadTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([=]() { LOG_INFO("render frame ",frame_index); });
+	//TGraphTask<RenderThreadTaskLambdaBug>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([frame_index](uint64_t s) { LOG_INFO("render frame ",frame_index, "pass: ",s); }, frame_index);
+	FPlatformMisc::MemoryBarrier();
+
+	auto local_frame_index = frame_index;
+	//render_fence[current_fence_index] = TGraphTask<RenderThreadTaskNumber>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady(frame_index);
+	render_fence[current_fence_index] = TGraphTask<RenderThreadTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([this, delta_time, game_time,local_frame_index]() {
+		//LOG_INFO("render thread ", local_frame_index);
+		std::unique_ptr<YRenderScene> render_scene = SWorld::GetWorld()->GenerateRenderScene();
+		render_scene->deta_time = delta_time;
+		render_scene->game_time = game_time;
+		renderer->Render(std::move(render_scene));
+
+		ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
+		ID3D11Resource* main_rt_color;
+		main_rtv->GetResource(&main_rt_color);
+		ID3D11Resource* rt_color = dynamic_cast<YForwardRenderer*>(this->GetRender())->GetRTs()->GetColorBuffer();
+		g_device->GetDC()->CopyResource(main_rt_color, rt_color);
+		g_device->Present();
+		});
+	
+	frame_index++;
 }
 
 void YEngine::ShutDown()

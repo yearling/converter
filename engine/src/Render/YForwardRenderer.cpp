@@ -34,6 +34,8 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 
 	rts_->BindRenderTargets();
 	rts_->ClearColor(YVector4(0.0f, 0.0f, 0.0f, 1.0f));
+	rts_->ClearColor(YVector4(0.0f, 0.0f, 0.0f, 1.0f));
+	rts_->ClearColor(YVector4(0.0f, 0.0f, 1.0f, 1.0f));
 	rts_->ClearDepthStencil(1.0, 0);
 
 

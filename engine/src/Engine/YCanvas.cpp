@@ -3,6 +3,8 @@
 #include "Engine/YLog.h"
 #include <fstream>
 #include "Render/YRenderInterface.h"
+#include "Engine/TaskGraphInterfaces.h"
+#include "Render/YRenderThread.h"
 
 class YCanvasVertexFactory :public DXVertexFactory
 {
@@ -153,6 +155,7 @@ void YCamvas::Update()
 
 void YCamvas::Render(CameraBase* camera)
 {
+	
 	if (vertex_buffers_.empty())
 	{
 		return;
@@ -206,6 +209,9 @@ void YCamvas::Render(RenderParam* render_param)
 
 void YCamvas::DrawLine(const YVector& start, const YVector& end, const YVector4& color, bool solid)
 {
+	//TGraphTask<RenderThreadTask>::CreateTask(nullptr, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([this,start,end,color,solid]() {
+			//lines_.push_back(LineDesc(start, end, color,solid));
+		//});
 	lines_.push_back(LineDesc(start, end, color,solid));
 }
 

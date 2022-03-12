@@ -47,6 +47,25 @@ bool SStaticMeshComponent::PostLoadOp()
 
 void SStaticMeshComponent::Update(double deta_time)
 {
+	const float move_speed = 20.0f;
+	YVector move_dir = YVector(1.0, 0.0, 0.0).GetSafeNormal();
+	YVector delta_dir = move_dir * deta_time * move_speed;
+	YVector local_trans = GetLocalTranslation();
+	if(local_trans.x > 30 )
+	{ 
+		move_dir_neg = -1.0;
+		local_trans.x = 30.0f;
+	}
+	else if (local_trans.x < -30)
+	{
+		move_dir_neg = 1.0;
+		local_trans.x = -30.0f;
+	}
+
+	local_trans = local_trans + (move_dir_neg * delta_dir);
+
+	SetLocalTranslation(local_trans);
+
 	SRenderComponent::Update(deta_time);
 }
 

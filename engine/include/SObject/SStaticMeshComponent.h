@@ -19,4 +19,5 @@ protected:
 	//std::unique_ptr<YStaticMesh> static_mesh_;
 	//std::vector<TRefCountPtr<SMaterial>> materials_;
 	TRefCountPtr<SStaticMesh> static_mesh_;
+	float move_dir_neg = 1.0;
 };
