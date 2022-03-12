@@ -183,8 +183,8 @@ static void sleep_for(double dt)
 
 void YEngine::Update()
 {
-	int current_fence_index = frame_index % 2;
-	//int current_fence_index = 0;
+	//int current_fence_index = frame_index % 2;
+	int current_fence_index = 0;
 	sleep_for(0.010);
 	if (render_fence[current_fence_index])
 	{
