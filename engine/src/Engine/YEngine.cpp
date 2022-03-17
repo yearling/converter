@@ -153,6 +153,8 @@ bool YEngine::Init()
 		return false;
 	}
 
+	GGameThreadId = FPlatformTLS::GetCurrentThreadId();
+	GIsGameThreadIdInitialized = true;
 	// initialize task graph sub-system with potential multiple threads
 	FTaskGraphInterface::Startup(FPlatformProcess::NumberOfCores());
 	FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
@@ -185,7 +187,7 @@ void YEngine::Update()
 {
 	//int current_fence_index = frame_index % 2;
 	int current_fence_index = 0;
-	sleep_for(0.010);
+	//sleep_for(0.010);
 	if (render_fence[current_fence_index])
 	{
 		std::chrono::time_point<std::chrono::high_resolution_clock> wait_time_before = std::chrono::high_resolution_clock::now();

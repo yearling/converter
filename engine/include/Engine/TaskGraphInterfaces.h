@@ -542,7 +542,7 @@ public:
 	*	"Complete" the event. This grabs the list of subsequents and atomically closes it. Then for each subsequent it reduces the number of prerequisites outstanding and if that drops to zero, the task is queued.
 	*	@param CurrentThreadIfKnown if the current thread is known, provide it here. Otherwise it will be determined via TLS if any task ends up being queued.
 	**/
-	 void DispatchSubsequents(std::vector<FBaseGraphTask*>& NewTasks, ENamedThreads::Type CurrentThreadIfKnown = ENamedThreads::AnyThread);
+	void DispatchSubsequents(std::vector<FBaseGraphTask*>& NewTasks, ENamedThreads::Type CurrentThreadIfKnown = ENamedThreads::AnyThread);
 
 	/**
 	*	Determine if the event has been completed. This can be used to poll for completion.
@@ -676,7 +676,7 @@ public:
 		template<typename...T>
 		FGraphEventRef ConstructAndDispatchWhenReady(T&&... Args)
 		{
-			new ((void *)&Owner->TaskStorage) TTask(std::forward<T>(Args)...);
+			new ((void*)&Owner->TaskStorage) TTask(std::forward<T>(Args)...);
 			return Owner->Setup(Prerequisites, CurrentThreadIfKnown);
 		}
 
@@ -684,7 +684,7 @@ public:
 		template<typename...T>
 		TGraphTask* ConstructAndHold(T&&... Args)
 		{
-			new ((void *)&Owner->TaskStorage) TTask(std::forward<T>(Args)...);
+			new ((void*)&Owner->TaskStorage) TTask(std::forward<T>(Args)...);
 			return Owner->Hold(Prerequisites, CurrentThreadIfKnown);
 		}
 
@@ -692,9 +692,9 @@ public:
 		friend class TGraphTask;
 
 		/** The task that created me to assist with embeded task construction and preparation. **/
-		TGraphTask*						Owner;
+		TGraphTask* Owner;
 		/** The list of prerequisites. **/
-		const FGraphEventArray*			Prerequisites;
+		const FGraphEventArray* Prerequisites;
 		/** If known, the current thread.  ENamedThreads::AnyThread is also fine, and if that is the value, we will determine the current thread, as needed, via TLS. **/
 		ENamedThreads::Type				CurrentThreadIfKnown;
 
@@ -728,7 +728,7 @@ public:
 		int NumPrereq = Prerequisites ? (int)Prerequisites->size() : 0;
 		if (sizeof(TGraphTask) <= FBaseGraphTask::SMALL_TASK_SIZE)
 		{
-			void *Mem = FBaseGraphTask::GetSmallTaskAllocator().Allocate();
+			void* Mem = FBaseGraphTask::GetSmallTaskAllocator().Allocate();
 			return FConstructor(new (Mem) TGraphTask(TTask::GetSubsequentsMode() == ESubsequentsMode::FireAndForget ? NULL : FGraphEvent::CreateGraphEvent(), NumPrereq), Prerequisites, CurrentThreadIfKnown);
 		}
 		return FConstructor(new TGraphTask(TTask::GetSubsequentsMode() == ESubsequentsMode::FireAndForget ? NULL : FGraphEvent::CreateGraphEvent(), NumPrereq), Prerequisites, CurrentThreadIfKnown);
@@ -899,10 +899,10 @@ private:
 	{
 		if (sizeof(TGraphTask) <= FBaseGraphTask::SMALL_TASK_SIZE)
 		{
-			void *Mem = FBaseGraphTask::GetSmallTaskAllocator().Allocate();
-			return FConstructor(new (Mem) TGraphTask(SubsequentsToAssume, Prerequisites ?(int) Prerequisites->size() : 0), Prerequisites, CurrentThreadIfKnown);
+			void* Mem = FBaseGraphTask::GetSmallTaskAllocator().Allocate();
+			return FConstructor(new (Mem) TGraphTask(SubsequentsToAssume, Prerequisites ? (int)Prerequisites->size() : 0), Prerequisites, CurrentThreadIfKnown);
 		}
-		return FConstructor(new TGraphTask(SubsequentsToAssume, Prerequisites ?(int) Prerequisites->size() : 0), Prerequisites, CurrentThreadIfKnown);
+		return FConstructor(new TGraphTask(SubsequentsToAssume, Prerequisites ? (int)Prerequisites->size() : 0), Prerequisites, CurrentThreadIfKnown);
 	}
 
 	/** An aligned bit of storage to hold the embedded task **/
@@ -1004,7 +1004,7 @@ private:
 /**
 *	FNullGraphTask is a task that does nothing. It can be used to "gather" tasks into one prerequisite.
 **/
-class FNullGraphTask 
+class FNullGraphTask
 {
 public:
 	/**
@@ -1012,7 +1012,7 @@ public:
 	*	@param StatId The stat id for this task.
 	*	@param InDesiredThread; Thread to run on, can be ENamedThreads::AnyThread
 	**/
-	FNullGraphTask( ENamedThreads::Type InDesiredThread)
+	FNullGraphTask(ENamedThreads::Type InDesiredThread)
 		: DesiredThread(InDesiredThread)
 	{
 	}
@@ -1209,7 +1209,7 @@ private:
 //};
 
 /** Task class for lambda based tasks. **/
-class FFunctionGraphTask 
+class FFunctionGraphTask
 {
 public:
 	/** Function to run **/
@@ -1287,7 +1287,7 @@ public:
 
 	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
 	{
-		Function(CurrentThread,MyCompletionGraphEvent);
+		Function(CurrentThread, MyCompletionGraphEvent);
 	}
 	/**
 	* Task constructor
@@ -1394,7 +1394,7 @@ public:
 				GET_STATID(STAT_FDelegateGraphTask_WaitOnCompletionList), &PendingHandles, CurrentThread, ENamedThreads::AnyHiPriThreadHiPriTask
 			);*/
 			CompleteHandle = FFunctionGraphTaskNotUntil::CreateAndDispatchWhenReady([this](ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent) {
-				ChainWaitForPrerequisites(CurrentThread, MyCompletionGraphEvent);}, &PendingHandles, ENamedThreads::AnyHiPriThreadHiPriTask);
+				ChainWaitForPrerequisites(CurrentThread, MyCompletionGraphEvent); }, &PendingHandles, ENamedThreads::AnyHiPriThreadHiPriTask);
 		}
 		return CompleteHandle;
 	}

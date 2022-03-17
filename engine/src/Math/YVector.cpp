@@ -6,6 +6,11 @@ YVector2::YVector2(float in_x, float in_y)
 
 }
 
+YVector2 YVector2::operator*(float mul) const
+{
+	return YVector2(x * mul, y * mul);
+}
+
 bool YVector2::operator!=(const YVector2& v) const
 {
 	return !(*this == v);
@@ -228,4 +233,4 @@ YVector YVector4::AffineTransform() const
 	return YVector(x / w, y / w, z / w);
 }
 
-const YVector4 YVector4::zero_vector = YVector4(0.f,0.f,0.f,0.f);
+const YVector4 YVector4::zero_vector = YVector4(0.f, 0.f, 0.f, 0.f);

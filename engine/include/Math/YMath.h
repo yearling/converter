@@ -59,7 +59,7 @@ struct YBox;
 #define THRESH_VECTOR_NORMALIZED		(0.01f)		/** Allowed error for a normalized vector (against squared magnitude) */
 #define THRESH_QUAT_NORMALIZED			(0.01f)		/** Allowed error for a normalized quaternion (against squared magnitude) */
 #define MAX_MESH_TEXTURE_COORDS			 8
-
+#define Z_PRECISION	0.0f
 enum EForceInit
 {
 	ForceInit,
@@ -273,4 +273,89 @@ struct YMath
 		return !((uint64_t)Val & (Alignment - 1));
 	}
 
+	static inline float Loge(float Value) { return logf(Value); }
+	/**
+	 * Computes the base 2 logarithm of the specified value
+	 *
+	 * @param Value the value to perform the log on
+	 *
+	 * @return the base 2 log of the value
+	 */
+	static inline float Log2(float Value)
+	{
+		// Cached value for fast conversions
+		static const float LogToLog2 = 1.f / Loge(2.f);
+		// Do the platform specific log and convert using the cached value
+		return Loge(Value) * LogToLog2;
+	}
+	/** Performs a linear interpolation between two values, Alpha ranges from 0-1 */
+	template< class T, class U >
+	static inline T Lerp(const T& A, const T& B, const U& Alpha)
+	{
+		return (T)(A + Alpha * (B - A));
+	}
+
+
+	/**
+ * Converts a float to a nearest less or equal integer.
+ * @param F		Floating point value to convert
+ * @return		An integer less or equal to 'F'.
+ */
+	static inline int32_t FloorToInt(float F)
+	{
+		return TruncToInt(floorf(F));
+	}
+
+	/**
+ * Converts a float to the nearest integer. Rounds up when the fraction is .5
+ * @param F		Floating point value to convert
+ * @return		The nearest integer to 'F'.
+ */
+	static inline int32_t RoundToInt(float F)
+	{
+		return FloorToInt(F + 0.5f);
+	}
+	/** Seeds global random number functions Rand() and FRand() */
+	static inline void RandInit(int32_t Seed) { srand(Seed); }
+
+	/** Returns a random integer between 0 and RAND_MAX, inclusive */
+	static inline int32_t Rand() { return rand(); }
+
+	/** Returns a random float between 0 and 1, inclusive. */
+	static inline float FRand() { return Rand() / (float)RAND_MAX; }
+
+	/** Divides two integers and rounds up */
+	template <class T>
+	static inline T DivideAndRoundUp(T Dividend, T Divisor)
+	{
+		return (Dividend + Divisor - 1) / Divisor;
+	}
+
+	/** Divides two integers and rounds down */
+	template <class T>
+	static inline T DivideAndRoundDown(T Dividend, T Divisor)
+	{
+		return Dividend / Divisor;
+	}
+
+	/** Divides two integers and rounds to nearest */
+	template <class T>
+	static inline T DivideAndRoundNearest(T Dividend, T Divisor)
+	{
+		return (Dividend >= 0)
+			? (Dividend + Divisor / 2) / Divisor
+			: (Dividend - Divisor / 2 + 1) / Divisor;
+	}
+
+
+
+	/**
+	* Converts a float to the nearest greater or equal integer.
+	* @param F		Floating point value to convert
+	* @return		An integer greater or equal to 'F'.
+	*/
+	static inline int32_t CeilToInt(float F)
+	{
+		return TruncToInt(ceilf(F));
+	}
 };
