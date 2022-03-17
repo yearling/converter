@@ -205,7 +205,7 @@ inline float FFloat16::GetFloat() const
 		else
 		{
 			// Denormal.
-			uint32_t MantissaShift = 10 - (uint32_t)YMath::TruncToInt(YMath::Log2(Mantissa));
+			uint32_t MantissaShift = 10 - (uint32_t)YMath::TruncToInt(YMath::Log2((float)Mantissa));
 			Result.Components.Exponent = 127 - (15 - 1) - MantissaShift;
 			Result.Components.Mantissa = Mantissa << (MantissaShift + 23 - 10);
 		}
