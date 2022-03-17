@@ -2,13 +2,19 @@
 
 
 #pragma once
-
+#include <cassert>
 #include "Math/YColor.h"
 #include "Platform/ThreadSafeCounter.h"
 #include "RHI/RHIDefinitions.h"
 #include "Engine/YPixelFormat.h"
 #include "Engine/LockFreeList.h"
 #include "Platform/YPlatformAtomics.h"
+#include "Platform/Windows/YWindowsPlatformMisc.h"
+#include "Utility/SecureHash.h"
+#include "Engine/YReferenceCount.h"
+#include "RHI/RHI.h"
+#include "Math/IntPoint.h"
+#include "Math/IntVector.h"
 
 #define DISABLE_RHI_DEFFERED_DELETE 0
 
@@ -66,7 +72,7 @@ public:
 	{
 		assert(!MarkedForDelete);
 		bDoNotDeferDelete = true;
-		FPlatformMisc::MemoryBarrier();
+		FPlatformMisc::MemoryBarrier(); //t
 		assert(!MarkedForDelete);
 	}
 
@@ -121,11 +127,11 @@ private:
 
 		}
 
-		TArray<FRHIResource*>	Resources;
+		std::vector<FRHIResource*>	Resources;
 		uint32_t					FrameDeleted;
 	};
 
-	static TArray<ResourcesToDelete> DeferredDeletionQueue;
+	static std::vector<ResourcesToDelete> DeferredDeletionQueue;
 	static uint32_t CurrentFrame;
 };
 
@@ -176,7 +182,7 @@ public:
 
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 	// for debugging only e.g. MaterialName:ShaderFile.usf or ShaderFile.usf/EntryFunc
-	FString ShaderName;
+	std::string ShaderName;
 #endif
 
 private:
@@ -217,9 +223,9 @@ struct FRHIUniformBufferLayout
 	/** The size of the constant buffer in bytes. */
 	uint32_t ConstantBufferSize;
 	/** Byte offset to each resource in the uniform buffer memory. */
-	TArray<uint16> ResourceOffsets;
+	std::vector<uint16_t> ResourceOffsets;
 	/** The type of each resource (EUniformBufferBaseType). */
-	TArray<uint8> Resources;
+	std::vector<uint8_t> Resources;
 
 	inline uint32_t GetHash() const
 	{
@@ -231,14 +237,14 @@ struct FRHIUniformBufferLayout
 	{
 		uint32_t TmpHash = ConstantBufferSize << 16;
 			
-		for (int32_t ResourceIndex = 0; ResourceIndex < ResourceOffsets.Num(); ResourceIndex++)
+		for (int32_t ResourceIndex = 0; ResourceIndex < ResourceOffsets.size(); ResourceIndex++)
 		{
 			// Offset and therefore hash must be the same regardless of pointer size
-			assert(ResourceOffsets[ResourceIndex] == Align(ResourceOffsets[ResourceIndex], 8));
+			assert(ResourceOffsets[ResourceIndex] == YMath::Align(ResourceOffsets[ResourceIndex], 8));
 			TmpHash ^= ResourceOffsets[ResourceIndex];
 		}
 
-		uint32_t N = Resources.Num();
+		uint32_t N = Resources.size();
 		while (N >= 4)
 		{
 			TmpHash ^= (Resources[--N] << 0);
@@ -258,7 +264,7 @@ struct FRHIUniformBufferLayout
 		Hash = TmpHash;
 	}
 
-	explicit FRHIUniformBufferLayout(FName InName) :
+	explicit FRHIUniformBufferLayout(std::string InName) :
 		ConstantBufferSize(0),
 		Name(InName),
 		Hash(0)
@@ -271,7 +277,7 @@ struct FRHIUniformBufferLayout
 	};
 	explicit FRHIUniformBufferLayout(EInit) :
 		ConstantBufferSize(0),
-		Name(FName()),
+		Name(""),
 		Hash(0)
 	{
 	}
@@ -285,11 +291,11 @@ struct FRHIUniformBufferLayout
 		Hash = Source.Hash;
 	}
 
-	const FName GetDebugName() const { return Name; }
+	const std::string GetDebugName() const { return Name; }
 
 private:
 	// for debugging / error message
-	FName Name;
+	std::string Name;
 
 	uint32_t Hash;
 };
@@ -519,12 +525,12 @@ public:
 		return &LastRenderTime;
 	}
 
-	void SetName(const FName& InName)
+	void SetName(const std::string& InName)
 	{
 		TextureName = InName;
 	}
 
-	FName GetName() const
+	std::string GetName() const
 	{
 		return TextureName;
 	}
@@ -573,7 +579,7 @@ private:
 	uint32_t Flags;
 	FLastRenderTimeContainer& LastRenderTime;
 	FLastRenderTimeContainer DefaultLastRenderTime;	
-	FName TextureName;
+	std::string TextureName;
 };
 
 class  FRHITexture2D : public FRHITexture
@@ -763,7 +769,7 @@ public:
 class FRHIGPUFence : public FRHIResource
 {
 public:
-	FRHIGPUFence(FName InName)
+	FRHIGPUFence(std::string InName)
 		: FenceName(InName)
 	{}
 
@@ -786,7 +792,7 @@ public:
 	};
 
 private:
-	FName FenceName;
+	std::string FenceName;
 };
 
 
@@ -796,12 +802,12 @@ class FRHIComputeFence : public FRHIResource
 {
 public:
 
-	FRHIComputeFence(FName InName)
+	FRHIComputeFence(std::string InName)
 		: Name(InName)
 		, bWriteEnqueued(false)
 	{}
 
-	FORCEINLINE FName GetName() const
+	FORCEINLINE std::string GetName() const
 	{
 		return Name;
 	}
@@ -818,13 +824,14 @@ public:
 
 	virtual void WriteFence()
 	{
-		ensureMsgf(!bWriteEnqueued, TEXT("ComputeFence: %s already written this frame. You should use a new label"), *Name.ToString());
+		//ensureMsgf(!bWriteEnqueued, TEXT("ComputeFence: %s already written this frame. You should use a new label"), *Name.ToString());
+		ERROR_INFO("ComputeFence:", Name, "already written this frame.You should use a new label");
 		bWriteEnqueued = true;
 	}
 
 private:
 	//debug name of the label.
-	FName Name;
+	std::string Name;
 
 	//has the label been written to since being created.
 	//assert this when queuing waits to catch GPU hangs on the CPU at command creation time.
@@ -1303,8 +1310,20 @@ public:
 
 	void Validate() const
 	{		
-		ensureMsgf(DepthStencilAccess.IsDepthWrite() || DepthStoreAction == ERenderTargetStoreAction::ENoAction, TEXT("Depth is read-only, but we are performing a store.  This is a waste on mobile.  If depth can't change, we don't need to store it out again"));
-		ensureMsgf(DepthStencilAccess.IsStencilWrite() || StencilStoreAction == ERenderTargetStoreAction::ENoAction, TEXT("Stencil is read-only, but we are performing a store.  This is a waste on mobile.  If stencil can't change, we don't need to store it out again"));
+		//ensureMsgf(DepthStencilAccess.IsDepthWrite() || DepthStoreAction == ERenderTargetStoreAction::ENoAction, TEXT("Depth is read-only, but we are performing a store.  This is a waste on mobile.  If depth can't change, we don't need to store it out again"));
+		//ensureMsgf(DepthStencilAccess.IsStencilWrite() || StencilStoreAction == ERenderTargetStoreAction::ENoAction, TEXT("Stencil is read-only, but we are performing a store.  This is a waste on mobile.  If stencil can't change, we don't need to store it out again"));
+#if defined(DEBUG) || defined(_DEBUG)
+		if (DepthStencilAccess.IsDepthWrite() || DepthStoreAction == ERenderTargetStoreAction::ENoAction)
+		{
+			WARNING_INFO("Depth is read - only, but we are performing a store.This is a waste on mobile.If depth can't change, we don't need to store it out again");
+		}
+
+		if (DepthStencilAccess.IsStencilWrite() || StencilStoreAction == ERenderTargetStoreAction::ENoAction)
+		{
+			WARNING_INFO("Stencil is read - only, but we are performing a store.This is a waste on mobile.If stencil can't change, we don't need to store it out again");
+		}
+#endif
+
 	}
 
 	bool operator==(const FRHIDepthRenderTargetView& Other) const
@@ -1398,7 +1417,7 @@ public:
 
 			void Set(const FRHISetRenderTargetsInfo& RTInfo)
 			{
-				FMemory::Memzero(*this);
+				memset(this,0,sizeof(FRHISetRenderTargetsInfo));
 				for (int32_t Index = 0; Index < RTInfo.NumColorRenderTargets; ++Index)
 				{
 					Texture[Index] = RTInfo.ColorRenderTarget[Index].Texture;
@@ -1427,7 +1446,7 @@ public:
 		};
 
 		FHashableStruct RTHash;
-		FMemory::Memzero(RTHash);
+		memset(&RTHash,0,sizeof(FHashableStruct));
 		RTHash.Set(*this);
 		return FCrc::MemCrc32(&RTHash, sizeof(RTHash));
 	}
@@ -1722,7 +1741,7 @@ public:
 	ERenderTargetLoadAction			StencilTargetLoadAction;
 	ERenderTargetStoreAction		StencilTargetStoreAction;
 	FExclusiveDepthStencil			DepthStencilAccess;
-	uint16							NumSamples;
+	uint16_t							NumSamples;
 
 	friend class FMeshDrawingPolicy;
 };
@@ -1766,11 +1785,11 @@ protected:
 class FRHIShaderLibrary : public FRHIResource
 {
 public:
-	FRHIShaderLibrary(EShaderPlatform InPlatform, FString const& InName) : Platform(InPlatform), LibraryName(InName), LibraryId(GetTypeHash(InName)) {}
+	FRHIShaderLibrary(EShaderPlatform InPlatform, std::string const& InName) : Platform(InPlatform), LibraryName(InName), LibraryId(GetTypeHash(InName)) {}
 	virtual ~FRHIShaderLibrary() {}
 	
 	FORCEINLINE EShaderPlatform GetPlatform(void) const { return Platform; }
-	FORCEINLINE FString GetName(void) const { return LibraryName; }
+	FORCEINLINE std::string GetName(void) const { return LibraryName; }
 	FORCEINLINE uint32_t GetId(void) const { return LibraryId; }
 	
 	virtual bool IsNativeLibrary() const = 0;
@@ -1817,7 +1836,7 @@ public:
 
 protected:
 	EShaderPlatform Platform;
-	FString LibraryName;
+	std::string LibraryName;
 	uint32_t LibraryId;
 };
 
@@ -1827,7 +1846,7 @@ typedef TRefCountPtr<FRHIShaderLibrary>	FRHIShaderLibraryRef;
 class FRHIPipelineBinaryLibrary : public FRHIResource
 {
 public:
-	FRHIPipelineBinaryLibrary(EShaderPlatform InPlatform, FString const& FilePath) : Platform(InPlatform) {}
+	FRHIPipelineBinaryLibrary(EShaderPlatform InPlatform, std::string const& FilePath) : Platform(InPlatform) {}
 	virtual ~FRHIPipelineBinaryLibrary() {}
 	
 	FORCEINLINE EShaderPlatform GetPlatform(void) const { return Platform; }
@@ -1838,11 +1857,11 @@ protected:
 typedef FRHIPipelineBinaryLibrary*				FRHIPipelineBinaryLibraryParamRef;
 typedef TRefCountPtr<FRHIPipelineBinaryLibrary>	FRHIPipelineBinaryLibraryRef;
 
-enum class ERenderTargetActions : uint8
+enum class ERenderTargetActions : uint8_t
 {
 	LoadOpMask = 2,
 
-#define RTACTION_MAKE_MASK(Load, Store) (((uint8)ERenderTargetLoadAction::Load << (uint8)LoadOpMask) | (uint8)ERenderTargetStoreAction::Store)
+#define RTACTION_MAKE_MASK(Load, Store) (((uint8_t)ERenderTargetLoadAction::Load << (uint8_t)LoadOpMask) | (uint8_t)ERenderTargetStoreAction::Store)
 
 	DontLoad_DontStore =	RTACTION_MAKE_MASK(ENoAction, ENoAction),
 
@@ -1860,24 +1879,24 @@ enum class ERenderTargetActions : uint8
 
 inline ERenderTargetActions MakeRenderTargetActions(ERenderTargetLoadAction Load, ERenderTargetStoreAction Store)
 {
-	return (ERenderTargetActions)(((uint8)Load << (uint8)ERenderTargetActions::LoadOpMask) | (uint8)Store);
+	return (ERenderTargetActions)(((uint8_t)Load << (uint8_t)ERenderTargetActions::LoadOpMask) | (uint8_t)Store);
 }
 
 inline ERenderTargetLoadAction GetLoadAction(ERenderTargetActions Action)
 {
-	return (ERenderTargetLoadAction)((uint8)Action >> (uint8)ERenderTargetActions::LoadOpMask);
+	return (ERenderTargetLoadAction)((uint8_t)Action >> (uint8_t)ERenderTargetActions::LoadOpMask);
 }
 
 inline ERenderTargetStoreAction GetStoreAction(ERenderTargetActions Action)
 {
-	return (ERenderTargetStoreAction)((uint8)Action & ((1 << (uint8)ERenderTargetActions::LoadOpMask) - 1));
+	return (ERenderTargetStoreAction)((uint8_t)Action & ((1 << (uint8_t)ERenderTargetActions::LoadOpMask) - 1));
 }
 
-enum class EDepthStencilTargetActions : uint8
+enum class EDepthStencilTargetActions : uint8_t
 {
 	DepthMask = 4,
 
-#define RTACTION_MAKE_MASK(Depth, Stencil) (((uint8)ERenderTargetActions::Depth << (uint8)DepthMask) | (uint8)ERenderTargetActions::Stencil)
+#define RTACTION_MAKE_MASK(Depth, Stencil) (((uint8_t)ERenderTargetActions::Depth << (uint8_t)DepthMask) | (uint8_t)ERenderTargetActions::Stencil)
 
 	DontLoad_DontStore =						RTACTION_MAKE_MASK(DontLoad_DontStore, DontLoad_DontStore),
 	DontLoad_StoreDepthStencil =				RTACTION_MAKE_MASK(DontLoad_Store, DontLoad_Store),
@@ -1901,17 +1920,17 @@ enum class EDepthStencilTargetActions : uint8
 
 inline constexpr EDepthStencilTargetActions MakeDepthStencilTargetActions(const ERenderTargetActions Depth, const ERenderTargetActions Stencil)
 {
-	return (EDepthStencilTargetActions)(((uint8)Depth << (uint8)EDepthStencilTargetActions::DepthMask) | (uint8)Stencil);
+	return (EDepthStencilTargetActions)(((uint8_t)Depth << (uint8_t)EDepthStencilTargetActions::DepthMask) | (uint8_t)Stencil);
 }
 
 inline ERenderTargetActions GetDepthActions(EDepthStencilTargetActions Action)
 {
-	return (ERenderTargetActions)((uint8)Action >> (uint8)EDepthStencilTargetActions::DepthMask);
+	return (ERenderTargetActions)((uint8_t)Action >> (uint8_t)EDepthStencilTargetActions::DepthMask);
 }
 
 inline ERenderTargetActions GetStencilActions(EDepthStencilTargetActions Action)
 {
-	return (ERenderTargetActions)((uint8)Action & ((1 << (uint8)EDepthStencilTargetActions::DepthMask) - 1));
+	return (ERenderTargetActions)((uint8_t)Action & ((1 << (uint8_t)EDepthStencilTargetActions::DepthMask) - 1));
 }
 
 struct FRHIRenderPassInfo
@@ -1921,7 +1940,7 @@ struct FRHIRenderPassInfo
 		FRHITexture* RenderTarget;
 		FRHITexture* ResolveTarget;
 		int32_t ArraySlice;
-		uint8 MipIndex;
+		uint8_t MipIndex;
 		ERenderTargetActions Action;
 	};
 	FColorEntry ColorRenderTargets[MaxSimultaneousRenderTargets];

@@ -9,7 +9,21 @@
 #define  PLATFORM_HAS_64BIT_ATOMICS 1
 #define  PLATFORM_HAS_128BIT_ATOMICS 0
 
-
+//#if !PLATFORM_XBOXONE
+#if 1
+#undef InterlockedIncrement
+#undef InterlockedDecrement
+#undef InterlockedAdd
+#undef InterlockedExchange
+#undef InterlockedExchangeAdd
+#undef InterlockedCompareExchange
+#undef InterlockedCompareExchangePointer
+#undef InterlockedExchange64
+#undef InterlockedExchangeAdd64
+#undef InterlockedCompareExchange64
+#undef InterlockedIncrement64
+#undef InterlockedDecrement64
+#endif
 /**
 * Windows implementation of the Atomics OS functions
 */

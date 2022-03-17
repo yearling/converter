@@ -358,4 +358,28 @@ struct YMath
 	{
 		return TruncToInt(ceilf(F));
 	}
+
+	template <typename T>
+	static inline constexpr T Align(T Val, uint64_t Alignment)
+	{
+		//static_assert(TIsIntegral<T>::Value || TIsPointer<T>::Value, "Align expects an integer or pointer type");
+
+		return (T)(((uint64_t)Val + Alignment - 1) & ~(Alignment - 1));
+	}
+
+	static inline uint32_t ReverseBits(uint32_t Bits)
+	{
+		Bits = (Bits << 16) | (Bits >> 16);
+		Bits = ((Bits & 0x00ff00ff) << 8) | ((Bits & 0xff00ff00) >> 8);
+		Bits = ((Bits & 0x0f0f0f0f) << 4) | ((Bits & 0xf0f0f0f0) >> 4);
+		Bits = ((Bits & 0x33333333) << 2) | ((Bits & 0xcccccccc) >> 2);
+		Bits = ((Bits & 0x55555555) << 1) | ((Bits & 0xaaaaaaaa) >> 1);
+		return Bits;
+	}
+
+	#define BYTESWAP_ORDER32_unsigned(x) (((x) >> 24) + (((x) >> 8) & 0xff00) + (((x) << 8) & 0xff0000) + ((x) << 24))
+	static inline uint32_t BYTESWAP_ORDER32(uint32_t val)
+	{
+		return (BYTESWAP_ORDER32_unsigned(val));
+	}
 };

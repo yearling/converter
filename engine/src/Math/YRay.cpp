@@ -20,7 +20,7 @@ bool RayCastTriangle(const YRay& Ray, const YVector& Point0, const YVector& Poin
 			return false;
 		}
 	}
-	float InvDet = 1.0 / det;
+	float InvDet = 1.0f / det;
 	YVector TVec = Ray.origin_ - Point0;
 	u = (TVec | N) * InvDet;
 	if (u < 0 || u >1)
