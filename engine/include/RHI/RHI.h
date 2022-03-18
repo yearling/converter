@@ -13,6 +13,7 @@
 #include <vector>
 #include "Math/YColor.h"
 #include "Math/IntVector.h"
+#include <stdint.h>
 
 #ifndef RHI_COMMAND_LIST_DEBUG_TRACES
 #define RHI_COMMAND_LIST_DEBUG_TRACES 0
@@ -96,7 +97,7 @@ extern  uint32_t GRHIVendorId;
  bool IsRHIDeviceNVIDIA();
 
 // helper to convert GRHIVendorId into a printable string, or "Unknown" if unknown.
- const TCHAR* RHIVendorIdToString();
+ const char* RHIVendorIdToString();
 
 // helper to return the shader language version for the given shader platform.
  uint32_t RHIGetShaderLanguageVersion(const EShaderPlatform Platform);
@@ -487,7 +488,7 @@ extern  bool GetFeatureLevelFromName(std::string Name, ERHIFeatureLevel::Type& O
 extern  void GetFeatureLevelName(ERHIFeatureLevel::Type InFeatureLevel, std::string& OutName);
 
 /** Creates an std::string for the given feature level. */
-extern  void GetFeatureLevelName(ERHIFeatureLevel::Type InFeatureLevel, std::string& OutName);
+//extern  void GetFeatureLevelName(ERHIFeatureLevel::Type InFeatureLevel, FName& OutName);
 
 
 /** Table for finding out which shader platform corresponds to a given feature level for this RHI. */

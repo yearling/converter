@@ -382,4 +382,12 @@ struct YMath
 	{
 		return (BYTESWAP_ORDER32_unsigned(val));
 	}
+
+	template <typename T>
+	static inline constexpr T AlignArbitrary(T Val, uint64_t Alignment)
+	{
+		//static_assert(TIsIntegral<T>::Value || TIsPointer<T>::Value, "AlignArbitrary expects an integer or pointer type");
+
+		return (T)((((uint64)Val + Alignment - 1) / Alignment) * Alignment);
+	}
 };

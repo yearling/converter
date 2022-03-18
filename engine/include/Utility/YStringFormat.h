@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cassert>
 #include <stdint.h>
+#include "Crc.h"
 
 template< typename... Args >
 std::string StringFormat(const char* format, Args... args) {
@@ -116,4 +117,9 @@ inline int32_t HexToBytes(const std::string& HexString, uint8_t* OutBytes)
 		++NumBytes;
 	}
 	return NumBytes;
+}
+
+inline uint32_t GetTypeHash(const std::string& S)
+{
+	return FCrc::Strihash_DEPRECATED(S.c_str());
 }

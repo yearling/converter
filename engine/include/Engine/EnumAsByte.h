@@ -2,6 +2,7 @@
 
 #pragma once
 #include <type_traits>
+#include <stdint.h>
 
 
 template <bool> struct TEnumAsByte_EnumClass;
@@ -42,16 +43,16 @@ public:
 	{ }
 
 	/**
-	 * Constructor, initialize to the int32 value.
+	 * Constructor, initialize to the int32_t value.
 	 *
 	 * @param InValue value to construct with.
 	 */
-	explicit inline TEnumAsByte(int32 InValue)
+	explicit inline TEnumAsByte(int32_t InValue)
 		: Value(static_cast<uint8_t>(InValue))
 	{ }
 
 	/**
-	 * Constructor, initialize to the int32 value.
+	 * Constructor, initialize to the int32_t value.
 	 *
 	 * @param InValue value to construct with.
 	 */
@@ -130,7 +131,7 @@ private:
 	uint8_t Value;
 
 
-	inline friend uint32 GetTypeHash(const TEnumAsByte& Enum)
+	inline friend uint32_t GetTypeHash(const TEnumAsByte& Enum)
 	{
 		return GetTypeHash(Enum.Value);
 	}
