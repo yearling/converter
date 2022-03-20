@@ -330,7 +330,7 @@ void FRHICommandEndDrawPrimitiveUP::Execute(FRHICommandListBase& CmdList)
 	RHISTAT(EndDrawPrimitiveUP);
 	void* Buffer = NULL;
 	INTERNAL_DECORATOR(RHIBeginDrawPrimitiveUP)(PrimitiveType, NumPrimitives, NumVertices, VertexDataStride, Buffer);
-	FMemory::Memcpy(Buffer, OutVertexData, NumVertices * VertexDataStride);
+	memcpy(Buffer, OutVertexData, NumVertices * VertexDataStride);
 	INTERNAL_DECORATOR(RHIEndDrawPrimitiveUP)();
 }
 
@@ -349,8 +349,8 @@ void FRHICommandEndDrawIndexedPrimitiveUP::Execute(FRHICommandListBase& CmdList)
 		NumIndices,
 		IndexDataStride,
 		IndexBuffer);
-	FMemory::Memcpy(VertexBuffer, OutVertexData, NumVertices * VertexDataStride);
-	FMemory::Memcpy(IndexBuffer, OutIndexData, NumIndices * IndexDataStride);
+	memcpy(VertexBuffer, OutVertexData, NumVertices * VertexDataStride);
+	memcpy(IndexBuffer, OutIndexData, NumIndices * IndexDataStride);
 	INTERNAL_DECORATOR(RHIEndDrawIndexedPrimitiveUP)();
 }
 
@@ -463,7 +463,7 @@ void FRHICommandTransitionTextures::Execute(FRHICommandListBase& CmdList)
 void FRHICommandTransitionTexturesArray::Execute(FRHICommandListBase& CmdList)
 {
 	RHISTAT(TransitionTextures);
-	INTERNAL_DECORATOR(RHITransitionResources)(TransitionType, &Textures[0], Textures.Num());
+	INTERNAL_DECORATOR(RHITransitionResources)(TransitionType, &Textures[0], Textures.size());
 }
 
 template<ECmdList CmdListType>

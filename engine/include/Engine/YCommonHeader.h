@@ -46,3 +46,4 @@ enum
 };
 
 #define  LLM_SCOPE(x) 
+#define  PLATFORM_RHITHREAD_DEFAULT_BYPASS 0

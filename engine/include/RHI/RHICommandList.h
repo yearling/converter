@@ -1677,7 +1677,7 @@ struct FRHICommandSetLocalUniformBuffer final : public FRHICommand<FRHICommandSe
 		, LocalUniformBuffer(InLocalUniformBuffer)
 
 	{
-		assert(CheckCmdList == LocalUniformBuffer.WorkArea->CheckCmdList && CheckCmdList->GetUID() == LocalUniformBuffer.WorkArea->UID); // this uniform buffer was not built for this particular commandlist
+		//assert(CheckCmdList == LocalUniformBuffer.WorkArea->CheckCmdList && CheckCmdList->GetUID() == LocalUniformBuffer.WorkArea->UID); // this uniform buffer was not built for this particular commandlist
 		LocalUniformBuffer.WorkArea->ComputedUniformBuffer->UseCount++;
 	}
 	 void Execute(FRHICommandListBase& CmdList);
@@ -3995,8 +3995,8 @@ class  FRHICommandListExecutor
 public:
 	enum
 	{
-		//DefaultBypass = PLATFORM_RHITHREAD_DEFAULT_BYPASS
-		DefaultBypass = 0
+		DefaultBypass = PLATFORM_RHITHREAD_DEFAULT_BYPASS
+		//DefaultBypass = 0
 	};
 	FRHICommandListExecutor()
 		: bLatchedBypass(!!DefaultBypass)
