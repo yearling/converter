@@ -11,6 +11,18 @@ YVector2 YVector2::operator*(float mul) const
 	return YVector2(x * mul, y * mul);
 }
 
+YVector2 YVector2::operator-(const YVector2& v) const
+{
+	return YVector2(x - v.x, y - v.y);
+}
+
+YVector2 YVector2::operator+(const YVector2& v) const
+{
+	return YVector2(x + v.x, y + v.y);
+}
+
+const YVector2 YVector2::zero_vector = YVector2(0.0,0.0);
+
 bool YVector2::operator!=(const YVector2& v) const
 {
 	return !(*this == v);

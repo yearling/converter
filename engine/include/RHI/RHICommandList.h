@@ -16,6 +16,10 @@
 #include "Engine/YCommonHeader.h"
 #include "Engine/TaskGraphCommon.h"
 #include <array>
+#include "Utility/MemStack.h"
+#include <algorithm>
+#include <lmerrlog.h>
+#include "DynamicRHI.h"
 class FApp;
 class FBlendStateInitializerRHI;
 class FGraphicsPipelineStateInitializer;
@@ -147,7 +151,8 @@ struct  FLockTracker
 			if (OutstandingLocks[Index].RHIBuffer == RHIBuffer)
 			{
 				FLockParams Result = OutstandingLocks[Index];
-				OutstandingLocks.RemoveAtSwap(Index, 1, false);
+				//OutstandingLocks.RemoveAtSwap(Index, 1, false);
+				OutstandingLocks.erase(OutstandingLocks.begin() + Index);
 				return Result;
 			}
 		}
@@ -420,8 +425,9 @@ public:
 
 	inline void ExchangeCmdList(FRHICommandListBase& Other)
 	{
-		assert(!RTTasks.Num() && !Other.RTTasks.Num());
-		FMemory::Memswap(this, &Other, sizeof(FRHICommandListBase));
+		assert(!RTTasks.size() && !Other.RTTasks.size());
+		//FMemory::Memswap(this, &Other, sizeof(FRHICommandListBase));
+		std::swap_ranges(this, this + sizeof(FRHICommandListBase), &Other);
 		if (CommandLink == &Other.Root)
 		{
 			CommandLink = &Root;
@@ -1583,7 +1589,7 @@ struct FRHICommandSetLocalGraphicsPipelineState final : public FRHICommand<FRHIC
 	inline FRHICommandSetLocalGraphicsPipelineState(FRHICommandListBase* CheckCmdList, FLocalGraphicsPipelineState& InLocalGraphicsPipelineState)
 		: LocalGraphicsPipelineState(InLocalGraphicsPipelineState)
 	{
-		assert(CheckCmdList == LocalGraphicsPipelineState.WorkArea->CheckCmdList && CheckCmdList->GetUID() == LocalGraphicsPipelineState.WorkArea->UID); // this PSO was not built for this particular commandlist
+		//assert(CheckCmdList == LocalGraphicsPipelineState.WorkArea->CheckCmdList && CheckCmdList->GetUID() == LocalGraphicsPipelineState.WorkArea->UID); // this PSO was not built for this particular commandlist
 		LocalGraphicsPipelineState.WorkArea->ComputedGraphicsPipelineState->UseCount++;
 	}
 
@@ -1619,7 +1625,7 @@ struct FLocalUniformBufferWorkArea
 	{
 		assert(ContentsSize);
 		Contents = InCheckCmdList->Alloc(ContentsSize, UNIFORM_BUFFER_STRUCT_ALIGNMENT);
-		FMemory::Memcpy(Contents, InContents, ContentsSize);
+		memcpy(Contents, InContents, ContentsSize);
 		ComputedUniformBuffer = new (InCheckCmdList->Alloc<FComputedUniformBuffer>()) FComputedUniformBuffer;
 	}
 };
@@ -1823,10 +1829,10 @@ struct FRHICommandDebugBreak final : public FRHICommand<FRHICommandDebugBreak>
 {
 	void Execute(FRHICommandListBase& CmdList)
 	{
-		if (FPlatformMisc::IsDebuggerPresent())
-		{
-			UE_DEBUG_BREAK();
-		}
+		//if (FPlatformMisc::IsDebuggerPresent())
+		//{
+			//UE_DEBUG_BREAK();
+		//}
 	}
 };
 
@@ -2119,7 +2125,8 @@ public:
 	{
 		if (!IndexBuffer)
 		{
-			UE_LOG(LogRHI, Fatal, TEXT("Tried to call DrawIndexedPrimitive with null IndexBuffer!"));
+			//UE_LOG(LogRHI, Fatal, TEXT("Tried to call DrawIndexedPrimitive with null IndexBuffer!"));
+			ERROR_INFO("Tried to call DrawIndexedPrimitive with null IndexBuffer!");
 		}
 
 		//assert(IsOutsideRenderPass());
@@ -2505,7 +2512,7 @@ public:
 		new (AllocCommand<FRHICommandCopyToResolveTarget>()) FRHICommandCopyToResolveTarget(SourceTextureRHI, DestTextureRHI, ResolveParams);
 	}
 
-	DEPRECATED(4.20, "This signature of CopyToResolveTarget is deprecated. Please use the new one instead.")
+	//DEPRECATED(4.20, "This signature of CopyToResolveTarget is deprecated. Please use the new one instead.")
 	inline void CopyToResolveTarget(FTextureRHIParamRef SourceTextureRHI, FTextureRHIParamRef DestTextureRHI, bool bKeepOriginalSurface, const FResolveParams& ResolveParams)
 	{
 		CopyToResolveTarget(SourceTextureRHI, DestTextureRHI, ResolveParams);
@@ -2600,7 +2607,7 @@ public:
 	{
 		if (Bypass())
 		{
-			CMD_CONTEXT(RHITransitionResources)(TransitionType, &InTextures[0], InTextures.Num());
+			CMD_CONTEXT(RHITransitionResources)(TransitionType, &InTextures[0], InTextures.size());
 			return;
 		}
 		new (AllocCommand<FRHICommandTransitionTexturesArray>()) FRHICommandTransitionTexturesArray(TransitionType, InTextures);
@@ -2783,10 +2790,10 @@ public:
 #if !UE_BUILD_SHIPPING
 		if (Bypass())
 		{
-			if (FPlatformMisc::IsDebuggerPresent())
+		/*	if (FPlatformMisc::IsDebuggerPresent())
 			{
 				UE_DEBUG_BREAK();
-			}
+			}*/
 			return;
 		}
 		new (AllocCommand<FRHICommandDebugBreak>()) FRHICommandDebugBreak();
@@ -2827,7 +2834,7 @@ public:
 			return;
 		}
 		void* UseValue = Alloc(NumBytes, 16);
-		FMemory::Memcpy(UseValue, NewValue, NumBytes);
+		memcpy(UseValue, NewValue, NumBytes);
 		new (AllocCommand<FRHICommandSetShaderParameter<FComputeShaderRHIParamRef, ECmdList::ECompute> >()) FRHICommandSetShaderParameter<FComputeShaderRHIParamRef, ECmdList::ECompute>(Shader, BufferIndex, BaseIndex, NumBytes, UseValue);
 	}
 	
@@ -3008,10 +3015,10 @@ public:
 #if !UE_BUILD_SHIPPING
 		if (Bypass())
 		{
-			if (FPlatformMisc::IsDebuggerPresent())
+		/*	if (FPlatformMisc::IsDebuggerPresent())
 			{
 				UE_DEBUG_BREAK();
-			}
+			}*/
 			return;
 		}
 		new (AllocCommand<FRHICommandDebugBreak>()) FRHICommandDebugBreak();
@@ -3095,7 +3102,7 @@ public:
 	void UnStallRHIThread();
 	static bool IsStalled();
 
-	void SetCurrentStat(TStatId Stat);
+	//void SetCurrentStat(TStatId Stat);
 
 	/** Dispatch current work and change the GPUMask. */
 	void SetGPUMask(FRHIGPUMask InGPUMask);
@@ -3244,12 +3251,12 @@ public:
 		return GDynamicRHI->CreateComputeShader_RenderThread(*this, Library, Hash);
 	}
 	
-	inline FComputeFenceRHIRef CreateComputeFence(const FName& Name)
+	inline FComputeFenceRHIRef CreateComputeFence(const std::string& Name)
 	{		
 		return GDynamicRHI->RHICreateComputeFence(Name);
 	}	
 
-	inline FGPUFenceRHIRef CreateGPUFence(const FName& Name)
+	inline FGPUFenceRHIRef CreateGPUFence(const std::string& Name)
 	{
 		return GDynamicRHI->RHICreateGPUFence(Name);
 	}
@@ -3331,7 +3338,7 @@ public:
 	
 	inline void CopyVertexBuffer(FVertexBufferRHIParamRef SourceBuffer,FVertexBufferRHIParamRef DestBuffer)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_CopyVertexBuffer_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_CopyVertexBuffer_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);  
 		GDynamicRHI->RHICopyVertexBuffer(SourceBuffer,DestBuffer);
 	}
@@ -3345,7 +3352,7 @@ public:
 	inline void* LockStructuredBuffer(FStructuredBufferRHIParamRef StructuredBuffer, uint32_t Offset, uint32_t SizeRHI, EResourceLockMode LockMode)
 	{
 		LLM_SCOPE(ELLMTag::RHIMisc);
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_LockStructuredBuffer_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_LockStructuredBuffer_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		 
 		return GDynamicRHI->RHILockStructuredBuffer(StructuredBuffer, Offset, SizeRHI, LockMode);
@@ -3354,7 +3361,7 @@ public:
 	inline void UnlockStructuredBuffer(FStructuredBufferRHIParamRef StructuredBuffer)
 	{
 		LLM_SCOPE(ELLMTag::RHIMisc);
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_UnlockStructuredBuffer_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_UnlockStructuredBuffer_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		  
 		GDynamicRHI->RHIUnlockStructuredBuffer(StructuredBuffer);
@@ -3424,7 +3431,7 @@ public:
 	
 	inline bool GetTextureMemoryVisualizeData(FColor* TextureData,int32_t SizeX,int32_t SizeY,int32_t Pitch,int32_t PixelSize)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_GetTextureMemoryVisualizeData_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_GetTextureMemoryVisualizeData_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		return GDynamicRHI->RHIGetTextureMemoryVisualizeData(TextureData,SizeX,SizeY,Pitch,PixelSize);
 	}
@@ -3461,7 +3468,7 @@ public:
 	inline void CopySharedMips(FTexture2DRHIParamRef DestTexture2D, FTexture2DRHIParamRef SrcTexture2D)
 	{
 		LLM_SCOPE(ELLMTag::Textures);
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_CopySharedMips_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_CopySharedMips_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		 
 		return GDynamicRHI->RHICopySharedMips(DestTexture2D, SrcTexture2D);
@@ -3516,7 +3523,7 @@ public:
 
 	inline void GenerateMips(FTextureRHIParamRef Texture)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_GenerateMips_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_GenerateMips_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); return GDynamicRHI->RHIGenerateMips(Texture);
 	}
 	
@@ -3556,7 +3563,7 @@ public:
 	inline void* LockTexture2DArray(FTexture2DArrayRHIParamRef Texture, uint32_t TextureIndex, uint32_t MipIndex, EResourceLockMode LockMode, uint32_t& DestStride, bool bLockWithinMiptail)
 	{
 		LLM_SCOPE(ELLMTag::Textures);
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_LockTexture2DArray_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_LockTexture2DArray_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);  
 		return GDynamicRHI->RHILockTexture2DArray(Texture, TextureIndex, MipIndex, LockMode, DestStride, bLockWithinMiptail);
 	}
@@ -3564,7 +3571,7 @@ public:
 	inline void UnlockTexture2DArray(FTexture2DArrayRHIParamRef Texture, uint32_t TextureIndex, uint32_t MipIndex, bool bLockWithinMiptail)
 	{
 		LLM_SCOPE(ELLMTag::Textures);
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_UnlockTexture2DArray_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_UnlockTexture2DArray_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);   
 		GDynamicRHI->RHIUnlockTexture2DArray(Texture, TextureIndex, MipIndex, bLockWithinMiptail);
 	}
@@ -3637,28 +3644,28 @@ public:
 
 	inline void ReadSurfaceData(FTextureRHIParamRef Texture,FIntRect Rect,std::vector<FColor>& OutData,FReadSurfaceDataFlags InFlags)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_ReadSurfaceData_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_ReadSurfaceData_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);  
 		GDynamicRHI->RHIReadSurfaceData(Texture,Rect,OutData,InFlags);
 	}
 
 	inline void ReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FLinearColor>& OutData, FReadSurfaceDataFlags InFlags)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_ReadSurfaceData_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_ReadSurfaceData_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);
 		GDynamicRHI->RHIReadSurfaceData(Texture, Rect, OutData, InFlags);
 	}
 	
 	inline void MapStagingSurface(FTextureRHIParamRef Texture,void*& OutData,int32_t& OutWidth,int32_t& OutHeight)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_MapStagingSurface_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_MapStagingSurface_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);  
 		GDynamicRHI->RHIMapStagingSurface(Texture,OutData,OutWidth,OutHeight);
 	}
 	
 	inline void UnmapStagingSurface(FTextureRHIParamRef Texture)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_UnmapStagingSurface_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_UnmapStagingSurface_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);  
 		GDynamicRHI->RHIUnmapStagingSurface(Texture);
 	}
@@ -3671,7 +3678,7 @@ public:
 
 	inline void Read3DSurfaceFloatData(FTextureRHIParamRef Texture,FIntRect Rect,FIntPoint ZMinMax,std::vector<FFloat16Color>& OutData)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_Read3DSurfaceFloatData_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_Read3DSurfaceFloatData_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);  
 		GDynamicRHI->RHIRead3DSurfaceFloatData(Texture,Rect,ZMinMax,OutData);
 	}
@@ -3777,7 +3784,7 @@ public:
 	
 	inline void AcquireThreadOwnership()
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_AcquireThreadOwnership_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_AcquireThreadOwnership_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		 
 		return GDynamicRHI->RHIAcquireThreadOwnership();
@@ -3785,7 +3792,7 @@ public:
 	
 	inline void ReleaseThreadOwnership()
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_ReleaseThreadOwnership_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_ReleaseThreadOwnership_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		 
 		return GDynamicRHI->RHIReleaseThreadOwnership();
@@ -3793,7 +3800,7 @@ public:
 	
 	inline void FlushResources()
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_FlushResources_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_FlushResources_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		 
 		return GDynamicRHI->RHIFlushResources();
@@ -3824,21 +3831,21 @@ public:
 	
 	inline void SetStreamOutTargets(uint32_t NumTargets,const FVertexBufferRHIParamRef* VertexBuffers,const uint32_t* Offsets)
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_SetStreamOutTargets_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_SetStreamOutTargets_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);  
 		GDynamicRHI->RHISetStreamOutTargets(NumTargets,VertexBuffers,Offsets);
 	}
 	
 	inline void BlockUntilGPUIdle()
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_BlockUntilGPUIdle_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_BlockUntilGPUIdle_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);  
 		GDynamicRHI->RHIBlockUntilGPUIdle();
 	}
 
 	inline void SubmitCommandsAndFlushGPU()
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_SubmitCommandsAndFlushGPU_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_SubmitCommandsAndFlushGPU_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);
 		GDynamicRHI->RHISubmitCommandsAndFlushGPU();
 	}
@@ -3855,7 +3862,7 @@ public:
 	
 	inline bool IsRenderingSuspended()
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_IsRenderingSuspended_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_IsRenderingSuspended_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		return GDynamicRHI->RHIIsRenderingSuspended();
 	}
@@ -3908,7 +3915,7 @@ public:
 	
 	inline void* GetNativeDevice()
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_GetNativeDevice_Flush);
+		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_GetNativeDevice_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread); 
 		 
 		return GDynamicRHI->RHIGetNativeDevice();
@@ -3988,7 +3995,8 @@ class  FRHICommandListExecutor
 public:
 	enum
 	{
-		DefaultBypass = PLATFORM_RHITHREAD_DEFAULT_BYPASS
+		//DefaultBypass = PLATFORM_RHITHREAD_DEFAULT_BYPASS
+		DefaultBypass = 0
 	};
 	FRHICommandListExecutor()
 		: bLatchedBypass(!!DefaultBypass)
@@ -4041,14 +4049,16 @@ private:
 
 extern  FRHICommandListExecutor GRHICommandList;
 
-extern  FAutoConsoleTaskPriority CPrio_SceneRenderingTask;
+//extern  FAutoConsoleTaskPriority CPrio_SceneRenderingTask;
 
 class FRenderTask
 {
 public:
 	inline static ENamedThreads::Type GetDesiredThread()
 	{
-		return CPrio_SceneRenderingTask.Get();
+		//return CPrio_SceneRenderingTask.Get();
+		assert(0);
+		return ENamedThreads::NormalTaskPriority;
 	}
 };
 
@@ -4152,12 +4162,12 @@ inline FComputeShaderRHIRef RHICreateComputeShader(FRHIShaderLibraryParamRef Lib
 	return FRHICommandListExecutor::GetImmediateCommandList().CreateComputeShader(Library, Hash);
 }
 
-inline FComputeFenceRHIRef RHICreateComputeFence(const FName& Name)
+inline FComputeFenceRHIRef RHICreateComputeFence(const std::string& Name)
 {
 	return FRHICommandListExecutor::GetImmediateCommandList().CreateComputeFence(Name);
 }
 
-inline FGPUFenceRHIRef RHICreateGPUFence(const FName& Name)
+inline FGPUFenceRHIRef RHICreateGPUFence(const std::string& Name)
 {
 	return FRHICommandListExecutor::GetImmediateCommandList().CreateGPUFence(Name);
 }

@@ -9,6 +9,7 @@
 #include "Platform/TlsAutoCleanup.h"
 #include "Platform/IQueuedWork.h"
 #include "Platform/QueuedThreadPool.h"
+#include "Engine/CoreGlobals.h"
 #include <vector>
 #include <algorithm>
 
@@ -38,7 +39,7 @@ FQueuedThreadPool* GIOThreadPool = nullptr;
 	return false;
 }
 
- int GIsRenderingThreadSuspended = 0;
+ std::atomic<int32_t> GIsRenderingThreadSuspended = 0;
 
  FRunnableThread* GRenderingThread = nullptr;
 

@@ -4,6 +4,8 @@
 #include "Platform/RunnableThread.h"
 #include <functional>
 #include "Engine/TaskGraphInterfaces.h"
+#include "Engine/CoreGlobals.h"
+
 class FRHICommandListImmediate;
 
 ////////////////////////////////////

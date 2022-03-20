@@ -11,6 +11,8 @@
 #include <cassert>
 #include "Template/Template.h"
 #include "Math/NumericLimits.h"
+#include "RHI/RHICommandList.h"
+#include "Engine/YCommonHeader.h"
 //#include "Modules/ModuleManager.h"
 //#include "Misc/ConfigCacheIni.h"
 //#include "ProfilingDebugging/CsvProfiler.h"
@@ -341,7 +343,7 @@ void FRHIResource::FlushPendingDeletes(bool bFlushDeferredDeletes)
 		{
 			//const int32_t Index = DeferredDeletionQueue.AddDefaulted();
 			DeferredDeletionQueue.push_back(ResourcesToDelete());
-			const int32_t Index = DeferredDeletionQueue.size();
+			const int32_t Index = (int32_t)DeferredDeletionQueue.size();
 			ResourcesToDelete& ResourceBatch = DeferredDeletionQueue[Index];
 			ResourceBatch.FrameDeleted = CurrentFrame;
 			PendingDeletes.PopAll(ResourceBatch.Resources);

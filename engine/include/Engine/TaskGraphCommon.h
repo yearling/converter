@@ -54,16 +54,3 @@ IMPLEMENT_ALIGNED_STORAGE(4);
 IMPLEMENT_ALIGNED_STORAGE(2);
 
 #undef IMPLEMENT_ALIGNED_STORAGE
-
-extern  bool GIsGameThreadIdInitialized;
-extern  unsigned int GGameThreadId;
-
-inline bool IsInGameThread()
-{
-	if (GIsGameThreadIdInitialized)
-	{
-		const unsigned int CurrentThreadId = FPlatformTLS::GetCurrentThreadId();
-		return CurrentThreadId == GGameThreadId ;
-	}
-	return true;
-}

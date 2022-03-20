@@ -15,6 +15,9 @@ public:
 	bool operator==(const YVector2& v) const;
 	bool operator!=(const YVector2& v) const;
 	YVector2 operator*(float mul)const;
+	YVector2 operator-(const YVector2& v) const;
+	YVector2 operator+(const YVector2& v) const;
+	static const YVector2 zero_vector;
 };
 
 struct YVector

@@ -14,10 +14,18 @@ typedef uint64_t uint64;
 #define ensure assert
 #define checkf assert
 #define checkSlow assert
-#define  FORCEINLINE inline
-#define  FORCEINLINE_DEBUGGABLE inline
-#define STAT(a) 
 
+#ifndef FORCEINLINE
+#define  FORCEINLINE inline
+#endif
+
+#ifndef FORCEINLINE_DEBUGGABLE
+#define  FORCEINLINE_DEBUGGABLE FORCEINLINE
+#endif
+
+#define STAT(a) 
+#define STATS 0
+#define UE_BUILD_SHIPPING 0
 static FORCEINLINE void* Memzero(void* Dest, SIZE_T Count)
 {
 	return memset(Dest,0, Count);
@@ -33,3 +41,5 @@ enum
 	// Minimum allocator alignment
 	MIN_ALIGNMENT = 8,
 };
+
+#define  LLM_SCOPE(x) 

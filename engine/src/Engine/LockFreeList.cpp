@@ -4,6 +4,7 @@
 #include "Platform/Windows/WindowsPlatformProcess.h"
 #include "Platform/ThreadSafeCounter.h"
 #include "Engine/TaskGraphCommon.h"
+#include "Engine/CoreGlobals.h"
 
 
 

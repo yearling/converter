@@ -312,7 +312,7 @@ inline FIntRect FIntRect::Scale(float Fraction) const
 	YVector2 Min2D = YVector2(Min.X, Min.Y) * Fraction;
 	YVector2 Max2D = YVector2(Max.X, Max.Y) * Fraction;
 
-	return FIntRect(YMath::FloorToInt(Min2D.x), YMath::FloorToInt(Min2D.y), YMath::CeilToInt(Max2D.X), YMath::CeilToInt(Max2D.Y));
+	return FIntRect(YMath::FloorToInt(Min2D.x), YMath::FloorToInt(Min2D.y), YMath::CeilToInt(Max2D.x), YMath::CeilToInt(Max2D.y));
 }
 
 

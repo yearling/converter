@@ -27,7 +27,7 @@ TaskGraphInterfaces.h: TaskGraph library
 
 class FGraphEvent;
 
-#define STATS 1
+//#define STATS 1
 
 namespace ENamedThreads
 {
@@ -35,7 +35,8 @@ namespace ENamedThreads
 	{
 		UnusedAnchor = -1,
 		/** The always-present, named threads are listed next **/
-#if STATS
+//#if STATS
+#if 1
 		StatsThread,
 #endif
 		RHIThread,

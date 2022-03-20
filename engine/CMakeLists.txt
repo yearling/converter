@@ -35,7 +35,7 @@ endif(MSVC)
 # cpp files
 file(GLOB_RECURSE SRC_LIST "src/*.cpp" "src/*.h" )
 # .h files
-file(GLOB_RECURSE HEAD_LIST "include/*.h" )
+file(GLOB_RECURSE HEAD_LIST "include/*.h" "include/*.inl")
 # hlsl files
 file(GLOB_RECURSE HLSL_LIST "src/*.hlsl")
 

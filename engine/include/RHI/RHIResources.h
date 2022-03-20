@@ -17,6 +17,7 @@
 #include "Math/IntVector.h"
 #include "Utility/Crc.h"
 #include <array>
+#include "Engine/CoreGlobals.h"
 
 #define DISABLE_RHI_DEFFERED_DELETE 0
 
@@ -246,7 +247,7 @@ struct FRHIUniformBufferLayout
 			TmpHash ^= ResourceOffsets[ResourceIndex];
 		}
 
-		uint32_t N = Resources.size();
+		uint32_t N = (uint32_t)Resources.size();
 		while (N >= 4)
 		{
 			TmpHash ^= (Resources[--N] << 0);

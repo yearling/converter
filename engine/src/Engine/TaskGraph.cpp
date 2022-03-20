@@ -10,6 +10,7 @@
 #include "Platform/GenericPlatformAffinity.h"
 #include "Platform/RunnableThread.h"
 #include "Platform/ScopedEvent.h"
+#include "Engine/CoreGlobals.h"
 
 static int GNumWorkerThreadsToIgnore = 0;
 #define verify(x) if(!x){ abort();}
