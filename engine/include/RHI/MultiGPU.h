@@ -13,8 +13,8 @@
 #define WITH_SLI 1	// Implicit SLI
 #define WITH_MGPU 1	// Explicit MGPU
 #define MAX_NUM_GPUS 4
-extern RHI_API uint32_t GNumExplicitGPUsForRendering;
-extern RHI_API uint32_t GNumAlternateFrameRenderingGroups;
+extern  uint32_t GNumExplicitGPUsForRendering;
+extern  uint32_t GNumAlternateFrameRenderingGroups;
 #else
 #define WITH_SLI 0
 #define WITH_MGPU 0

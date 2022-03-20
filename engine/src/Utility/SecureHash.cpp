@@ -575,8 +575,8 @@ FMD5Hash FMD5Hash::HashFile(const char* InFilename, std::vector<uint8_t>* Buffer
 -----------------------------------------------------------------------------*/
 
 /** Global maps of filename to hash value */
- //std::unordered_map<FString, uint8_t*> FSHA1::FullFileSHAHashMap;
-//std::unordered_map<FString, uint8_t*> FSHA1::ScriptSHAHashMap;
+ //std::unordered_map<std::string, uint8_t*> FSHA1::FullFileSHAHashMap;
+//std::unordered_map<std::string, uint8_t*> FSHA1::ScriptSHAHashMap;
 std::unordered_map<std::string, uint8_t*> FSHA1::FullFileSHAHashMap;
 std::unordered_map<std::string, uint8_t*> FSHA1::ScriptSHAHashMap;
 // Rotate x bits to the left

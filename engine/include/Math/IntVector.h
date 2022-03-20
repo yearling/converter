@@ -450,7 +450,7 @@ inline std::string FIntVector::ToString() const
 {
 	assert(0);
 	return "";
-	//return FString::Printf(TEXT("X=%d Y=%d Z=%d"), X, Y, Z);
+	//return std::string::Printf(TEXT("X=%d Y=%d Z=%d"), X, Y, Z);
 }
 
 inline uint32_t GetTypeHash(const FIntVector& Vector)

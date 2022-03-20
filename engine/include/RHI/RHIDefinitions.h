@@ -980,11 +980,12 @@ inline bool IsFeatureLevelSupported(EShaderPlatform InShaderPlatform, ERHIFeatur
 inline bool RHINeedsToSwitchVerticalAxis(EShaderPlatform Platform)
 {
 #if WITH_EDITOR
-	static const auto CVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.Mobile.ForceRHISwitchVerticalAxis"));
-	if (CVar->GetValueOnAnyThread())
-	{
-		return true;
-	}
+	//static const auto CVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.Mobile.ForceRHISwitchVerticalAxis"));
+	//if (CVar->GetValueOnAnyThread())
+	//{
+		//return true;
+	//}
+	
 #endif
 
 	// ES2 & ES3.1 need to flip when rendering to an RT that will be post processed

@@ -32,7 +32,7 @@ namespace ENamedThreads
 }
 static int32_t GTestDontCompleteUntilForAlreadyComplete = 1;
 #if CREATE_HIPRI_TASK_THREADS || CREATE_BACKGROUND_TASK_THREADS
-//static void ThreadSwitchForABTest(const TArray<FString>& Args)
+//static void ThreadSwitchForABTest(const TArray<std::string>& Args)
 //{
 //	if (Args.Num() == 2)
 //	{
@@ -218,7 +218,7 @@ static struct FChaosMode
 	}
 } GChaosMode;
 
-static void EnableRandomizedThreads(const TArray<FString>& Args)
+static void EnableRandomizedThreads(const TArray<std::string>& Args)
 {
 	GChaosMode.Enabled = !GChaosMode.Enabled;
 	if (GChaosMode.Enabled)
@@ -280,7 +280,7 @@ static std::string TaskPriorityToName(ENamedThreads::Type Priority)
 	return "??Unknown??";
 }
 
-//void FAutoConsoleTaskPriority::CommandExecute(const TArray<FString>& Args)
+//void FAutoConsoleTaskPriority::CommandExecute(const TArray<std::string>& Args)
 //{
 //	if (Args.Num() > 0)
 //	{
@@ -991,7 +991,7 @@ public:
 			{
 				Name = "TaskGraphThreadHP ";
 				Name += (ThreadIndex - (LastExternalThread + 1));
-				//Name = FString::Printf(TEXT("TaskGraphThreadHP %d"), ThreadIndex - (LastExternalThread + 1));
+				//Name = std::string::Printf(TEXT("TaskGraphThreadHP %d"), ThreadIndex - (LastExternalThread + 1));
 				ThreadPri = TPri_SlightlyBelowNormal; // we want even hi priority tasks below the normal threads
 			}
 			else if (Priority == 2)

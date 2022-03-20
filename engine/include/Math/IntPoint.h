@@ -530,7 +530,7 @@ inline std::string FIntPoint::ToString() const
 {
 	assert(0);
 	return "";
-	//return FString::Printf(TEXT("X=%d Y=%d"), X, Y);
+	//return std::string::Printf(TEXT("X=%d Y=%d"), X, Y);
 }
 
 //template <> struct TIsPODType<FIntPoint> { enum { Value = true }; };

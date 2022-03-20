@@ -181,41 +181,42 @@ public:
 		return *this;
 	}
 
-#if WITH_EDITOR
-	inline void SetPreviewOverride(const TValueType& InValue)
-	{
-		PreviewValue = InValue;
-	}
+//#if WITH_EDITOR
+//	inline void SetPreviewOverride(const TValueType& InValue)
+//	{
+//		PreviewValue = InValue;
+//	}
+//
+//	inline operator TValueType() const
+//	{ 
+//		return PreviewValue.IsSet() ? GetPreviewValue() : Value;
+//	}
+//#else
+//	inline operator TValueType() const { return Value; }
+//#endif
 
-	inline operator TValueType() const
-	{ 
-		return PreviewValue.IsSet() ? GetPreviewValue() : Value;
-	}
-#else
 	inline operator TValueType() const { return Value; }
-#endif
-
 private:
 	TValueType Value;
 #if WITH_EDITOR
-	TOptional<TValueType> PreviewValue;
-	TValueType GetPreviewValue() const { return PreviewValue.GetValue(); }
+	//TOptional<TValueType> PreviewValue;
+	//TValueType GetPreviewValue() const { return PreviewValue.GetValue(); }
 #endif
 };
 
 #if WITH_EDITOR
-template<>
-inline int32_t TRHIGlobal<int32_t>::GetPreviewValue() const 
-{
-	// ensure the preview values are subsets of RHI functionality.
-	return YMath::Min(PreviewValue.GetValue(), Value);
-}
-template<>
-inline bool TRHIGlobal<bool>::GetPreviewValue() const
-{
-	// ensure the preview values are subsets of RHI functionality.
-	return PreviewValue.GetValue() && Value;
-}
+//template<>
+//inline int32_t TRHIGlobal<int32_t>::GetPreviewValue() const 
+//{
+//	// ensure the preview values are subsets of RHI functionality.
+//	return YMath::Min(PreviewValue.GetValue(), Value);
+//}
+//template<>
+//inline bool TRHIGlobal<bool>::GetPreviewValue() const
+//{
+//	// ensure the preview values are subsets of RHI functionality.
+//	return PreviewValue.GetValue() && Value;
+//}
 #endif
 
 /** true if the GPU is AMD's Pre-GCN architecture */

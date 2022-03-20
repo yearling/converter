@@ -351,15 +351,15 @@ struct FLinearColor
 
 	std::string ToString() const
 	{
-		//return FString::Printf(TEXT("(R=%f,G=%f,B=%f,A=%f)"),R,G,B,A);
+		//return std::string::Printf(TEXT("(R=%f,G=%f,B=%f,A=%f)"),R,G,B,A);
 		return "";
 	}
 
 	/**
-	 * Initialize this Color based on an FString. The String is expected to contain R=, G=, B=, A=.
+	 * Initialize this Color based on an std::string. The String is expected to contain R=, G=, B=, A=.
 	 * The FLinearColor will be bogus when InitFromString returns false.
 	 *
-	 * @param InSourceString FString containing the color values.
+	 * @param InSourceString std::string containing the color values.
 	 * @return true if the R,G,B values were read successfully; false otherwise.
 	 */
 	bool InitFromString(const std::string& InSourceString)
@@ -532,7 +532,7 @@ public:
 	 */
 	inline std::string ToHex() const
 	{
-		//return FString::Printf(TEXT("%02X%02X%02X%02X"), R, G, B, A);
+		//return std::string::Printf(TEXT("%02X%02X%02X%02X"), R, G, B, A);
 		assert(0);
 		return "";
 	}
@@ -545,16 +545,16 @@ public:
 	 */
 	inline std::string ToString() const
 	{
-		//return FString::Printf(TEXT("(R=%i,G=%i,B=%i,A=%i)"), R, G, B, A);
+		//return std::string::Printf(TEXT("(R=%i,G=%i,B=%i,A=%i)"), R, G, B, A);
 		assert(0);
 		return "";
 	}
 
 	/**
-	 * Initialize this Color based on an FString. The String is expected to contain R=, G=, B=, A=.
+	 * Initialize this Color based on an std::string. The String is expected to contain R=, G=, B=, A=.
 	 * The FColor will be bogus when InitFromString returns false.
 	 *
-	 * @param	InSourceString	FString containing the color values.
+	 * @param	InSourceString	std::string containing the color values.
 	 * @return true if the R,G,B values were read successfully; false otherwise.
 	 */
 	bool InitFromString(const std::string& InSourceString)

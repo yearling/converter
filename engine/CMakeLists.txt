@@ -27,7 +27,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${THIRD_PARTY}/jsoncpp/i
 
 # 添加c++标准
 if(MSVC)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR /wd4244 /wd4002 /wd4267 /wd4996")
 else(MSVC)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 endif(MSVC)

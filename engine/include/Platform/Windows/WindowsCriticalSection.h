@@ -3,7 +3,7 @@
 #pragma once
 #include <windows.h>
 
-class FString;
+class FName;
 
 /**
  * This is the Windows version of a critical section. It uses an aggregate
@@ -79,7 +79,7 @@ private:
 //{
 //public:
 //	/** Construct a named, system-wide critical section and attempt to get access/ownership of it */
-//	explicit FWindowsSystemWideCriticalSection(const class FString& InName, FTimespan InTimeout = FTimespan::Zero());
+//	explicit FWindowsSystemWideCriticalSection(const class std::string& InName, FTimespan InTimeout = FTimespan::Zero());
 //
 //	/** Destructor releases system-wide critical section if it is currently owned */
 //	~FWindowsSystemWideCriticalSection();

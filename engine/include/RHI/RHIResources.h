@@ -1752,7 +1752,18 @@ public:
 
 	friend class FMeshDrawingPolicy;
 };
+namespace std {
+	template <> //function-template-specialization
+	class hash<FGraphicsPipelineStateInitializer> {
+	public:
+		size_t operator()(const FGraphicsPipelineStateInitializer& name) const
+		{
+			return name.DepthStencilTargetFlag ^ name.RenderTargetsEnabled;
+		}
 
+	};
+
+};
 // This PSO is used as a fallback for RHIs that dont support PSOs. It is used to set the graphics state using the legacy state setting APIs
 class FRHIGraphicsPipelineStateFallBack : public FRHIGraphicsPipelineState
 {

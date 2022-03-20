@@ -26,6 +26,9 @@ typedef uint64_t uint64;
 #define STAT(a) 
 #define STATS 0
 #define UE_BUILD_SHIPPING 0
+#define UE_BUILD_TEST 0
+#define PLATFORM_MAC 0
+#define WITH_EDITOR 1
 static FORCEINLINE void* Memzero(void* Dest, SIZE_T Count)
 {
 	return memset(Dest,0, Count);

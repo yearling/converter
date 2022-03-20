@@ -18,7 +18,6 @@
 #include <array>
 #include "Utility/MemStack.h"
 #include <algorithm>
-#include <lmerrlog.h>
 #include "DynamicRHI.h"
 class FApp;
 class FBlendStateInitializerRHI;
@@ -427,7 +426,8 @@ public:
 	{
 		assert(!RTTasks.size() && !Other.RTTasks.size());
 		//FMemory::Memswap(this, &Other, sizeof(FRHICommandListBase));
-		std::swap_ranges(this, this + sizeof(FRHICommandListBase), &Other);
+		uint8_t* tmp = reinterpret_cast<uint8_t*>(this);
+		std::swap_ranges(tmp, tmp + sizeof(FRHICommandListBase), (uint8_t*)&Other);
 		if (CommandLink == &Other.Root)
 		{
 			CommandLink = &Root;
@@ -4486,7 +4486,7 @@ inline void RHIRecreateRecursiveBoundShaderStates()
 	GDynamicRHI->RHIRecreateRecursiveBoundShaderStates();
 }
 
-inline FRHIShaderLibraryRef RHICreateShaderLibrary(EShaderPlatform Platform, FString const& FilePath, FString const& Name)
+inline FRHIShaderLibraryRef RHICreateShaderLibrary(EShaderPlatform Platform, std::string const& FilePath, std::string const& Name)
 {
     return GDynamicRHI->RHICreateShaderLibrary(Platform, FilePath, Name);
 }

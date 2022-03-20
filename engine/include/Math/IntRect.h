@@ -539,7 +539,7 @@ inline std::string FIntRect::ToString() const
 {
 	assert(0);
 	return "";
-	//return FString::Printf(TEXT("Min=(%s) Max=(%s)"), *Min.ToString(), *Max.ToString());
+	//return std::string::Printf(TEXT("Min=(%s) Max=(%s)"), *Min.ToString(), *Max.ToString());
 }
 
 
