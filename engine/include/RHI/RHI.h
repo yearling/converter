@@ -1508,16 +1508,15 @@ struct FTextureMemoryStats
 
 
 // RHI base resource types.
-#if 0
-#include "RHIResources.h"
-#include "DynamicRHI.h"
+//#include "RHIResources.h"
+//#include "DynamicRHI.h"
 
 
 /** Initializes the RHI. */
 extern  void RHIInit(bool bHasEditorToken);
 
 /** Performs additional RHI initialization before the render thread starts. */
-extern  void RHIPostInit(const TArray<uint32_t>& InPixelFormatByteWidth);
+extern  void RHIPostInit(const std::vector<uint32_t>& InPixelFormatByteWidth);
 
 /** Shuts down the RHI. */
 extern  void RHIExit();
@@ -1532,5 +1531,4 @@ extern  void RHIExit();
 #define GETSAFERHISHADER_COMPUTE(Shader) ((Shader) ? (Shader)->GetComputeShader() : (FComputeShaderRHIParamRef)FComputeShaderRHIRef())
 
 // RHI utility functions that depend on the RHI definitions.
-#include "RHIUtilities.h"
-#endif
+//#include "RHIUtilities.h"

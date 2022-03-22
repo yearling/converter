@@ -1,7 +1,7 @@
 #pragma once 
 #include "SObject.h"
 #include "RHI/DirectX11/D3D11Texture.h"
-#include "Render/YPixelFormat.h"
+#include "Engine/YPixelFormat.h"
 
 class STexture :public SObject
 {
@@ -17,7 +17,7 @@ public:
     bool LoadFromMemoryFile(std::unique_ptr<MemoryFile> mem_file) override;
 	bool LoadFromPackage(const std::string& path) override;
 	TextureType GetTextureType()const;
-	PixelFormat GetPixelFormat()const;
+	EPixelFormat GetPixelFormat()const;
 	int GetMipMapLevel() const;
 	bool HasMimMap() const;
 	bool HasAlpha() const;
@@ -33,7 +33,7 @@ public:
 protected:
 
 	TextureType texture_type_ = Texture_Unknown;
-	PixelFormat  pixel_format_ = PF_INVALID;
+	EPixelFormat  pixel_format_ = PF_Unknown;
 	int mipmap_level_ = 0;
 	bool has_mipmap_ = false;
 	bool sRGB_ = true;

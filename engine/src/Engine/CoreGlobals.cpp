@@ -16,3 +16,10 @@ uint64					GLastGCFrame = 0;
 uint32					GFrameNumber = 1;
 /** NEED TO RENAME, for RT version of GFrameTime use View.ViewFamily->FrameNumber or pass down from RT from GFrameTime). */
 uint32					GFrameNumberRenderThread = 1;
+
+bool(*IsAsyncLoading)();
+void (*SuspendAsyncLoading)();
+void (*ResumeAsyncLoading)();
+bool (*IsAsyncLoadingSuspended)();
+bool(*IsAsyncLoadingMultithreaded)();
+void(*GFlushStreamingFunc)(void);

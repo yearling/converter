@@ -81,3 +81,21 @@ extern  FRunnableThread* GRHIThread_InternalUseOnly;
 
 /** Thread ID of the the thread we are executing RHI commands on. This could either be a constant dedicated thread or changing every task if we run the rhi thread on tasks. */
 extern  uint32 GRHIThreadId;
+
+/** Whether we're currently in the async loading code path or not */
+extern  bool(*IsAsyncLoading)();
+
+/** Suspends async package loading. */
+extern  void (*SuspendAsyncLoading)();
+
+/** Resumes async package loading. */
+extern  void (*ResumeAsyncLoading)();
+
+/** Suspends async package loading. */
+extern  bool (*IsAsyncLoadingSuspended)();
+
+/** Returns true if async loading is using the async loading thread */
+extern  bool(*IsAsyncLoadingMultithreaded)();
+
+/** Helper function to flush resource streaming. */
+extern  void(*GFlushStreamingFunc)(void);

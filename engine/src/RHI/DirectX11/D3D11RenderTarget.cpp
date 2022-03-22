@@ -20,12 +20,12 @@ int IRenderTarget::GetHeight() const
 	return height_;
 }
 
-PixelFormat IRenderTarget::GetColorFormat() const
+EPixelFormat IRenderTarget::GetColorFormat() const
 {
 	return color_format_;
 }
 
-PixelFormat IRenderTarget::GetDepthFormat() const
+EPixelFormat IRenderTarget::GetDepthFormat() const
 {
 	return depth_format_;
 }
@@ -54,7 +54,7 @@ void D3D11RenderTarget::UnBindRenderTargets()
 	g_device->SetRenderTarget(nullptr, nullptr);
 }
 
-bool D3D11RenderTarget::CreateRenderTarget(PixelFormat color_format, PixelFormat depth_format, int width, int height)
+bool D3D11RenderTarget::CreateRenderTarget(EPixelFormat color_format, EPixelFormat depth_format, int width, int height)
 {
 	assert(g_device);
 	assert(width && height);

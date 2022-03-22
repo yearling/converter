@@ -1,7 +1,7 @@
 #pragma once
 #include "RHI/DirectX11/D3D11Device.h"
 #include "RHI/DirectX11/D3D11Shader.h"
-#include "Render/YPixelFormat.h"
+#include "Engine/YPixelFormat.h"
 #include <unordered_map>
 #include <memory>
 
@@ -41,7 +41,7 @@ class D3DTexture2D : public D3DTexture {
 public:
 	D3DTexture2D(TextureUsage usage);
 	~D3DTexture2D();
-	bool Create(PixelFormat pixel_format, int width, int height, int mip_count, int sample_count, TextureUsage texture_usage,
+	bool Create(EPixelFormat pixel_format, int width, int height, int mip_count, int sample_count, TextureUsage texture_usage,
 		const unsigned char* data);
 	friend ID3DShaderBind;
 	friend D3DVertexShader;
@@ -58,7 +58,7 @@ class D3DTextureCube : public D3DTexture {
 public:
 	D3DTextureCube(TextureUsage usage);
 	~D3DTextureCube();
-	bool Create(PixelFormat pixel_format, int width, int height, int mip_count, int sample_count, TextureUsage texture_usage);
+	bool Create(EPixelFormat pixel_format, int width, int height, int mip_count, int sample_count, TextureUsage texture_usage);
 
 protected:
 	TComPtr<ID3D11Texture2D> d3d_texture2d_cube_;

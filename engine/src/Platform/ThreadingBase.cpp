@@ -55,10 +55,12 @@ FQueuedThreadPool* GIOThreadPool = nullptr;
 
  bool IsInParallelRenderingThread()
 {
-	//return !GRenderingThread || GIsRenderingThreadSuspended || (FPlatformTLS::GetCurrentThreadId() != GGameThreadId);
-	return false;
+	return !GRenderingThread || GIsRenderingThreadSuspended || (FPlatformTLS::GetCurrentThreadId() != GGameThreadId);
+	//return false;
 }
 
+  uint32 GRHIThreadId = 0;
+  FRunnableThread* GRHIThread_InternalUseOnly = nullptr;
  bool IsInRHIThread()
 {
 	return false;

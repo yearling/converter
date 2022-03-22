@@ -12,38 +12,40 @@
 #include "Math/Float16Color.h"
 #include "Platform/ThreadSafeCounter.h"
 #include "Engine/TaskGraphInterfaces.h"
-#include "RHI/RHIResources.h"
 #include "Engine/YCommonHeader.h"
 #include "Engine/TaskGraphCommon.h"
 #include <array>
 #include "Utility/MemStack.h"
 #include <algorithm>
-#include "DynamicRHI.h"
-class FApp;
-class FBlendStateInitializerRHI;
-class FGraphicsPipelineStateInitializer;
-class FLastRenderTimeContainer;
-class FReadSurfaceDataFlags;
-class FRHICommandListBase;
-class FRHIComputeShader;
-class FRHIDepthRenderTargetView;
-class FRHIRenderTargetView;
-class FRHISetRenderTargetsInfo;
-class IRHICommandContext;
-class IRHIComputeContext;
-struct FBoundShaderStateInput;
-struct FDepthStencilStateInitializerRHI;
-struct FRasterizerStateInitializerRHI;
-struct FResolveParams;
-struct FRHIResourceCreateInfo;
-struct FRHIResourceInfo;
-struct FRHIUniformBufferLayout;
-struct FSamplerStateInitializerRHI;
-struct FTextureMemoryStats;
-enum class EAsyncComputeBudget;
-enum class EClearDepthStencil;
-enum class EResourceTransitionAccess;
-enum class EResourceTransitionPipeline;
+#include "Engine/CoreGlobals.h"
+#include "RHI/RHIResources.h"
+#include "RHI/DynamicRHI.h"
+#include "RHI/RHIContext.h"
+//class FApp;
+//class FBlendStateInitializerRHI;
+//class FGraphicsPipelineStateInitializer;
+//class FLastRenderTimeContainer;
+//class FReadSurfaceDataFlags;
+//class FRHICommandListBase;
+//class FRHIComputeShader;
+//class FRHIDepthRenderTargetView;
+//class FRHIRenderTargetView;
+//class FRHISetRenderTargetsInfo;
+//class IRHICommandContext;
+//class IRHIComputeContext;
+//struct FBoundShaderStateInput;
+//struct FDepthStencilStateInitializerRHI;
+//struct FRasterizerStateInitializerRHI;
+//struct FResolveParams;
+//struct FRHIResourceCreateInfo;
+//struct FRHIResourceInfo;
+//struct FRHIUniformBufferLayout;
+//struct FSamplerStateInitializerRHI;
+//struct FTextureMemoryStats;
+//enum class EAsyncComputeBudget;
+//enum class EClearDepthStencil;
+//enum class EResourceTransitionAccess;
+//enum class EResourceTransitionPipeline;
 class FComputePipelineState;
 class FGraphicsPipelineState;
 

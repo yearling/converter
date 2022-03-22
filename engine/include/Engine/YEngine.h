@@ -27,6 +27,7 @@ public:
 	YEngine& operator=(YEngine&&) = delete;
 
 public:
+	bool PreInit();
 	bool Init();
 	void Update();
 	void ShutDown();

@@ -3,6 +3,7 @@
 #include <cassert>
 #include <intsafe.h>
 #include <cstring>
+
 typedef int8_t int8;
 typedef uint8_t uint8;
 typedef int32_t int32;
@@ -47,3 +48,7 @@ enum
 
 #define  LLM_SCOPE(x) 
 #define  PLATFORM_RHITHREAD_DEFAULT_BYPASS 0
+#define DECLARE_CYCLE_STAT(x)
+#define QUICK_SCOPE_CYCLE_COUNTER(x)
+#define  SCOPE_TIME_GUARD(x)
+#define  SCOPE_CYCLE_COUNTER(x)

@@ -14,6 +14,8 @@
 #include "Engine/TaskGraphInterfaces.h"
 #include "Platform/Windows/YSysUtility.h"
 #include "Render/YRenderThread.h"
+#include  "RHI/RHI.h"
+#include "RHI/RHICommandList.h"
 #include <thread>
 
 
@@ -112,6 +114,48 @@ public:
 	std::function<void(uint64_t)> func_;
 	uint64_t num;
 };
+
+bool YEngine::PreInit()
+{
+	GGameThreadId = FPlatformTLS::GetCurrentThreadId();
+	GIsGameThreadIdInitialized = true;
+
+	FPlatformProcess::SetThreadAffinityMask(FPlatformAffinity::GetMainGameMask());
+	FPlatformProcess::SetupGameThread();
+
+	FTaskGraphInterface::Startup(FPlatformMisc::NumberOfCores());
+	FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
+
+	if (FPlatformMisc::UseRenderThread())
+	{
+		GUseThreadedRendering = true;
+	}
+ 
+	// 	RHIInit(bHasEditorToken);
+
+	//	GetRendererModule()
+	
+	//PostInitRHI();
+	if (GUseThreadedRendering)
+	{
+		if (GRHISupportsRHIThread)
+		{
+			const bool DefaultUseRHIThread = true;
+			GUseRHIThread_InternalUseOnly = DefaultUseRHIThread;
+			//if (FParse::Param(FCommandLine::Get(), TEXT("rhithread")))
+			//{
+				GUseRHIThread_InternalUseOnly = true;
+			//}
+			//else if (FParse::Param(FCommandLine::Get(), TEXT("norhithread")))
+			//{
+				//GUseRHIThread_InternalUseOnly = false;
+			//}
+		}
+		StartRenderingThread();
+	}
+	return true;
+}
+
 bool YEngine::Init()
 {
 	//YSysUtility::AllocWindowsConsole();
@@ -156,15 +200,16 @@ bool YEngine::Init()
 	GGameThreadId = FPlatformTLS::GetCurrentThreadId();
 	GIsGameThreadIdInitialized = true;
 	// initialize task graph sub-system with potential multiple threads
-	FTaskGraphInterface::Startup(FPlatformProcess::NumberOfCores());
-	FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
-	for (int i = 0; i < 14; ++i)
-	{
+	//FTaskGraphInterface::Startup(FPlatformProcess::NumberOfCores());
+	//FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
+	//for (int i = 0; i < 14; ++i)
+	//{
 		//TGraphTask<BusyTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
-	}
+	//}
 	//TGraphTask<RootTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
 	//TGraphTask<BusyTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady();
 
+	PreInit();
 	render_thread_ = new YRenderThread();
 	render_thread_->CreateThread();
 

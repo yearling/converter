@@ -82,4 +82,9 @@ public:
 	{
 		return TPri_Normal;
 	}
+
+	static EThreadPriority GetRHIThreadPriority()
+	{
+		return TPri_SlightlyBelowNormal;
+	}
 };

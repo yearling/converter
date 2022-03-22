@@ -26,6 +26,16 @@ extern  bool GUseThreadedRendering;
 
 extern  void SetRHIThreadEnabled(bool bEnableDedicatedThread, bool bEnableRHIOnTaskThreads);
 
+#if (UE_BUILD_SHIPPING || UE_BUILD_TEST)
+static FORCEINLINE void CheckNotBlockedOnRenderThread() {}
+#else // #if (UE_BUILD_SHIPPING || UE_BUILD_TEST)
+/** Whether the main thread is currently blocked on the rendering thread, e.g. a call to FlushRenderingCommands. */
+extern  std::atomic<bool> GMainThreadBlockedOnRenderThread;
+
+/** Asserts if called from the main thread when the main thread is blocked on the rendering thread. */
+static FORCEINLINE void CheckNotBlockedOnRenderThread() { check(!GMainThreadBlockedOnRenderThread.load(std::memory_order::memory_order_relaxed) || !IsInGameThread()); }
+#endif // #if (UE_BUILD_SHIPPING || UE_BUILD_TEST)
+
 /** Starts the rendering thread. */
 extern  void StartRenderingThread();
 
@@ -57,6 +67,38 @@ extern  void TickRenderingTickables();
 extern  void StartRenderCommandFenceBundler();
 extern  void StopRenderCommandFenceBundler();
 
+////////////////////////////////////
+// Render thread suspension
+////////////////////////////////////
+
+/**
+ * Encapsulates stopping and starting the renderthread so that other threads can manipulate graphics resources.
+ */
+class FSuspendRenderingThread
+{
+public:
+	/**
+	 *	Constructor that flushes and suspends the renderthread
+	 *	@param bRecreateThread	- Whether the rendering thread should be completely destroyed and recreated, or just suspended.
+	 */
+	FSuspendRenderingThread(bool bRecreateThread);
+
+	/** Destructor that starts the renderthread again */
+	~FSuspendRenderingThread();
+
+private:
+	/** Whether we should use a rendering thread or not */
+	bool bUseRenderingThread;
+
+	/** Whether the rendering thread was currently running or not */
+	bool bWasRenderingThreadRunning;
+
+	/** Whether the rendering thread should be completely destroyed and recreated, or just suspended */
+	bool bRecreateThread;
+};
+
+/** Helper macro for safely flushing and suspending the rendering thread while manipulating graphics resources */
+#define SCOPED_SUSPEND_RENDERING_THREAD(bRecreateThread)	FSuspendRenderingThread SuspendRenderingThread(bRecreateThread)
 
 /** The parent class of commands stored in the rendering command queue. */
 class  FRenderCommand
@@ -95,7 +137,7 @@ template<typename TSTR, typename LAMBDA>
 class TEnqueueUniqueRenderCommandType : public FRenderCommand
 {
 public:
-	TEnqueueUniqueRenderCommandType(LAMBDA&& InLambda) : Lambda(Forward<LAMBDA>(InLambda)) {}
+	TEnqueueUniqueRenderCommandType(LAMBDA&& InLambda) : Lambda(std::forward<LAMBDA>(InLambda)) {}
 
 	void DoTask(ENamedThreads::Type CurrentThread, const FGraphEventRef& MyCompletionGraphEvent)
 	{
@@ -127,12 +169,12 @@ inline void EnqueueUniqueRenderCommand(LAMBDA&& Lambda)
 			if (ShouldExecuteOnRenderThread())
 			{
 				CheckNotBlockedOnRenderThread();
-				TGraphTask<EURCType>::CreateTask().ConstructAndDispatchWhenReady(Forward<LAMBDA>(Lambda));
+				TGraphTask<EURCType>::CreateTask().ConstructAndDispatchWhenReady(std::forward<LAMBDA>(Lambda));
 			}
 			else
 			{
-				EURCType TempCommand(Forward<LAMBDA>(Lambda));
-				FScopeCycleCounter EURCMacro_Scope(TempCommand.GetStatId());
+				EURCType TempCommand(std::forward<LAMBDA>(Lambda));
+				//FScopeCycleCounter EURCMacro_Scope(TempCommand.GetStatId());
 				TempCommand.DoTask(ENamedThreads::GameThread, FGraphEventRef());
 			}
 		}

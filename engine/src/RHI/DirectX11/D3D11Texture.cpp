@@ -2,7 +2,7 @@
 #include <cassert>
 #include "RHI/DirectX11/D3D11Texture.h"
 #include "Engine/YLog.h"
-static DXGI_FORMAT PixelFormatToDXPixelFormat(PixelFormat pixel_format) {
+static DXGI_FORMAT PixelFormatToDXPixelFormat(EPixelFormat pixel_format) {
 	static const DXGI_FORMAT kDXPixelFormatTable[] = {
 		DXGI_FORMAT_UNKNOWN,  // Unknown
 
@@ -69,7 +69,7 @@ D3DTexture2D::D3DTexture2D(TextureUsage usage) {}
 
 D3DTexture2D::~D3DTexture2D() {}
 
-bool D3DTexture2D::Create( PixelFormat pixel_format, int width, int height, int mip_count, int sample_count,
+bool D3DTexture2D::Create(EPixelFormat pixel_format, int width, int height, int mip_count, int sample_count,
 	TextureUsage texture_usage, const unsigned char* data) {
 	DXGI_FORMAT dxgi_pixel_format = PixelFormatToDXPixelFormat(pixel_format);
 	if (dxgi_pixel_format == DXGI_FORMAT_UNKNOWN) {
@@ -118,7 +118,7 @@ D3DTextureCube::D3DTextureCube(TextureUsage usage) {}
 
 D3DTextureCube::~D3DTextureCube() {}
 
-bool D3DTextureCube::Create(PixelFormat pixel_format, int width, int height, int mip_count, int sample_count, TextureUsage texture_usage) {
+bool D3DTextureCube::Create(EPixelFormat pixel_format, int width, int height, int mip_count, int sample_count, TextureUsage texture_usage) {
 	return true;
 }
 

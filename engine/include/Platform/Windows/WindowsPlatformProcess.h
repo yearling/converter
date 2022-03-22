@@ -12,7 +12,7 @@ class FRunnableThread;
 /**
 * Windows implementation of the Process OS functions.
 **/
-struct  FWindowsPlatformProcess
+struct  FWindowsPlatformProcess:public YGenericPlatformProcess
 {
 	
 	static void Sleep(float Seconds);
@@ -44,9 +44,8 @@ struct  FWindowsPlatformProcess
 	static class FRunnableThread* CreateRunnableThread();
 	static bool SupportsMultithreading();
 	static int NumberOfWorkerThreadsToSpawn();
-	static int NumberOfCores();
-	static int NumberOfCoresIncludingHyperthreads();
 	static void SetThreadAffinityMask(unsigned long long AffinityMask);
+	static void SetRealTimeMode() { }
 };
 
 typedef FWindowsPlatformProcess FPlatformProcess;

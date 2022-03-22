@@ -37,43 +37,43 @@ struct FreeImageHelper
 		return (int)channel_count;
 	}
 
-	static PixelFormat get_rhi_format(const int byte_per_channel, const int channel_count)
+	static EPixelFormat get_rhi_format(const int byte_per_channel, const int channel_count)
 	{
 		assert(byte_per_channel != 0);
 		assert(channel_count != 0);
 
-		PixelFormat format = PixelFormat::PF_INVALID;
+		EPixelFormat format = EPixelFormat::PF_Unknown;
 
 		if (channel_count == 1)
 		{
 			if (byte_per_channel == 1)
 			{
-				format = PF_R8_UNORM;
+				format = EPixelFormat::PF_G8;
 			}
 			else if (byte_per_channel == 2)
 			{
-				format = PF_R16_UNORM;
+				format = PF_G16;
 			}
 		}
 		else if (channel_count == 2)
 		{
 			if (byte_per_channel == 2)
 			{
-				format = PF_R8G8_UNORM;
+				format = PF_R8G8;
 			}
 		}
 		else if (channel_count == 3)
 		{
 			if (byte_per_channel == 4)
 			{
-				format = PF_R32G32B32_FLOAT;
+				format = PF_Unknown;
 			}
 		}
 		else if (channel_count == 4)
 		{
 			if (byte_per_channel == 1)
 			{
-				format = PF_R8G8B8A8_UNORM;
+				format = PF_B8G8R8A8;
 			}
 			else if (byte_per_channel == 2)
 			{
@@ -81,11 +81,11 @@ struct FreeImageHelper
 			}
 			else if (byte_per_channel == 4)
 			{
-				format = PF_R32G32B32A32_FLOAT;
+				format = PF_A32B32G32R32F;
 			}
 		}
 
-		assert(format != PixelFormat::PF_INVALID);
+		assert(format != EPixelFormat::PF_Unknown);
 
 		return format;
 	}
@@ -332,7 +332,7 @@ TextureType STexture::GetTextureType() const
 	return texture_type_;
 }
 
-PixelFormat STexture::GetPixelFormat() const
+EPixelFormat STexture::GetPixelFormat() const
 {
 	return pixel_format_;
 }

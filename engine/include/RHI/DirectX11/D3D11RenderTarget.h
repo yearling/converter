@@ -1,5 +1,5 @@
 #pragma once
-#include "Render/YPixelFormat.h"
+#include "Engine/YPixelFormat.h"
 #include "ComPtr.h"
 #include "RHI/DirectX11/D3D11Device.h"
 #include "Math/YVector.h"
@@ -16,14 +16,14 @@ public:
 	virtual void ClearDepthStencil(float depth, uint8_t stencil)=0;
 	int GetWidth() const;
 	int GetHeight() const;
-	PixelFormat GetColorFormat() const;
-	PixelFormat GetDepthFormat() const;
+	EPixelFormat GetColorFormat() const;
+	EPixelFormat GetDepthFormat() const;
 protected:
 	
 	int width_ = 0;
 	int height_ = 0;
-	PixelFormat color_format_= PF_INVALID;
-	PixelFormat depth_format_ = PF_INVALID;
+	EPixelFormat color_format_= PF_Unknown;
+	EPixelFormat depth_format_ = PF_Unknown;
 };
 
 class D3D11RenderTarget :public IRenderTarget
@@ -33,7 +33,7 @@ public:
 	~D3D11RenderTarget() override;
 	void BindRenderTargets() override;
 	void UnBindRenderTargets() override;
-	bool CreateRenderTarget(PixelFormat color_format, PixelFormat depth_format, int width, int height);
+	bool CreateRenderTarget(EPixelFormat color_format, EPixelFormat depth_format, int width, int height);
 	bool OnResize(int width, int height) override;
 	ID3D11Texture2D* GetColorBuffer();
 	ID3D11Texture2D* GetDepthBuffer();

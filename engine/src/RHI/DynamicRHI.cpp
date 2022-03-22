@@ -162,6 +162,11 @@ static void RHIDetectAndWarnOfBadDrivers()
 }
 #endif // PLATFORM_WINDOWS
 
+FDynamicRHI* PlatformCreateDynamicRHI()
+{
+	return nullptr;
+}
+
 void RHIInit(bool bHasEditorToken)
 {
 	if(!GDynamicRHI)

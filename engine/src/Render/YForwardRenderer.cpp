@@ -3,6 +3,7 @@
 #include "RHI/DirectX11/D3D11Device.h"
 #include "Render/YRenderInterface.h"
 #include "Engine/YCanvasUtility.h"
+#include "Engine/YPixelFormat.h"
 
 
 bool YForwardRenderer::Init()
@@ -18,7 +19,7 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 	if (!rts_)
 	{
 		rts_ = std::make_unique<D3D11RenderTarget>();
-		if (!rts_->CreateRenderTarget(PF_R8G8B8A8_UNORM, PF_D24S8, scene_width, scene_height))
+		if (!rts_->CreateRenderTarget(EPixelFormat::PF_R8G8B8A8, EPixelFormat::PF_DepthStencil, scene_width, scene_height))
 		{
 			rts_ = nullptr;
 			return false;

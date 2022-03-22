@@ -88,4 +88,3 @@ protected:
 	static double SecondsPerCycle;
 	static double SecondsPerCycle64;
 };
-
