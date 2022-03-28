@@ -17,6 +17,7 @@ uint32					GFrameNumber = 1;
 /** NEED TO RENAME, for RT version of GFrameTime use View.ViewFamily->FrameNumber or pass down from RT from GFrameTime). */
 uint32					GFrameNumberRenderThread = 1;
 
+bool GIsCriticalError = false;
 bool(*IsAsyncLoading)();
 void (*SuspendAsyncLoading)();
 void (*ResumeAsyncLoading)();

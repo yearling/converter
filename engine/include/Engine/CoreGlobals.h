@@ -33,6 +33,7 @@ extern  uint32 GFrameNumber;
 /** NEED TO RENAME, for RT version of GFrameTime use View.ViewFamily->FrameNumber or pass down from RT from GFrameTime). */
 extern  uint32 GFrameNumberRenderThread;
 
+extern  bool GIsCriticalError;
 /** @return True if called from the game thread. */
 FORCEINLINE bool IsInGameThread()
 {

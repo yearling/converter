@@ -43,6 +43,19 @@ extern  void StartRenderingThread();
 extern  void StopRenderingThread();
 
 /**
+ * Checks if the rendering thread is healthy and running.
+ * If it has crashed, UE_LOG is called with the exception information.
+ */
+extern  void CheckRenderingThreadHealth();
+
+/** Checks if the rendering thread is healthy and running, without crashing */
+extern  bool IsRenderingThreadHealthy();
+
+/**
+ * Advances stats for the rendering thread. Called from the game thread.
+ */
+extern  void AdvanceRenderingThreadStatsGT(bool bDiscardCallstack, int64 StatsFrame, int32 MasterDisableChangeTagStartFrame);
+/**
  * Adds a task that must be completed either before the next scene draw or a flush rendering commands
  * This can be called from any thread though it probably doesn't make sense to call it from the render thread.
  * @param TaskToAdd, task to add as a pending render thread task

@@ -126,6 +126,8 @@ bool YEngine::PreInit()
 	FTaskGraphInterface::Startup(FPlatformMisc::NumberOfCores());
 	FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
 
+	//set shader dir
+
 	if (FPlatformMisc::UseRenderThread())
 	{
 		GUseThreadedRendering = true;
@@ -197,8 +199,8 @@ bool YEngine::Init()
 		return false;
 	}
 
-	GGameThreadId = FPlatformTLS::GetCurrentThreadId();
-	GIsGameThreadIdInitialized = true;
+	//GGameThreadId = FPlatformTLS::GetCurrentThreadId();
+	//GIsGameThreadIdInitialized = true;
 	// initialize task graph sub-system with potential multiple threads
 	//FTaskGraphInterface::Startup(FPlatformProcess::NumberOfCores());
 	//FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
@@ -357,11 +359,23 @@ void YEngine::TestLoad()
 	}
 }
 
+
+double YEngine::GetCurrentGameTime()
+{
+	double game_time = 0.0;
+	std::chrono::time_point<std::chrono::high_resolution_clock> current_time = std::chrono::high_resolution_clock::now();
+	game_time = (double)std::chrono::duration_cast<std::chrono::microseconds>(current_time - game_start_time).count();
+	game_time *= 0.000001;
+	return game_time;
+}
+
+
 static void FreeImageErrorHandler(FREE_IMAGE_FORMAT fif, const char* message) {
 	if (fif != FIF_UNKNOWN) {
 		WARNING_INFO( FreeImage_GetFormatFromFIF(fif), "format ", message);
 	}
 }
+
 
 bool YEngine::InitThridParty()
 {

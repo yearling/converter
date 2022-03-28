@@ -33,7 +33,7 @@ public:
 	void ShutDown();
 	void TestLoad();
 	IRenderInterface* GetRender() const { return renderer.get(); }
-
+	double GetCurrentGameTime();
 private:
 	YEngine() = default;
 	~YEngine() = default;
