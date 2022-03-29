@@ -9,6 +9,7 @@
 #include "RHI/RHI.h"
 #include "RHI/RHICommandList.h"
 #include "RHI/PipelineStateCache.h"
+#include "RHI/NullRHI/NullRHI.h"
 //#include "PipelineStateCache.h"
 
 #ifndef PLATFORM_ALLOW_NULL_RHI
@@ -164,7 +165,8 @@ static void RHIDetectAndWarnOfBadDrivers()
 
 FDynamicRHI* PlatformCreateDynamicRHI()
 {
-	return nullptr;
+	//return nullptr;
+	return new FNullDynamicRHI();
 }
 
 void RHIInit(bool bHasEditorToken)

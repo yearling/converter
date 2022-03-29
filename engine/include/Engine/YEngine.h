@@ -30,6 +30,7 @@ public:
 	bool PreInit();
 	bool Init();
 	void Update();
+	void Update1();
 	void ShutDown();
 	void TestLoad();
 	IRenderInterface* GetRender() const { return renderer.get(); }

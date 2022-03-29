@@ -442,6 +442,99 @@ struct YMath
 	{
 		return Abs<double>(Value) <= ErrorTolerance;
 	}
+	
+	/**
+ * Computes the base 2 logarithm for an integer value that is greater than 0.
+ * The result is rounded down to the nearest integer.
+ *
+ * @param Value		The value to compute the log of
+ * @return			Log2 of Value. 0 if Value is 0.
+ */
+	static FORCEINLINE uint32 FloorLog2(uint32 Value)
+	{
+		/*		// reference implementation
+				// 1500ms on test data
+				uint32 Bit = 32;
+				for (; Bit > 0;)
+				{
+					Bit--;
+					if (Value & (1<<Bit))
+					{
+						break;
+					}
+				}
+				return Bit;
+		*/
+		// same output as reference
 
+		// see http://codinggorilla.domemtech.com/?p=81 or http://en.wikipedia.org/wiki/Binary_logarithm but modified to return 0 for a input value of 0
+		// 686ms on test data
+		uint32 pos = 0;
+		if (Value >= 1 << 16) { Value >>= 16; pos += 16; }
+		if (Value >= 1 << 8) { Value >>= 8; pos += 8; }
+		if (Value >= 1 << 4) { Value >>= 4; pos += 4; }
+		if (Value >= 1 << 2) { Value >>= 2; pos += 2; }
+		if (Value >= 1 << 1) { pos += 1; }
+		return (Value == 0) ? 0 : pos;
+
+		// even faster would be method3 but it can introduce more cache misses and it would need to store the table somewhere
+		// 304ms in test data
+		/*int LogTable256[256];
+
+		void prep()
+		{
+			LogTable256[0] = LogTable256[1] = 0;
+			for (int i = 2; i < 256; i++)
+			{
+				LogTable256[i] = 1 + LogTable256[i / 2];
+			}
+			LogTable256[0] = -1; // if you want log(0) to return -1
+		}
+
+		int _forceinline method3(uint32 v)
+		{
+			int r;     // r will be lg(v)
+			uint32 tt; // temporaries
+
+			if ((tt = v >> 24) != 0)
+			{
+				r = (24 + LogTable256[tt]);
+			}
+			else if ((tt = v >> 16) != 0)
+			{
+				r = (16 + LogTable256[tt]);
+			}
+			else if ((tt = v >> 8 ) != 0)
+			{
+				r = (8 + LogTable256[tt]);
+			}
+			else
+			{
+				r = LogTable256[v];
+			}
+			return r;
+		}*/
+	}
+	/**
+	 * Counts the number of leading zeros in the bit representation of the value
+	 *
+	 * @param Value the value to determine the number of leading zeros for
+	 *
+	 * @return the number of zeros before the first "on" bit
+	 */
+	static FORCEINLINE uint32 CountLeadingZeros(uint32 Value)
+	{
+		if (Value == 0) return 32;
+		return 31 - FloorLog2(Value);
+	}
+	/**
+	 * Returns smallest N such that (1<<N)>=Arg.
+	 * Note: CeilLogTwo(0)=0 because (1<<0)=1 >= 0.
+	 */
+	static FORCEINLINE uint32 CeilLogTwo(uint32 Arg)
+	{
+		int32 Bitmask = ((int32)(CountLeadingZeros(Arg) << 26)) >> 31;
+		return (32 - CountLeadingZeros(Arg - 1)) & (~Bitmask);
+	}
 };
 
