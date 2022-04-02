@@ -3,6 +3,7 @@
 #include <cassert>
 #include <intsafe.h>
 #include <cstring>
+#include "Engine/PlatformMacro.h"
 
 typedef int8_t int8;
 typedef uint8_t uint8;
@@ -31,7 +32,7 @@ typedef uint64_t uint64;
 #define UE_BUILD_SHIPPING 0
 #define UE_BUILD_TEST 0
 #define PLATFORM_MAC 0
-#define WITH_EDITOR 1
+
 static FORCEINLINE void* Memzero(void* Dest, SIZE_T Count)
 {
 	return memset(Dest,0, Count);
@@ -49,7 +50,6 @@ enum
 };
 
 #define  LLM_SCOPE(x) 
-#define  PLATFORM_RHITHREAD_DEFAULT_BYPASS 0
 #define DECLARE_CYCLE_STAT(x)
 #define QUICK_SCOPE_CYCLE_COUNTER(x)
 #define  SCOPE_TIME_GUARD(x)

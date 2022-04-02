@@ -667,7 +667,8 @@ void FRHICommandListExecutor::ExecuteList(FRHICommandListImmediate& CmdList)
 
 void FRHICommandListExecutor::LatchBypass()
 {
-#if CAN_TOGGLE_COMMAND_LIST_BYPASS
+//#if CAN_TOGGLE_COMMAND_LIST_BYPASS
+#if 0
 	if (IsRunningRHIInSeparateThread())
 	{
 		if (bLatchedBypass)
@@ -714,9 +715,9 @@ void FRHICommandListExecutor::LatchBypass()
 	}
 	else
 	{
-		bLatchedUseParallelAlgorithms = /*FApp::ShouldUseThreadingForPerformance()*/
+		bLatchedUseParallelAlgorithms = true; /*FApp::ShouldUseThreadingForPerformance()*/
 #if CAN_TOGGLE_COMMAND_LIST_BYPASS
-		/*	&& */(CVarRHICmdUseParallelAlgorithms/*.GetValueOnAnyThread()*/ >= 1)
+		///*	&& */(CVarRHICmdUseParallelAlgorithms/*.GetValueOnAnyThread()*/ >= 1)
 #endif
 			;
 	}

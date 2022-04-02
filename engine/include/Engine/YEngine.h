@@ -7,8 +7,24 @@
 #include "Utility/YPickupOps.h"
 #include "Utility/YAverageSmooth.h"
 #include "TaskGraphInterfaces.h"
+#include "Render/YRenderThread.h"
+#include "Render/RenderCommandFence.h"
 
 class IRenderInterface;
+
+class FFrameEndSync
+{
+	/** Pair of fences. */
+	FRenderCommandFence Fence[2];
+	/** Current index into events array. */
+	int32 EventIndex;
+public:
+	/**
+	 * Syncs the game thread with the render thread. Depending on passed in bool this will be a total
+	 * sync or a one frame lag.
+	 */
+	void Sync(bool bAllowOneFrameThreadLag);
+};
 
 
 class YEngine
@@ -45,7 +61,8 @@ private:
 	std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
 	std::unique_ptr<IRenderInterface> renderer;
 	AverageSmooth<float> fps;
-
+	/** Holds the objects which need to be cleaned up when the rendering thread finishes the previous frame. */
+	FPendingCleanupObjects* PendingCleanupObjects;
 
 protected:
 	bool InitThridParty();

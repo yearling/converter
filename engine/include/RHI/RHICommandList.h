@@ -3998,7 +3998,6 @@ public:
 	enum
 	{
 		DefaultBypass = PLATFORM_RHITHREAD_DEFAULT_BYPASS
-		//DefaultBypass = 0
 	};
 	FRHICommandListExecutor()
 		: bLatchedBypass(!!DefaultBypass)

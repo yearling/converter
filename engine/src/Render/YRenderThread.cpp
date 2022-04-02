@@ -952,13 +952,14 @@ void FRenderCommandFence::BeginFence(bool bSyncToRHIAndGPU)
 		{
 			// Don't sync to the RHI and GPU if GtSyncType is disabled, or we're not vsyncing
 			//@TODO: do this logic in the caller?
-		/*	static auto CVarVsync = IConsoleManager::Get().FindConsoleVariable(TEXT("r.VSync"));
-			check(CVarVsync != nullptr);
-
-			if (GTSyncType == 0 || CVarVsync->GetInt() == 0)
+			//	static auto CVarVsync = IConsoleManager::Get().FindConsoleVariable(TEXT("r.VSync"));
+			//check(CVarVsync != nullptr);
+			GTSyncType = 0;
+			//if (GTSyncType == 0 || CVarVsync->GetInt() == 0)
+			if (GTSyncType == 0)
 			{
 				bSyncToRHIAndGPU = false;
-			}*/
+			}
 		}
 
 
@@ -1031,7 +1032,7 @@ uint32 GGameThreadTime = 0;
 /** How many cycles it took to swap buffers to present the frame. */
 uint32 GSwapBufferTime = 0;
 
-static int32 GTimeToBlockOnRenderFence = 1;
+static int32 GTimeToBlockOnRenderFence = 40;
 //static FAutoConsoleVariableRef CVarTimeToBlockOnRenderFence(
 //	TEXT("g.TimeToBlockOnRenderFence"),
 //	GTimeToBlockOnRenderFence,
@@ -1101,7 +1102,7 @@ static void GameThreadWaitForTask(const FGraphEventRef& Task, bool bEmptyGameThr
 
 			do
 			{
-				CheckRenderingThreadHealth();
+				CheckRenderingThreadHealth(); //todo
 				if (bEmptyGameThreadTasks)
 				{
 					// process gamethread tasks if there are any
@@ -1132,12 +1133,13 @@ static void GameThreadWaitForTask(const FGraphEventRef& Task, bool bEmptyGameThr
 #if !WITH_EDITOR
 #if !PLATFORM_IOS // @todo MetalMRT: Timeout isn't long enough...
 				// editor threads can block for quite a while... 
-				if (!bDone && !bRenderThreadEnsured && !FPlatformMisc::IsDebuggerPresent())
+				if (!bDone && !bRenderThreadEnsured /*&& !FPlatformMisc::IsDebuggerPresent()*/)
 				{
-					if (bOverdue && !bDisabled)
+				/*	if (bOverdue && !bDisabled)
 					{
 						UE_LOG(LogRendererCore, Fatal, TEXT("GameThread timed out waiting for RenderThread after %.02f secs"), FPlatformTime::Seconds() - StartTime);
-					}
+					}*/
+					ERROR_INFO("GameThread timed out waiting for RenderThread after ", FPlatformTime::Seconds() - StartTime, "secs");
 				}
 #endif
 #endif
@@ -1325,7 +1327,7 @@ FPendingCleanupObjects::~FPendingCleanupObjects()
 {
 	QUICK_SCOPE_CYCLE_COUNTER(STAT_FPendingCleanupObjects_Destruct);
 
-	for (int32 ObjectIndex = 0; ObjectIndex < CleanupArray.Num(); ObjectIndex++)
+	for (int32 ObjectIndex = 0; ObjectIndex < CleanupArray.size(); ObjectIndex++)
 	{
 		delete CleanupArray[ObjectIndex];
 	}

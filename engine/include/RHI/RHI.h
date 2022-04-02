@@ -181,21 +181,20 @@ public:
 		return *this;
 	}
 
-//#if WITH_EDITOR
-//	inline void SetPreviewOverride(const TValueType& InValue)
-//	{
-//		PreviewValue = InValue;
-//	}
-//
-//	inline operator TValueType() const
-//	{ 
-//		return PreviewValue.IsSet() ? GetPreviewValue() : Value;
-//	}
-//#else
-//	inline operator TValueType() const { return Value; }
-//#endif
+#if WITH_EDITOR
+	inline void SetPreviewOverride(const TValueType& InValue)
+	{
+		PreviewValue = InValue;
+	}
 
+	inline operator TValueType() const
+	{ 
+		return PreviewValue.IsSet() ? GetPreviewValue() : Value;
+	}
+#else
 	inline operator TValueType() const { return Value; }
+#endif
+
 private:
 	TValueType Value;
 #if WITH_EDITOR
