@@ -497,10 +497,29 @@ void YEngine::Update()
 	frame_index++;
 }
 
+static void RHIExitAndStopRHIThread()
+{
+	//#if HAS_GPU_STATS
+		//FRealtimeGPUProfiler::Get()->Release();
+	//#endif
+		//FShaderPipelineCache::Shutdown();
+
+		// Stop the RHI Thread (using GRHIThread_InternalUseOnly is unreliable since RT may be stopped)
+	if (FTaskGraphInterface::IsRunning() && FTaskGraphInterface::Get().IsThreadProcessingTasks(ENamedThreads::RHIThread))
+	{
+		DECLARE_CYCLE_STAT(TEXT("Wait For RHIThread Finish"), STAT_WaitForRHIThreadFinish, STATGROUP_TaskGraphTasks);
+		FGraphEventRef QuitTask = TGraphTask<FReturnGraphTask>::CreateTask(nullptr, ENamedThreads::GameThread).ConstructAndDispatchWhenReady(ENamedThreads::RHIThread);
+		FTaskGraphInterface::Get().WaitUntilTaskCompletes(QuitTask, ENamedThreads::GameThread_Local);
+	}
+
+	RHIExit();
+}
+
 void YEngine::ShutDown()
 {
 	StopRenderingThread();
 	renderer->Clearup();
+	RHIExitAndStopRHIThread();
 	FTaskGraphInterface::Get().Shutdown();
 	delete g_Canvas;
 	g_Canvas = nullptr;

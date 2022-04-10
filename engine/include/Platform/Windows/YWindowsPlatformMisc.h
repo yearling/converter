@@ -6,7 +6,7 @@ struct  FWindowsPlatformMisc: public FGenericPlatformMisc
 	inline static void MemoryBarrier() { _mm_sfence(); }
 	static int NumberOfCoresIncludingHyperthreads();
 	static int NumberOfCores();
-
+	static void RequestExit(bool Force);
 	
 };
 typedef FWindowsPlatformMisc FPlatformMisc;

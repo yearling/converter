@@ -171,7 +171,7 @@ FSuspendRenderingThread::~FSuspendRenderingThread()
 		// Resume the render thread again.
 		--GIsRenderingThreadSuspended;
 	}
-	if (IsAsyncLoadingMultithreaded())
+	if (IsAsyncLoadingMultithreaded && IsAsyncLoadingMultithreaded())
 	{
 		ResumeAsyncLoading();
 	}

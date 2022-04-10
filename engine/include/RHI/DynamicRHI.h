@@ -1177,16 +1177,16 @@ inline void appDumpTextureMemoryStats(const TCHAR* /*Message*/) {}
 
 
 ///** Defines the interface of a module implementing a dynamic RHI. */
-//class IDynamicRHIModule : public IModuleInterface
-//{
-//public:
-//
-//	/** Checks whether the RHI is supported by the current system. */
-//	virtual bool IsSupported() = 0;
-//
-//	/** Creates a new instance of the dynamic RHI implemented by the module. */
-//	virtual FDynamicRHI* CreateRHI(ERHIFeatureLevel::Type RequestedFeatureLevel = ERHIFeatureLevel::Num) = 0;
-//};
+class IDynamicRHIModule //: public IModuleInterface
+{
+public:
+
+	/** Checks whether the RHI is supported by the current system. */
+	virtual bool IsSupported() = 0;
+
+	/** Creates a new instance of the dynamic RHI implemented by the module. */
+	virtual FDynamicRHI* CreateRHI(ERHIFeatureLevel::Type RequestedFeatureLevel = ERHIFeatureLevel::Num) = 0;
+};
 
 /**
 *	Each platform that utilizes dynamic RHIs should implement this function

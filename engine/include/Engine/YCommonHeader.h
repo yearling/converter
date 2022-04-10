@@ -18,7 +18,7 @@ typedef uint64_t uint64;
 #define ensure assert
 #define checkf assert
 #define checkSlow assert
-
+#define DO_CHECK 1
 #ifndef FORCEINLINE
 #define  FORCEINLINE inline
 #endif

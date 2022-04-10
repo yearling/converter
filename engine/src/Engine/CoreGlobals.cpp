@@ -17,7 +17,9 @@ uint32					GFrameNumber = 1;
 /** NEED TO RENAME, for RT version of GFrameTime use View.ViewFamily->FrameNumber or pass down from RT from GFrameTime). */
 uint32					GFrameNumberRenderThread = 1;
 
+bool					GIsRequestingExit = false;					/* Indicates that MainLoop() should be exited at the end of the current iteration */
 bool GIsCriticalError = false;
+bool GIsGPUCrashed = false;
 bool(*IsAsyncLoading)();
 void (*SuspendAsyncLoading)();
 void (*ResumeAsyncLoading)();

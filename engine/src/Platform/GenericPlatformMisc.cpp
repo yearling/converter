@@ -1,6 +1,7 @@
 #include "Platform/YGenericPlatformMisc.h"
 #include "Platform/YPlatformProcess.h"
 #include "Platform/YPlatfomMisc.h"
+#include "Engine/CoreGlobals.h"
 
 
 int FGenericPlatformMisc::NumberOfCoresIncludingHyperthreads()
@@ -40,4 +41,16 @@ bool FGenericPlatformMisc::UseRenderThread()
 
 	// allow if not overridden
 	return true;
+}
+
+void FGenericPlatformMisc::RequestExit(bool Force)
+{
+	if (Force)
+	{
+		abort();
+	}
+	else
+	{
+		GIsRequestingExit = true;
+	}
 }

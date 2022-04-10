@@ -2,6 +2,7 @@
 #include <windows.h>
 #include "Platform/YPlatformAffinity.h"
 #include <cassert>
+#include "Engine/CoreGlobals.h"
 
 int FWindowsPlatformMisc::NumberOfCoresIncludingHyperthreads()
 {
@@ -51,4 +52,19 @@ int FWindowsPlatformMisc::NumberOfCores()
 	}
 	return CoreCount;
 }
+
+void FWindowsPlatformMisc::RequestExit(bool Force)
+{
+	if (Force)
+	{
+		TerminateProcess(GetCurrentProcess(), 0);
+	}
+	else
+	{
+		// Tell the platform specific code we want to exit cleanly from the main loop.
+		PostQuitMessage(0);
+		GIsRequestingExit = 1;
+	}
+}
+
 

@@ -7,6 +7,7 @@ struct FGenericPlatformMisc
 	static int NumberOfCores();
 
 	static void SetThreadAffinityMask(unsigned long long AffinityMask);
+	static void RequestExit(bool Force);
 };
 
 

@@ -10,6 +10,7 @@
 #include "RHI/RHICommandList.h"
 #include "RHI/PipelineStateCache.h"
 #include "RHI/NullRHI/NullRHI.h"
+#include "RHI/DirectX11/D3D11RHI.h"
 //#include "PipelineStateCache.h"
 
 #ifndef PLATFORM_ALLOW_NULL_RHI
@@ -166,7 +167,16 @@ static void RHIDetectAndWarnOfBadDrivers()
 FDynamicRHI* PlatformCreateDynamicRHI()
 {
 	//return nullptr;
-	return new FNullDynamicRHI();
+	YD3D11DynamicRHIModule* d3d11_dynamic_module = new YD3D11DynamicRHIModule();
+	if (d3d11_dynamic_module->IsSupported())
+	{
+		return d3d11_dynamic_module->CreateRHI(ERHIFeatureLevel::SM5);
+	}
+	else
+	{
+		return new FNullDynamicRHI();
+	}
+	return nullptr;
 }
 
 void RHIInit(bool bHasEditorToken)
@@ -198,7 +208,7 @@ void RHIInit(bool bHasEditorToken)
 					std::string ShaderPlatformString = LegacyShaderPlatformToShaderFormat(GetFeatureLevelShaderPlatform(GMaxRHIFeatureLevel));
 					//std::string Error = std::string::Printf(TEXT("A Feature Level 5 video card is required to run the editor.\nAvailableFeatureLevel = %s, ShaderPlatform = %s"), *FeatureLevelString, *ShaderPlatformString);
 					//FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(Error));
-					//FPlatformMisc::RequestExit(1);
+					FPlatformMisc::RequestExit(1);
 				}
 			}
 #if PLATFORM_ALLOW_NULL_RHI
@@ -268,15 +278,15 @@ void FDynamicRHI::EnableIdealGPUCaptureOptions(bool bEnabled)
 	//static IConsoleObject* RHIThreadEnableObj = IConsoleManager::Get().FindConsoleObject(TEXT("r.RHIThread.Enable"));
 	//static IConsoleCommand* RHIThreadEnableCommand = RHIThreadEnableObj ? RHIThreadEnableObj->AsCommand() : nullptr;
 
-	//const bool bShouldEnableDrawEvents = bEnabled;
-	//const bool bShouldEnableMaterialDrawEvents = bEnabled;
-	//const bool bShouldEnableRHIThread = !bEnabled;
-	//const bool bShouldRHICmdBypass = bEnabled;	
+	const bool bShouldEnableDrawEvents = bEnabled;
+	const bool bShouldEnableMaterialDrawEvents = bEnabled;
+	const bool bShouldEnableRHIThread = !bEnabled;
+	const bool bShouldRHICmdBypass = bEnabled;	
 
-	//const bool bDrawEvents = GetEmitDrawEvents() != 0;
-	//const bool bMaterialDrawEvents = ShowMaterialDrawEventVar ? ShowMaterialDrawEventVar->GetInt() != 0 : false;
-	//const bool bRHIThread = IsRunningRHIInSeparateThread();
-	//const bool bRHIBypass = RHICmdBypassVar ? RHICmdBypassVar->GetInt() != 0 : false;
+	/*const bool bDrawEvents = GetEmitDrawEvents() != 0;
+	const bool bMaterialDrawEvents = ShowMaterialDrawEventVar ? ShowMaterialDrawEventVar->GetInt() != 0 : false;
+	const bool bRHIThread = IsRunningRHIInSeparateThread();
+	const bool bRHIBypass = RHICmdBypassVar ? RHICmdBypassVar->GetInt() != 0 : false;*/
 
 	//UE_LOG(LogRHI, Display, TEXT("Setting GPU Capture Options: %i"), bEnabled ? 1 : 0);
 	//if (bShouldEnableDrawEvents != bDrawEvents)

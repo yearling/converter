@@ -100,3 +100,7 @@ extern  bool(*IsAsyncLoadingMultithreaded)();
 
 /** Helper function to flush resource streaming. */
 extern  void(*GFlushStreamingFunc)(void);
+
+extern  bool GIsRequestingExit;
+
+extern bool GIsGPUCrashed;
