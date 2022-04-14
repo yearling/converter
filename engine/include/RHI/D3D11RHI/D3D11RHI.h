@@ -4,9 +4,11 @@
 #include "RHI/MultiGPU.h"
 #include "RHI/RHICommandList.h"
 #include "RHI/DirectX11/ComPtr.h"
-#include "RHI/DirectX11/D3D11StateCache.h"
+#include "RHI/D3D11RHI/D3D11StateCache.h"
 #include <d3d11.h>
-
+#include "D3D11Resources.h"
+#include "D3D11Util.h"
+#define CHECK_SRV_TRANSITIONS 0
 // DX11 doesn't support higher MSAA count
 #define DX_MAX_MSAA_COUNT 8
 
@@ -67,21 +69,29 @@ public:
 };
 
 
-class YD3D11DynamicRHI :public FDynamicRHI, public IRHICommandContext
+class FD3D11DynamicRHI :public FDynamicRHI, public IRHICommandContext
 {
 
 public:
-	YD3D11DynamicRHI(IDXGIFactory1* InDXGIFactory1, D3D_FEATURE_LEVEL InFeatureLevel, int32 InChosenAdapter, const DXGI_ADAPTER_DESC& ChosenDescription);
-	~YD3D11DynamicRHI() override;
+	friend class FD3D11Viewport;
+
+	/** Global D3D11 lock list */
+	std::unordered_map<FD3D11LockedKey, FD3D11LockedData> OutstandingLocks;
+
+	FD3D11DynamicRHI(IDXGIFactory1* InDXGIFactory1, D3D_FEATURE_LEVEL InFeatureLevel, int32 InChosenAdapter, const DXGI_ADAPTER_DESC& ChosenDescription);
+	~FD3D11DynamicRHI() override;
 
 	virtual void Init() override;
 
 	virtual	void InitD3DDevice();
-	virtual void PostInit() override;
-
 
 	virtual void Shutdown() override;
 
+	template<typename TRHIType>
+	static FORCEINLINE typename TD3D11ResourceTraits<TRHIType>::TConcreteType* ResourceCast(TRHIType* Resource)
+	{
+		return static_cast<typename TD3D11ResourceTraits<TRHIType>::TConcreteType*>(Resource);
+	}
 
 	virtual const TCHAR* GetName() override;
 
@@ -958,10 +968,17 @@ public:
 protected:
 	void CleanupD3DDevice();
 	void ClearState();
+	void ConditionalClearShaderResource(FD3D11BaseShaderResource* Resource);
+	template <EShaderFrequency ShaderFrequency>
+	void ClearShaderResourceViews(FD3D11BaseShaderResource* Resource);
+
+	template <EShaderFrequency ShaderFrequency>
+	void InternalSetShaderResourceView(FD3D11BaseShaderResource* Resource, ID3D11ShaderResourceView* SRV, int32 ResourceIndex,const std::string& SRVName, FD3D11StateCache::ESRV_Type SrvType = FD3D11StateCache::SRV_Unknown);
+
 	// shared code for different D3D11 devices (e.g. PC DirectX11 and XboxOne) called
 // after device creation and GRHISupportsAsyncTextureCreation was set and before resource init
 	void SetupAfterDeviceCreation();
-
+	void CheckIfSRVIsResolved(ID3D11ShaderResourceView* SRV);
 	// called by SetupAfterDeviceCreation() when the device gets initialized
 	void UpdateMSAASettings();
 
@@ -980,6 +997,7 @@ private:
 	// set by UpdateMSAASettings(), get by GetMSAAQuality()
 // [SampleCount] = Quality, 0xffffffff if not supported
 	uint32 AvailableMSAAQualities[DX_MAX_MSAA_COUNT + 1];
-
+	int32 MaxBoundShaderResourcesIndex[SF_NumFrequencies];
+	FD3D11BaseShaderResource* CurrentResourcesBoundAsSRVs[SF_NumFrequencies][D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT];
 	/** The global D3D device's immediate context */
 };

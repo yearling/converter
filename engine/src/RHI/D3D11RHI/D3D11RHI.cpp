@@ -1,13 +1,17 @@
-#include "RHI/DirectX11/D3D11RHI.h"
-#include "RHI/DirectX11/D3D11Util.h"
+#include "RHI/D3D11RHI/D3D11RHI.h"
+#include "RHI/D3D11RHI/D3D11Util.h"
 #include "Render/YRenderThread.h"
 #include "Render/RenderUtils.h"
 #include "Engine/List.h"
 #include "Render/RenderResource.h"
 #include <delayimp.h>
 
+int64 FD3D11GlobalStats::GDedicatedVideoMemory = 0;
+int64 FD3D11GlobalStats::GDedicatedSystemMemory = 0;
+int64 FD3D11GlobalStats::GSharedSystemMemory = 0;
+int64 FD3D11GlobalStats::GTotalGraphicsMemory = 0;
 
-YD3D11DynamicRHI::YD3D11DynamicRHI(IDXGIFactory1* InDXGIFactory1, D3D_FEATURE_LEVEL InFeatureLevel, int32 InChosenAdapter, const DXGI_ADAPTER_DESC& InChosenDescription)
+FD3D11DynamicRHI::FD3D11DynamicRHI(IDXGIFactory1* InDXGIFactory1, D3D_FEATURE_LEVEL InFeatureLevel, int32 InChosenAdapter, const DXGI_ADAPTER_DESC& InChosenDescription)
 	:DXGIFactory1(InDXGIFactory1),
 	FeatureLevel(InFeatureLevel),
 	ChosenAdapter(InChosenAdapter),
@@ -129,18 +133,18 @@ YD3D11DynamicRHI::YD3D11DynamicRHI(IDXGIFactory1* InDXGIFactory1, D3D_FEATURE_LE
 	GRHISupportsResolveCubemapFaces = true;
 }
 
-YD3D11DynamicRHI::~YD3D11DynamicRHI()
+FD3D11DynamicRHI::~FD3D11DynamicRHI()
 {
 	LOG_INFO("~YD3D11DynamicRHI");
 }
 
-void YD3D11DynamicRHI::Init()
+void FD3D11DynamicRHI::Init()
 {
 	InitD3DDevice();
 	GSupportsDepthBoundsTest = (IsRHIDeviceNVIDIA() || IsRHIDeviceAMD());
 }
 
-void YD3D11DynamicRHI::InitD3DDevice()
+void FD3D11DynamicRHI::InitD3DDevice()
 {
 	assert(IsInGameThread());
 	// Wait for the rendering thread to go idle.
@@ -368,10 +372,7 @@ void YD3D11DynamicRHI::InitD3DDevice()
 }
 
 
-void YD3D11DynamicRHI::PostInit()
-{
-}
-void YD3D11DynamicRHI::CleanupD3DDevice()
+void FD3D11DynamicRHI::CleanupD3DDevice()
 {
 	LOG_INFO("Clean up d3d device");
 	if (GIsRHIInitialized)
@@ -415,12 +416,88 @@ void YD3D11DynamicRHI::CleanupD3DDevice()
 }
 
 
-void YD3D11DynamicRHI::ClearState()
+void FD3D11DynamicRHI::ClearState()
 {
 	StateCache.ClearState();
 }
+template <EShaderFrequency ShaderFrequency>
+void FD3D11DynamicRHI::InternalSetShaderResourceView(FD3D11BaseShaderResource* Resource, ID3D11ShaderResourceView* SRV, int32 ResourceIndex, const std::string& SRVName, FD3D11StateCache::ESRV_Type SrvType)
+{
+	// Check either both are set, or both are null.
+	check((Resource && SRV) || (!Resource && !SRV));
+	CheckIfSRVIsResolved(SRV);
 
-void YD3D11DynamicRHI::SetupAfterDeviceCreation()
+	//avoid state cache crash
+	if (!((Resource && SRV) || (!Resource && !SRV)))
+	{
+		//UE_LOG(LogRHI, Warning, TEXT("Bailing on InternalSetShaderResourceView on resource: %i, %s"), ResourceIndex, *SRVName.ToString());
+		return;
+	}
+
+	if (Resource)
+	{
+		const EResourceTransitionAccess CurrentAccess = Resource->GetCurrentGPUAccess();
+		const bool bAccessPass = CurrentAccess == EResourceTransitionAccess::EReadable || (CurrentAccess == EResourceTransitionAccess::ERWBarrier && !Resource->IsDirty()) || CurrentAccess == EResourceTransitionAccess::ERWSubResBarrier;
+		//ensureMsgf((GEnableDX11TransitionChecks == 0) || bAccessPass || Resource->GetLastFrameWritten() != PresentCounter, TEXT("Shader resource %s is not GPU readable.  Missing a call to RHITransitionResources()"), *SRVName.ToString());
+	}
+
+	FD3D11BaseShaderResource*& ResourceSlot = CurrentResourcesBoundAsSRVs[ShaderFrequency][ResourceIndex];
+	int32& MaxResourceIndex = MaxBoundShaderResourcesIndex[ShaderFrequency];
+
+	if (Resource)
+	{
+		// We are binding a new SRV.
+		// Update the max resource index to the highest bound resource index.
+		MaxResourceIndex = YMath::Max(MaxResourceIndex, ResourceIndex);
+		ResourceSlot = Resource;
+	}
+	else if (ResourceSlot != nullptr)
+	{
+		// Unbind the resource from the slot.
+		ResourceSlot = nullptr;
+
+		// If this was the highest bound resource...
+		if (MaxResourceIndex == ResourceIndex)
+		{
+			// Adjust the max resource index downwards until we
+			// hit the next non-null slot, or we've run out of slots.
+			do
+			{
+				MaxResourceIndex--;
+			} while (MaxResourceIndex >= 0 && CurrentResourcesBoundAsSRVs[ShaderFrequency][MaxResourceIndex] == nullptr);
+		}
+	}
+
+	// Set the SRV we have been given (or null).
+	StateCache.SetShaderResourceView<ShaderFrequency>(SRV, ResourceIndex, SrvType);
+}
+
+
+template <EShaderFrequency ShaderFrequency>
+void FD3D11DynamicRHI::ClearShaderResourceViews(FD3D11BaseShaderResource* Resource)
+{
+	int32 MaxIndex = MaxBoundShaderResourcesIndex[ShaderFrequency];
+	for (int32 ResourceIndex = MaxIndex; ResourceIndex >= 0; --ResourceIndex)
+	{
+		if (CurrentResourcesBoundAsSRVs[ShaderFrequency][ResourceIndex] == Resource)
+		{
+			// Unset the SRV from the device context
+			InternalSetShaderResourceView<ShaderFrequency>(nullptr, nullptr, ResourceIndex, "none");
+		}
+	}
+}
+void FD3D11DynamicRHI::ConditionalClearShaderResource(FD3D11BaseShaderResource* Resource)
+{
+	check(Resource);
+	ClearShaderResourceViews<SF_Vertex>(Resource);
+	ClearShaderResourceViews<SF_Hull>(Resource);
+	ClearShaderResourceViews<SF_Domain>(Resource);
+	ClearShaderResourceViews<SF_Pixel>(Resource);
+	ClearShaderResourceViews<SF_Geometry>(Resource);
+	ClearShaderResourceViews<SF_Compute>(Resource);
+}
+
+void FD3D11DynamicRHI::SetupAfterDeviceCreation()
 {
 	// without that the first RHIClear would get a scissor rect of (0,0)-(0,0) which means we get a draw call clear 
 	RHISetScissorRect(false, 0, 0, 0, 0);
@@ -452,7 +529,54 @@ void YD3D11DynamicRHI::SetupAfterDeviceCreation()
 #endif
 }
 
-void YD3D11DynamicRHI::UpdateMSAASettings()
+void FD3D11DynamicRHI::CheckIfSRVIsResolved(ID3D11ShaderResourceView* SRV)
+{
+#if CHECK_SRV_TRANSITIONS
+	if (IsRunningRHIInSeparateThread() || !SRV)
+	{
+		return;
+	}
+
+	static const auto CheckSRVCVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.CheckSRVTransitions"));
+	if (!CheckSRVCVar->GetValueOnRenderThread())
+	{
+		return;
+	}
+
+	ID3D11Resource* SRVResource = nullptr;
+	SRV->GetResource(&SRVResource);
+
+	int32 MipLevel;
+	int32 NumMips;
+	int32 ArraySlice;
+	int32 NumSlices;
+	GetMipAndSliceInfoFromSRV(SRV, MipLevel, NumMips, ArraySlice, NumSlices);
+
+	//d3d uses -1 to mean 'all mips'
+	int32 LastMip = MipLevel + NumMips - 1;
+	int32 LastSlice = ArraySlice + NumSlices - 1;
+
+	TArray<FUnresolvedRTInfo> RTInfoArray;
+	check(UnresolvedTargetsConcurrencyGuard.Increment() == 1);
+	UnresolvedTargets.MultiFind(SRVResource, RTInfoArray);
+	check(UnresolvedTargetsConcurrencyGuard.Decrement() == 0);
+
+	for (int32 InfoIndex = 0; InfoIndex < RTInfoArray.Num(); ++InfoIndex)
+	{
+		const FUnresolvedRTInfo& RTInfo = RTInfoArray[InfoIndex];
+		int32 RTLastMip = RTInfo.MipLevel + RTInfo.NumMips - 1;
+		ensureMsgf((MipLevel == -1 || NumMips == -1) || (LastMip < RTInfo.MipLevel || MipLevel > RTLastMip), TEXT("SRV is set to read mips in range %i to %i.  Target %s is unresolved for mip %i"), MipLevel, LastMip, *RTInfo.ResourceName.ToString(), RTInfo.MipLevel);
+		ensureMsgf(NumMips != -1, TEXT("SRV is set to read all mips.  Target %s is unresolved for mip %i"), *RTInfo.ResourceName.ToString(), RTInfo.MipLevel);
+
+		int32 RTLastSlice = RTInfo.ArraySlice + RTInfo.ArraySize - 1;
+		ensureMsgf((ArraySlice == -1 || LastSlice == -1) || (LastSlice < RTInfo.ArraySlice || ArraySlice > RTLastSlice), TEXT("SRV is set to read slices in range %i to %i.  Target %s is unresolved for mip %i"), ArraySlice, LastSlice, *RTInfo.ResourceName.ToString(), RTInfo.ArraySlice);
+		ensureMsgf(ArraySlice == -1 || NumSlices != -1, TEXT("SRV is set to read all slices.  Target %s is unresolved for slice %i"));
+	}
+	SRVResource->Release();
+#endif
+}
+
+void FD3D11DynamicRHI::UpdateMSAASettings()
 {
 	check(DX_MAX_MSAA_COUNT == 8);
 
@@ -470,7 +594,7 @@ void YD3D11DynamicRHI::UpdateMSAASettings()
 	AvailableMSAAQualities[8] = 0;
 }
 
-uint32 YD3D11DynamicRHI::GetMaxMSAAQuality(uint32 SampleCount)
+uint32 FD3D11DynamicRHI::GetMaxMSAAQuality(uint32 SampleCount)
 {
 	if (SampleCount <= DX_MAX_MSAA_COUNT)
 	{
@@ -483,7 +607,7 @@ uint32 YD3D11DynamicRHI::GetMaxMSAAQuality(uint32 SampleCount)
 	return 0xffffffff;
 }
 
-void YD3D11DynamicRHI::Shutdown()
+void FD3D11DynamicRHI::Shutdown()
 {
 	//throw std::logic_error("The method or operation is not implemented.");
 	LOG_INFO("YD3D11DynamicRHI::ShutDown");
@@ -492,1089 +616,1025 @@ void YD3D11DynamicRHI::Shutdown()
 	CleanupD3DDevice();
 }
 
-const TCHAR* YD3D11DynamicRHI::GetName()
+const TCHAR* FD3D11DynamicRHI::GetName()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FSamplerStateRHIRef YD3D11DynamicRHI::RHICreateSamplerState(const FSamplerStateInitializerRHI& Initializer)
+FPixelShaderRHIRef FD3D11DynamicRHI::RHICreatePixelShader(const std::vector<uint8>& Code)
 {
-	//assert(d3d_device_);
-	//HRESULT hr = S_OK;
-	//D3D11_SAMPLER_DESC samDesc;
-	//ZeroMemory(&samDesc, sizeof(samDesc));
-	//switch(Initializer.Filter)
-	//{
-	//case ESamplerFilter::SF_Point:
-	//	samDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
-	//}
-	//samDesc.Filter = 
-	//samDesc.AddressU = samDesc.AddressV = samDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	//samDesc.MaxAnisotropy = 1;
-	//samDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-	//samDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	//if (FAILED(hr = d3d_device_->CreateSamplerState(&samDesc, &sample))) {
-	//	return false;
-	//}
-	assert(0);
-	FSamplerStateRHIRef tmp;
-	return tmp;
-}
-
-FRasterizerStateRHIRef YD3D11DynamicRHI::RHICreateRasterizerState(const FRasterizerStateInitializerRHI& Initializer)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FDepthStencilStateRHIRef YD3D11DynamicRHI::RHICreateDepthStencilState(const FDepthStencilStateInitializerRHI& Initializer)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FBlendStateRHIRef YD3D11DynamicRHI::RHICreateBlendState(const FBlendStateInitializerRHI& Initializer)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FVertexDeclarationRHIRef YD3D11DynamicRHI::RHICreateVertexDeclaration(const FVertexDeclarationElementList& Elements)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FPixelShaderRHIRef YD3D11DynamicRHI::RHICreatePixelShader(const std::vector<uint8>& Code)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FPixelShaderRHIRef YD3D11DynamicRHI::RHICreatePixelShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FVertexShaderRHIRef YD3D11DynamicRHI::RHICreateVertexShader(const std::vector<uint8>& Code)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FVertexShaderRHIRef YD3D11DynamicRHI::RHICreateVertexShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FHullShaderRHIRef YD3D11DynamicRHI::RHICreateHullShader(const std::vector<uint8>& Code)
-{
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FHullShaderRHIRef YD3D11DynamicRHI::RHICreateHullShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FPixelShaderRHIRef FD3D11DynamicRHI::RHICreatePixelShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FDomainShaderRHIRef YD3D11DynamicRHI::RHICreateDomainShader(const std::vector<uint8>& Code)
+FVertexShaderRHIRef FD3D11DynamicRHI::RHICreateVertexShader(const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FDomainShaderRHIRef YD3D11DynamicRHI::RHICreateDomainShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FVertexShaderRHIRef FD3D11DynamicRHI::RHICreateVertexShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGeometryShaderRHIRef YD3D11DynamicRHI::RHICreateGeometryShader(const std::vector<uint8>& Code)
+FHullShaderRHIRef FD3D11DynamicRHI::RHICreateHullShader(const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGeometryShaderRHIRef YD3D11DynamicRHI::RHICreateGeometryShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FHullShaderRHIRef FD3D11DynamicRHI::RHICreateHullShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGeometryShaderRHIRef YD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(const std::vector<uint8>& Code, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream)
+FDomainShaderRHIRef FD3D11DynamicRHI::RHICreateDomainShader(const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGeometryShaderRHIRef YD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FDomainShaderRHIRef FD3D11DynamicRHI::RHICreateDomainShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::FlushPendingLogs()
+FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShader(const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FComputeShaderRHIRef YD3D11DynamicRHI::RHICreateComputeShader(const std::vector<uint8>& Code)
+FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FComputeShaderRHIRef YD3D11DynamicRHI::RHICreateComputeShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(const std::vector<uint8>& Code, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FRHIShaderLibraryRef YD3D11DynamicRHI::RHICreateShaderLibrary(EShaderPlatform Platform, std::string const& FilePath, std::string const& Name)
+FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FComputeFenceRHIRef YD3D11DynamicRHI::RHICreateComputeFence(const std::string& Name)
+void FD3D11DynamicRHI::FlushPendingLogs()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGPUFenceRHIRef YD3D11DynamicRHI::RHICreateGPUFence(const std::string& Name)
+FComputeShaderRHIRef FD3D11DynamicRHI::RHICreateComputeShader(const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FStagingBufferRHIRef YD3D11DynamicRHI::RHICreateStagingBuffer()
+FComputeShaderRHIRef FD3D11DynamicRHI::RHICreateComputeShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FBoundShaderStateRHIRef YD3D11DynamicRHI::RHICreateBoundShaderState(FVertexDeclarationRHIParamRef VertexDeclaration, FVertexShaderRHIParamRef VertexShader, FHullShaderRHIParamRef HullShader, FDomainShaderRHIParamRef DomainShader, FPixelShaderRHIParamRef PixelShader, FGeometryShaderRHIParamRef GeometryShader)
+FRHIShaderLibraryRef FD3D11DynamicRHI::RHICreateShaderLibrary(EShaderPlatform Platform, std::string const& FilePath, std::string const& Name)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGraphicsPipelineStateRHIRef YD3D11DynamicRHI::RHICreateGraphicsPipelineState(const FGraphicsPipelineStateInitializer& Initializer)
+FComputeFenceRHIRef FD3D11DynamicRHI::RHICreateComputeFence(const std::string& Name)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGraphicsPipelineStateRHIRef YD3D11DynamicRHI::RHICreateGraphicsPipelineState(const FGraphicsPipelineStateInitializer& Initializer, FRHIPipelineBinaryLibraryParamRef PipelineBinary)
+FGPUFenceRHIRef FD3D11DynamicRHI::RHICreateGPUFence(const std::string& Name)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-TRefCountPtr<FRHIComputePipelineState> YD3D11DynamicRHI::RHICreateComputePipelineState(FRHIComputeShader* ComputeShader)
+FStagingBufferRHIRef FD3D11DynamicRHI::RHICreateStagingBuffer()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-TRefCountPtr<FRHIComputePipelineState> YD3D11DynamicRHI::RHICreateComputePipelineState(FRHIComputeShader* ComputeShader, FRHIPipelineBinaryLibraryParamRef PipelineBinary)
+FBoundShaderStateRHIRef FD3D11DynamicRHI::RHICreateBoundShaderState(FVertexDeclarationRHIParamRef VertexDeclaration, FVertexShaderRHIParamRef VertexShader, FHullShaderRHIParamRef HullShader, FDomainShaderRHIParamRef DomainShader, FPixelShaderRHIParamRef PixelShader, FGeometryShaderRHIParamRef GeometryShader)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUniformBufferRHIRef YD3D11DynamicRHI::RHICreateUniformBuffer(const void* Contents, const FRHIUniformBufferLayout& Layout, EUniformBufferUsage Usage)
+FGraphicsPipelineStateRHIRef FD3D11DynamicRHI::RHICreateGraphicsPipelineState(const FGraphicsPipelineStateInitializer& Initializer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FIndexBufferRHIRef YD3D11DynamicRHI::RHICreateIndexBuffer(uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
+FGraphicsPipelineStateRHIRef FD3D11DynamicRHI::RHICreateGraphicsPipelineState(const FGraphicsPipelineStateInitializer& Initializer, FRHIPipelineBinaryLibraryParamRef PipelineBinary)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::RHILockIndexBuffer(FIndexBufferRHIParamRef IndexBuffer, uint32 Offset, uint32 Size, EResourceLockMode LockMode)
+TRefCountPtr<FRHIComputePipelineState> FD3D11DynamicRHI::RHICreateComputePipelineState(FRHIComputeShader* ComputeShader)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUnlockIndexBuffer(FIndexBufferRHIParamRef IndexBuffer)
+TRefCountPtr<FRHIComputePipelineState> FD3D11DynamicRHI::RHICreateComputePipelineState(FRHIComputeShader* ComputeShader, FRHIPipelineBinaryLibraryParamRef PipelineBinary)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FVertexBufferRHIRef YD3D11DynamicRHI::RHICreateVertexBuffer(uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
+FUniformBufferRHIRef FD3D11DynamicRHI::RHICreateUniformBuffer(const void* Contents, const FRHIUniformBufferLayout& Layout, EUniformBufferUsage Usage)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::RHILockVertexBuffer(FVertexBufferRHIParamRef VertexBuffer, uint32 Offset, uint32 SizeRHI, EResourceLockMode LockMode)
+FIndexBufferRHIRef FD3D11DynamicRHI::RHICreateIndexBuffer(uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUnlockVertexBuffer(FVertexBufferRHIParamRef VertexBuffer)
+void* FD3D11DynamicRHI::RHILockIndexBuffer(FIndexBufferRHIParamRef IndexBuffer, uint32 Offset, uint32 Size, EResourceLockMode LockMode)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHICopyVertexBuffer(FVertexBufferRHIParamRef SourceBuffer, FVertexBufferRHIParamRef DestBuffer)
+void FD3D11DynamicRHI::RHIUnlockIndexBuffer(FIndexBufferRHIParamRef IndexBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FStructuredBufferRHIRef YD3D11DynamicRHI::RHICreateStructuredBuffer(uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
+FStructuredBufferRHIRef FD3D11DynamicRHI::RHICreateStructuredBuffer(uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::RHILockStructuredBuffer(FStructuredBufferRHIParamRef StructuredBuffer, uint32 Offset, uint32 SizeRHI, EResourceLockMode LockMode)
+void* FD3D11DynamicRHI::RHILockStructuredBuffer(FStructuredBufferRHIParamRef StructuredBuffer, uint32 Offset, uint32 SizeRHI, EResourceLockMode LockMode)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUnlockStructuredBuffer(FStructuredBufferRHIParamRef StructuredBuffer)
+void FD3D11DynamicRHI::RHIUnlockStructuredBuffer(FStructuredBufferRHIParamRef StructuredBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHICreateUnorderedAccessView(FStructuredBufferRHIParamRef StructuredBuffer, bool bUseUAVCounter, bool bAppendBuffer)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FStructuredBufferRHIParamRef StructuredBuffer, bool bUseUAVCounter, bool bAppendBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHICreateUnorderedAccessView(FTextureRHIParamRef Texture, uint32 MipLevel)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FTextureRHIParamRef Texture, uint32 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHICreateUnorderedAccessView(FVertexBufferRHIParamRef VertexBuffer, uint8 Format)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FVertexBufferRHIParamRef VertexBuffer, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHICreateUnorderedAccessView(FIndexBufferRHIParamRef IndexBuffer, uint8 Format)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FIndexBufferRHIParamRef IndexBuffer, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView(FStructuredBufferRHIParamRef StructuredBuffer)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FStructuredBufferRHIParamRef StructuredBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView(FVertexBufferRHIParamRef VertexBuffer, uint32 Stride, uint8 Format)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FVertexBufferRHIParamRef VertexBuffer, uint32 Stride, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView(FIndexBufferRHIParamRef Buffer)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FIndexBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel, uint8 NumMipLevels, uint8 Format)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel, uint8 NumMipLevels, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView(FTexture3DRHIParamRef Texture3DRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTexture3DRHIParamRef Texture3DRHI, uint8 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DArrayRHIParamRef Texture2DArrayRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DArrayRHIParamRef Texture2DArrayRHI, uint8 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView(FTextureCubeRHIParamRef TextureCubeRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTextureCubeRHIParamRef TextureCubeRHI, uint8 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIGenerateMips(FTextureRHIParamRef Texture)
+void FD3D11DynamicRHI::RHIGenerateMips(FTextureRHIParamRef Texture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-uint32 YD3D11DynamicRHI::RHIComputeMemorySize(FTextureRHIParamRef TextureRHI)
+uint32 FD3D11DynamicRHI::RHIComputeMemorySize(FTextureRHIParamRef TextureRHI)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::RHIAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, int32 NewMipCount, int32 NewSizeX, int32 NewSizeY, FThreadSafeCounter* RequestStatus)
+FTexture2DRHIRef FD3D11DynamicRHI::RHIAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, int32 NewMipCount, int32 NewSizeX, int32 NewSizeY, FThreadSafeCounter* RequestStatus)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-ETextureReallocationStatus YD3D11DynamicRHI::RHIFinalizeAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
+ETextureReallocationStatus FD3D11DynamicRHI::RHIFinalizeAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-ETextureReallocationStatus YD3D11DynamicRHI::RHICancelAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
+ETextureReallocationStatus FD3D11DynamicRHI::RHICancelAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::RHILockTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
+void* FD3D11DynamicRHI::RHILockTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUnlockTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, bool bLockWithinMiptail)
+void FD3D11DynamicRHI::RHIUnlockTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, bool bLockWithinMiptail)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::RHILockTexture2DArray(FTexture2DArrayRHIParamRef Texture, uint32 TextureIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
+void* FD3D11DynamicRHI::RHILockTexture2DArray(FTexture2DArrayRHIParamRef Texture, uint32 TextureIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUnlockTexture2DArray(FTexture2DArrayRHIParamRef Texture, uint32 TextureIndex, uint32 MipIndex, bool bLockWithinMiptail)
+void FD3D11DynamicRHI::RHIUnlockTexture2DArray(FTexture2DArrayRHIParamRef Texture, uint32 TextureIndex, uint32 MipIndex, bool bLockWithinMiptail)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUpdateTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion2D& UpdateRegion, uint32 SourcePitch, const uint8* SourceData)
+void FD3D11DynamicRHI::RHIUpdateTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion2D& UpdateRegion, uint32 SourcePitch, const uint8* SourceData)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUpdateTexture3D(FTexture3DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion3D& UpdateRegion, uint32 SourceRowPitch, uint32 SourceDepthPitch, const uint8* SourceData)
+void FD3D11DynamicRHI::RHIUpdateTexture3D(FTexture3DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion3D& UpdateRegion, uint32 SourceRowPitch, uint32 SourceDepthPitch, const uint8* SourceData)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTextureCubeRHIRef YD3D11DynamicRHI::RHICreateTextureCube(uint32 Size, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTextureCubeRHIRef FD3D11DynamicRHI::RHICreateTextureCube(uint32 Size, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTextureCubeRHIRef YD3D11DynamicRHI::RHICreateTextureCubeArray(uint32 Size, uint32 ArraySize, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTextureCubeRHIRef FD3D11DynamicRHI::RHICreateTextureCubeArray(uint32 Size, uint32 ArraySize, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::RHILockTextureCubeFace(FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
+void* FD3D11DynamicRHI::RHILockTextureCubeFace(FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUnlockTextureCubeFace(FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, bool bLockWithinMiptail)
+void FD3D11DynamicRHI::RHIUnlockTextureCubeFace(FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, bool bLockWithinMiptail)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBindDebugLabelName(FTextureRHIParamRef Texture, const TCHAR* Name)
+void FD3D11DynamicRHI::RHIBindDebugLabelName(FTextureRHIParamRef Texture, const TCHAR* Name)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBindDebugLabelName(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const TCHAR* Name)
+void FD3D11DynamicRHI::RHIBindDebugLabelName(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const TCHAR* Name)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FColor>& OutData, FReadSurfaceDataFlags InFlags)
+void FD3D11DynamicRHI::RHIReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FColor>& OutData, FReadSurfaceDataFlags InFlags)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FLinearColor>& OutData, FReadSurfaceDataFlags InFlags)
+void FD3D11DynamicRHI::RHIReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FLinearColor>& OutData, FReadSurfaceDataFlags InFlags)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIMapStagingSurface(FTextureRHIParamRef Texture, void*& OutData, int32& OutWidth, int32& OutHeight)
+void FD3D11DynamicRHI::RHIMapStagingSurface(FTextureRHIParamRef Texture, void*& OutData, int32& OutWidth, int32& OutHeight)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUnmapStagingSurface(FTextureRHIParamRef Texture)
+void FD3D11DynamicRHI::RHIUnmapStagingSurface(FTextureRHIParamRef Texture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIReadSurfaceFloatData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FFloat16Color>& OutData, ECubeFace CubeFace, int32 ArrayIndex, int32 MipIndex)
+void FD3D11DynamicRHI::RHIReadSurfaceFloatData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FFloat16Color>& OutData, ECubeFace CubeFace, int32 ArrayIndex, int32 MipIndex)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIRead3DSurfaceFloatData(FTextureRHIParamRef Texture, FIntRect Rect, FIntPoint ZMinMax, std::vector<FFloat16Color>& OutData)
+void FD3D11DynamicRHI::RHIRead3DSurfaceFloatData(FTextureRHIParamRef Texture, FIntRect Rect, FIntPoint ZMinMax, std::vector<FFloat16Color>& OutData)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FRenderQueryRHIRef YD3D11DynamicRHI::RHICreateRenderQuery(ERenderQueryType QueryType)
+FRenderQueryRHIRef FD3D11DynamicRHI::RHICreateRenderQuery(ERenderQueryType QueryType)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool YD3D11DynamicRHI::RHIGetRenderQueryResult(FRenderQueryRHIParamRef RenderQuery, uint64& OutResult, bool bWait)
+bool FD3D11DynamicRHI::RHIGetRenderQueryResult(FRenderQueryRHIParamRef RenderQuery, uint64& OutResult, bool bWait)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRef Viewport)
+FTexture2DRHIRef FD3D11DynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRef Viewport)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHIGetViewportBackBufferUAV(FViewportRHIParamRef ViewportRHI)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHIGetViewportBackBufferUAV(FViewportRHIParamRef ViewportRHI)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::RHIGetFMaskTexture(FTextureRHIParamRef SourceTextureRHI)
+FTexture2DRHIRef FD3D11DynamicRHI::RHIGetFMaskTexture(FTextureRHIParamRef SourceTextureRHI)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer(FViewportRHIParamRef Viewport)
+void FD3D11DynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer(FViewportRHIParamRef Viewport)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIAcquireThreadOwnership()
+void FD3D11DynamicRHI::RHIAcquireThreadOwnership()
 {
 }
 
-void YD3D11DynamicRHI::RHIReleaseThreadOwnership()
+void FD3D11DynamicRHI::RHIReleaseThreadOwnership()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIFlushResources()
+void FD3D11DynamicRHI::RHIFlushResources()
 {
 }
 
-uint32 YD3D11DynamicRHI::RHIGetGPUFrameCycles()
+uint32 FD3D11DynamicRHI::RHIGetGPUFrameCycles()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FViewportRHIRef YD3D11DynamicRHI::RHICreateViewport(void* WindowHandle, uint32 SizeX, uint32 SizeY, bool bIsFullscreen, EPixelFormat PreferredPixelFormat)
+FViewportRHIRef FD3D11DynamicRHI::RHICreateViewport(void* WindowHandle, uint32 SizeX, uint32 SizeY, bool bIsFullscreen, EPixelFormat PreferredPixelFormat)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIResizeViewport(FViewportRHIParamRef Viewport, uint32 SizeX, uint32 SizeY, bool bIsFullscreen)
+void FD3D11DynamicRHI::RHIResizeViewport(FViewportRHIParamRef Viewport, uint32 SizeX, uint32 SizeY, bool bIsFullscreen)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIResizeViewport(FViewportRHIParamRef Viewport, uint32 SizeX, uint32 SizeY, bool bIsFullscreen, EPixelFormat PreferredPixelFormat)
+void FD3D11DynamicRHI::RHIResizeViewport(FViewportRHIParamRef Viewport, uint32 SizeX, uint32 SizeY, bool bIsFullscreen, EPixelFormat PreferredPixelFormat)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHITick(float DeltaTime)
+void FD3D11DynamicRHI::RHITick(float DeltaTime)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetStreamOutTargets(uint32 NumTargets, const FVertexBufferRHIParamRef* VertexBuffers, const uint32* Offsets)
+void FD3D11DynamicRHI::RHISetStreamOutTargets(uint32 NumTargets, const FVertexBufferRHIParamRef* VertexBuffers, const uint32* Offsets)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBlockUntilGPUIdle()
+void FD3D11DynamicRHI::RHIBlockUntilGPUIdle()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISubmitCommandsAndFlushGPU()
+void FD3D11DynamicRHI::RHISubmitCommandsAndFlushGPU()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginSuspendRendering()
+void FD3D11DynamicRHI::RHIBeginSuspendRendering()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISuspendRendering()
+void FD3D11DynamicRHI::RHISuspendRendering()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIResumeRendering()
+void FD3D11DynamicRHI::RHIResumeRendering()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool YD3D11DynamicRHI::RHIIsRenderingSuspended()
+bool FD3D11DynamicRHI::RHIIsRenderingSuspended()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool YD3D11DynamicRHI::RHIEnqueueDecompress(uint8_t* SrcBuffer, uint8_t* DestBuffer, int CompressedSize, void* ErrorCodeBuffer)
+bool FD3D11DynamicRHI::RHIEnqueueDecompress(uint8_t* SrcBuffer, uint8_t* DestBuffer, int CompressedSize, void* ErrorCodeBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool YD3D11DynamicRHI::RHIEnqueueCompress(uint8_t* SrcBuffer, uint8_t* DestBuffer, int UnCompressedSize, void* ErrorCodeBuffer)
+bool FD3D11DynamicRHI::RHIEnqueueCompress(uint8_t* SrcBuffer, uint8_t* DestBuffer, int UnCompressedSize, void* ErrorCodeBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIRecreateRecursiveBoundShaderStates()
+void FD3D11DynamicRHI::RHIRecreateRecursiveBoundShaderStates()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool YD3D11DynamicRHI::RHIGetAvailableResolutions(FScreenResolutionArray& Resolutions, bool bIgnoreRefreshRate)
+bool FD3D11DynamicRHI::RHIGetAvailableResolutions(FScreenResolutionArray& Resolutions, bool bIgnoreRefreshRate)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIGetSupportedResolution(uint32& Width, uint32& Height)
+void FD3D11DynamicRHI::RHIGetSupportedResolution(uint32& Width, uint32& Height)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIVirtualTextureSetFirstMipInMemory(FTexture2DRHIParamRef Texture, uint32 FirstMip)
+void FD3D11DynamicRHI::RHIVirtualTextureSetFirstMipInMemory(FTexture2DRHIParamRef Texture, uint32 FirstMip)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIVirtualTextureSetFirstMipVisible(FTexture2DRHIParamRef Texture, uint32 FirstMip)
+void FD3D11DynamicRHI::RHIVirtualTextureSetFirstMipVisible(FTexture2DRHIParamRef Texture, uint32 FirstMip)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIPerFrameRHIFlushComplete()
+void FD3D11DynamicRHI::RHIPerFrameRHIFlushComplete()
 {
 }
 
-void YD3D11DynamicRHI::RHIExecuteCommandList(FRHICommandList* CmdList)
+void FD3D11DynamicRHI::RHIExecuteCommandList(FRHICommandList* CmdList)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::RHIGetNativeDevice()
+void* FD3D11DynamicRHI::RHIGetNativeDevice()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-IRHICommandContext* YD3D11DynamicRHI::RHIGetDefaultContext()
+IRHICommandContext* FD3D11DynamicRHI::RHIGetDefaultContext()
 {
 	return this;
 }
 
-class IRHICommandContextContainer* YD3D11DynamicRHI::RHIGetCommandContextContainer(int32 Index, int32 Num)
+class IRHICommandContextContainer* FD3D11DynamicRHI::RHIGetCommandContextContainer(int32 Index, int32 Num)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FVertexBufferRHIRef YD3D11DynamicRHI::CreateAndLockVertexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo, void*& OutDataBuffer)
+FVertexBufferRHIRef FD3D11DynamicRHI::CreateAndLockVertexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo, void*& OutDataBuffer)
 {
 	//throw std::logic_error("The method or operation is not implemented.");
 	return nullptr;
 }
 
-FIndexBufferRHIRef YD3D11DynamicRHI::CreateAndLockIndexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo, void*& OutDataBuffer)
+FIndexBufferRHIRef FD3D11DynamicRHI::CreateAndLockIndexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo, void*& OutDataBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FVertexBufferRHIRef YD3D11DynamicRHI::CreateVertexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
+FVertexBufferRHIRef FD3D11DynamicRHI::CreateVertexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FStructuredBufferRHIRef YD3D11DynamicRHI::CreateStructuredBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
+FStructuredBufferRHIRef FD3D11DynamicRHI::CreateStructuredBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::CreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer, uint32 Stride, uint8 Format)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::CreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer, uint32 Stride, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::CreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef Buffer)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::CreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::LockVertexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer, uint32 Offset, uint32 SizeRHI, EResourceLockMode LockMode)
+void* FD3D11DynamicRHI::LockVertexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer, uint32 Offset, uint32 SizeRHI, EResourceLockMode LockMode)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::UnlockVertexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer)
+void FD3D11DynamicRHI::UnlockVertexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::AsyncReallocateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2D, int32 NewMipCount, int32 NewSizeX, int32 NewSizeY, FThreadSafeCounter* RequestStatus)
+FTexture2DRHIRef FD3D11DynamicRHI::AsyncReallocateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2D, int32 NewMipCount, int32 NewSizeX, int32 NewSizeY, FThreadSafeCounter* RequestStatus)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-ETextureReallocationStatus YD3D11DynamicRHI::FinalizeAsyncReallocateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
+ETextureReallocationStatus FD3D11DynamicRHI::FinalizeAsyncReallocateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-ETextureReallocationStatus YD3D11DynamicRHI::CancelAsyncReallocateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
+ETextureReallocationStatus FD3D11DynamicRHI::CancelAsyncReallocateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FIndexBufferRHIRef YD3D11DynamicRHI::CreateIndexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
+FIndexBufferRHIRef FD3D11DynamicRHI::CreateIndexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::LockIndexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef IndexBuffer, uint32 Offset, uint32 SizeRHI, EResourceLockMode LockMode)
+void* FD3D11DynamicRHI::LockIndexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef IndexBuffer, uint32 Offset, uint32 SizeRHI, EResourceLockMode LockMode)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::UnlockIndexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef IndexBuffer)
+void FD3D11DynamicRHI::UnlockIndexBuffer_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef IndexBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FVertexDeclarationRHIRef YD3D11DynamicRHI::CreateVertexDeclaration_RenderThread(class FRHICommandListImmediate& RHICmdList, const FVertexDeclarationElementList& Elements)
+FVertexDeclarationRHIRef FD3D11DynamicRHI::CreateVertexDeclaration_RenderThread(class FRHICommandListImmediate& RHICmdList, const FVertexDeclarationElementList& Elements)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FVertexShaderRHIRef YD3D11DynamicRHI::CreateVertexShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
+FVertexShaderRHIRef FD3D11DynamicRHI::CreateVertexShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FVertexShaderRHIRef YD3D11DynamicRHI::CreateVertexShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FVertexShaderRHIRef FD3D11DynamicRHI::CreateVertexShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FPixelShaderRHIRef YD3D11DynamicRHI::CreatePixelShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
+FPixelShaderRHIRef FD3D11DynamicRHI::CreatePixelShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FPixelShaderRHIRef YD3D11DynamicRHI::CreatePixelShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FPixelShaderRHIRef FD3D11DynamicRHI::CreatePixelShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGeometryShaderRHIRef YD3D11DynamicRHI::CreateGeometryShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
+FGeometryShaderRHIRef FD3D11DynamicRHI::CreateGeometryShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGeometryShaderRHIRef YD3D11DynamicRHI::CreateGeometryShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FGeometryShaderRHIRef FD3D11DynamicRHI::CreateGeometryShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGeometryShaderRHIRef YD3D11DynamicRHI::CreateGeometryShaderWithStreamOutput_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream)
+FGeometryShaderRHIRef FD3D11DynamicRHI::CreateGeometryShaderWithStreamOutput_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGeometryShaderRHIRef YD3D11DynamicRHI::CreateGeometryShaderWithStreamOutput_RenderThread(class FRHICommandListImmediate& RHICmdList, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FGeometryShaderRHIRef FD3D11DynamicRHI::CreateGeometryShaderWithStreamOutput_RenderThread(class FRHICommandListImmediate& RHICmdList, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FComputeShaderRHIRef YD3D11DynamicRHI::CreateComputeShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
+FComputeShaderRHIRef FD3D11DynamicRHI::CreateComputeShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FComputeShaderRHIRef YD3D11DynamicRHI::CreateComputeShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FComputeShaderRHIRef FD3D11DynamicRHI::CreateComputeShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FHullShaderRHIRef YD3D11DynamicRHI::CreateHullShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
+FHullShaderRHIRef FD3D11DynamicRHI::CreateHullShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FHullShaderRHIRef YD3D11DynamicRHI::CreateHullShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FHullShaderRHIRef FD3D11DynamicRHI::CreateHullShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FDomainShaderRHIRef YD3D11DynamicRHI::CreateDomainShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
+FDomainShaderRHIRef FD3D11DynamicRHI::CreateDomainShader_RenderThread(class FRHICommandListImmediate& RHICmdList, const std::vector<uint8>& Code)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FDomainShaderRHIRef YD3D11DynamicRHI::CreateDomainShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
+FDomainShaderRHIRef FD3D11DynamicRHI::CreateDomainShader_RenderThread(class FRHICommandListImmediate& RHICmdList, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::LockTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail, bool bNeedsDefaultRHIFlush /*= true*/)
+void* FD3D11DynamicRHI::LockTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail, bool bNeedsDefaultRHIFlush /*= true*/)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::UnlockTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 MipIndex, bool bLockWithinMiptail, bool bNeedsDefaultRHIFlush /*= true*/)
+void FD3D11DynamicRHI::UnlockTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 MipIndex, bool bLockWithinMiptail, bool bNeedsDefaultRHIFlush /*= true*/)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::UpdateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion2D& UpdateRegion, uint32 SourcePitch, const uint8* SourceData)
+void FD3D11DynamicRHI::UpdateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion2D& UpdateRegion, uint32 SourcePitch, const uint8* SourceData)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUpdateTexture3DData YD3D11DynamicRHI::BeginUpdateTexture3D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture3DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion3D& UpdateRegion)
+FUpdateTexture3DData FD3D11DynamicRHI::BeginUpdateTexture3D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture3DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion3D& UpdateRegion)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::EndUpdateTexture3D_RenderThread(class FRHICommandListImmediate& RHICmdList, FUpdateTexture3DData& UpdateData)
+void FD3D11DynamicRHI::EndUpdateTexture3D_RenderThread(class FRHICommandListImmediate& RHICmdList, FUpdateTexture3DData& UpdateData)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::UpdateTexture3D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture3DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion3D& UpdateRegion, uint32 SourceRowPitch, uint32 SourceDepthPitch, const uint8* SourceData)
+void FD3D11DynamicRHI::UpdateTexture3D_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture3DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion3D& UpdateRegion, uint32 SourceRowPitch, uint32 SourceDepthPitch, const uint8* SourceData)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FRHIShaderLibraryRef YD3D11DynamicRHI::RHICreateShaderLibrary_RenderThread(class FRHICommandListImmediate& RHICmdList, EShaderPlatform Platform, std::string FilePath, std::string Name)
+FRHIShaderLibraryRef FD3D11DynamicRHI::RHICreateShaderLibrary_RenderThread(class FRHICommandListImmediate& RHICmdList, EShaderPlatform Platform, std::string FilePath, std::string Name)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTextureReferenceRHIRef YD3D11DynamicRHI::RHICreateTextureReference_RenderThread(class FRHICommandListImmediate& RHICmdList, FLastRenderTimeContainer* LastRenderTime)
+FTextureReferenceRHIRef FD3D11DynamicRHI::RHICreateTextureReference_RenderThread(class FRHICommandListImmediate& RHICmdList, FLastRenderTimeContainer* LastRenderTime)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::RHICreateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTexture2DRHIRef FD3D11DynamicRHI::RHICreateTexture2D_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::RHICreateTextureExternal2D_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTexture2DRHIRef FD3D11DynamicRHI::RHICreateTextureExternal2D_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DArrayRHIRef YD3D11DynamicRHI::RHICreateTexture2DArray_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTexture2DArrayRHIRef FD3D11DynamicRHI::RHICreateTexture2DArray_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture3DRHIRef YD3D11DynamicRHI::RHICreateTexture3D_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTexture3DRHIRef FD3D11DynamicRHI::RHICreateTexture3D_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHICreateUnorderedAccessView_RenderThread(class FRHICommandListImmediate& RHICmdList, FStructuredBufferRHIParamRef StructuredBuffer, bool bUseUAVCounter, bool bAppendBuffer)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView_RenderThread(class FRHICommandListImmediate& RHICmdList, FStructuredBufferRHIParamRef StructuredBuffer, bool bUseUAVCounter, bool bAppendBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHICreateUnorderedAccessView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureRHIParamRef Texture, uint32 MipLevel)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureRHIParamRef Texture, uint32 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHICreateUnorderedAccessView_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer, uint8 Format)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef YD3D11DynamicRHI::RHICreateUnorderedAccessView_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef IndexBuffer, uint8 Format)
+FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef IndexBuffer, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel, uint8 NumMipLevels, uint8 Format)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel, uint8 NumMipLevels, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture3DRHIParamRef Texture3DRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture3DRHIParamRef Texture3DRHI, uint8 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DArrayRHIParamRef Texture2DArrayRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DArrayRHIParamRef Texture2DArrayRHI, uint8 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureCubeRHIParamRef TextureCubeRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureCubeRHIParamRef TextureCubeRHI, uint8 MipLevel)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer, uint32 Stride, uint8 Format)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FVertexBufferRHIParamRef VertexBuffer, uint32 Stride, uint8 Format)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef Buffer)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FIndexBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef YD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FStructuredBufferRHIParamRef StructuredBuffer)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView_RenderThread(class FRHICommandListImmediate& RHICmdList, FStructuredBufferRHIParamRef StructuredBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTextureCubeRHIRef YD3D11DynamicRHI::RHICreateTextureCube_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Size, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTextureCubeRHIRef FD3D11DynamicRHI::RHICreateTextureCube_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Size, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTextureCubeRHIRef YD3D11DynamicRHI::RHICreateTextureCubeArray_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Size, uint32 ArraySize, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTextureCubeRHIRef FD3D11DynamicRHI::RHICreateTextureCubeArray_RenderThread(class FRHICommandListImmediate& RHICmdList, uint32 Size, uint32 ArraySize, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FRenderQueryRHIRef YD3D11DynamicRHI::RHICreateRenderQuery_RenderThread(class FRHICommandListImmediate& RHICmdList, ERenderQueryType QueryType)
+FRenderQueryRHIRef FD3D11DynamicRHI::RHICreateRenderQuery_RenderThread(class FRHICommandListImmediate& RHICmdList, ERenderQueryType QueryType)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void* YD3D11DynamicRHI::RHILockTextureCubeFace_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
+void* FD3D11DynamicRHI::RHILockTextureCubeFace_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUnlockTextureCubeFace_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, bool bLockWithinMiptail)
+void FD3D11DynamicRHI::RHIUnlockTextureCubeFace_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, bool bLockWithinMiptail)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIAcquireTransientResource_RenderThread(FTextureRHIParamRef Texture)
+void FD3D11DynamicRHI::RHIAcquireTransientResource_RenderThread(FTextureRHIParamRef Texture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIAcquireTransientResource_RenderThread(FVertexBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHIAcquireTransientResource_RenderThread(FVertexBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIAcquireTransientResource_RenderThread(FStructuredBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHIAcquireTransientResource_RenderThread(FStructuredBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDiscardTransientResource_RenderThread(FTextureRHIParamRef Texture)
+void FD3D11DynamicRHI::RHIDiscardTransientResource_RenderThread(FTextureRHIParamRef Texture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDiscardTransientResource_RenderThread(FVertexBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHIDiscardTransientResource_RenderThread(FVertexBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDiscardTransientResource_RenderThread(FStructuredBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHIDiscardTransientResource_RenderThread(FStructuredBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIReadSurfaceFloatData_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FFloat16Color>& OutData, ECubeFace CubeFace, int32 ArrayIndex, int32 MipIndex)
+void FD3D11DynamicRHI::RHIReadSurfaceFloatData_RenderThread(class FRHICommandListImmediate& RHICmdList, FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FFloat16Color>& OutData, ECubeFace CubeFace, int32 ArrayIndex, int32 MipIndex)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::EnableIdealGPUCaptureOptions(bool bEnable)
+void FD3D11DynamicRHI::EnableIdealGPUCaptureOptions(bool bEnable)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetResourceAliasability_RenderThread(class FRHICommandListImmediate& RHICmdList, EResourceAliasability AliasMode, FTextureRHIParamRef* InTextures, int32 NumTextures)
+void FD3D11DynamicRHI::RHISetResourceAliasability_RenderThread(class FRHICommandListImmediate& RHICmdList, EResourceAliasability AliasMode, FTextureRHIParamRef* InTextures, int32 NumTextures)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool YD3D11DynamicRHI::CheckGpuHeartbeat() const
+bool FD3D11DynamicRHI::CheckGpuHeartbeat() const
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::VirtualTextureSetFirstMipInMemory_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 FirstMip)
+void FD3D11DynamicRHI::VirtualTextureSetFirstMipInMemory_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 FirstMip)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::VirtualTextureSetFirstMipVisible_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 FirstMip)
+void FD3D11DynamicRHI::VirtualTextureSetFirstMipVisible_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef Texture, uint32 FirstMip)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHICopySubTextureRegion_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef SourceTexture, FTexture2DRHIParamRef DestinationTexture, FBox2D SourceBox, FBox2D DestinationBox)
+void FD3D11DynamicRHI::RHICopySubTextureRegion_RenderThread(class FRHICommandListImmediate& RHICmdList, FTexture2DRHIParamRef SourceTexture, FTexture2DRHIParamRef DestinationTexture, FBox2D SourceBox, FBox2D DestinationBox)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHICopySubTextureRegion(FTexture2DRHIParamRef SourceTexture, FTexture2DRHIParamRef DestinationTexture, FBox2D SourceBox, FBox2D DestinationBox)
+void FD3D11DynamicRHI::RHICopySubTextureRegion(FTexture2DRHIParamRef SourceTexture, FTexture2DRHIParamRef DestinationTexture, FBox2D SourceBox, FBox2D DestinationBox)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FRHIFlipDetails YD3D11DynamicRHI::RHIWaitForFlip(double TimeoutInSeconds)
+FRHIFlipDetails FD3D11DynamicRHI::RHIWaitForFlip(double TimeoutInSeconds)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISignalFlipEvent()
+void FD3D11DynamicRHI::RHISignalFlipEvent()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHICalibrateTimers()
+void FD3D11DynamicRHI::RHICalibrateTimers()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIWaitComputeFence(FComputeFenceRHIParamRef InFence)
+void FD3D11DynamicRHI::RHIWaitComputeFence(FComputeFenceRHIParamRef InFence)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetComputeShader(FComputeShaderRHIParamRef ComputeShader)
+void FD3D11DynamicRHI::RHISetComputeShader(FComputeShaderRHIParamRef ComputeShader)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDispatchComputeShader(uint32_t ThreadGroupCountX, uint32_t ThreadGroupCountY, uint32_t ThreadGroupCountZ)
+void FD3D11DynamicRHI::RHIDispatchComputeShader(uint32_t ThreadGroupCountX, uint32_t ThreadGroupCountY, uint32_t ThreadGroupCountZ)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDispatchIndirectComputeShader(FVertexBufferRHIParamRef ArgumentBuffer, uint32_t ArgumentOffset)
+void FD3D11DynamicRHI::RHIDispatchIndirectComputeShader(FVertexBufferRHIParamRef ArgumentBuffer, uint32_t ArgumentOffset)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetAsyncComputeBudget(EAsyncComputeBudget Budget)
+void FD3D11DynamicRHI::RHISetAsyncComputeBudget(EAsyncComputeBudget Budget)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIAutomaticCacheFlushAfterComputeShader(bool bEnable)
+void FD3D11DynamicRHI::RHIAutomaticCacheFlushAfterComputeShader(bool bEnable)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIFlushComputeShaderCache()
+void FD3D11DynamicRHI::RHIFlushComputeShaderCache()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetMultipleViewports(uint32_t Count, const FViewportBounds* Data)
+void FD3D11DynamicRHI::RHISetMultipleViewports(uint32_t Count, const FViewportBounds* Data)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIClearTinyUAV(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const uint32_t* Values)
+void FD3D11DynamicRHI::RHIClearTinyUAV(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const uint32_t* Values)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHICopyToResolveTarget(FTextureRHIParamRef SourceTexture, FTextureRHIParamRef DestTexture, const FResolveParams& ResolveParams)
+void FD3D11DynamicRHI::RHICopyToResolveTarget(FTextureRHIParamRef SourceTexture, FTextureRHIParamRef DestTexture, const FResolveParams& ResolveParams)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHITransitionResources(EResourceTransitionAccess TransitionType, FTextureRHIParamRef* InTextures, int32_t NumTextures)
+void FD3D11DynamicRHI::RHITransitionResources(EResourceTransitionAccess TransitionType, FTextureRHIParamRef* InTextures, int32_t NumTextures)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHITransitionResources(EResourceTransitionAccess TransitionType, EResourceTransitionPipeline TransitionPipeline, FUnorderedAccessViewRHIParamRef* InUAVs, int32_t NumUAVs, FComputeFenceRHIParamRef WriteComputeFence)
+void FD3D11DynamicRHI::RHITransitionResources(EResourceTransitionAccess TransitionType, EResourceTransitionPipeline TransitionPipeline, FUnorderedAccessViewRHIParamRef* InUAVs, int32_t NumUAVs, FComputeFenceRHIParamRef WriteComputeFence)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginRenderQuery(FRenderQueryRHIParamRef RenderQuery)
+void FD3D11DynamicRHI::RHIBeginRenderQuery(FRenderQueryRHIParamRef RenderQuery)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndRenderQuery(FRenderQueryRHIParamRef RenderQuery)
+void FD3D11DynamicRHI::RHIEndRenderQuery(FRenderQueryRHIParamRef RenderQuery)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISubmitCommandsHint()
+void FD3D11DynamicRHI::RHISubmitCommandsHint()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDiscardRenderTargets(bool Depth, bool Stencil, uint32_t ColorBitMask)
+void FD3D11DynamicRHI::RHIDiscardRenderTargets(bool Depth, bool Stencil, uint32_t ColorBitMask)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginDrawingViewport(FViewportRHIParamRef Viewport, FTextureRHIParamRef RenderTargetRHI)
+void FD3D11DynamicRHI::RHIBeginDrawingViewport(FViewportRHIParamRef Viewport, FTextureRHIParamRef RenderTargetRHI)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndDrawingViewport(FViewportRHIParamRef Viewport, bool bPresent, bool bLockToVsync)
+void FD3D11DynamicRHI::RHIEndDrawingViewport(FViewportRHIParamRef Viewport, bool bPresent, bool bLockToVsync)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginFrame()
+void FD3D11DynamicRHI::RHIBeginFrame()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndFrame()
+void FD3D11DynamicRHI::RHIEndFrame()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginScene()
+void FD3D11DynamicRHI::RHIBeginScene()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndScene()
+void FD3D11DynamicRHI::RHIEndScene()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginUpdateMultiFrameResource(FTextureRHIParamRef Texture)
+void FD3D11DynamicRHI::RHIBeginUpdateMultiFrameResource(FTextureRHIParamRef Texture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginUpdateMultiFrameResource(FUnorderedAccessViewRHIParamRef UAV)
+void FD3D11DynamicRHI::RHIBeginUpdateMultiFrameResource(FUnorderedAccessViewRHIParamRef UAV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndUpdateMultiFrameResource(FTextureRHIParamRef Texture)
+void FD3D11DynamicRHI::RHIEndUpdateMultiFrameResource(FTextureRHIParamRef Texture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndUpdateMultiFrameResource(FUnorderedAccessViewRHIParamRef UAV)
+void FD3D11DynamicRHI::RHIEndUpdateMultiFrameResource(FUnorderedAccessViewRHIParamRef UAV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetStreamSource(uint32_t StreamIndex, FVertexBufferRHIParamRef VertexBuffer, uint32_t Offset)
+void FD3D11DynamicRHI::RHISetStreamSource(uint32_t StreamIndex, FVertexBufferRHIParamRef VertexBuffer, uint32_t Offset)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetViewport(uint32_t MinX, uint32_t MinY, float MinZ, uint32_t MaxX, uint32_t MaxY, float MaxZ)
+void FD3D11DynamicRHI::RHISetViewport(uint32_t MinX, uint32_t MinY, float MinZ, uint32_t MaxX, uint32_t MaxY, float MaxZ)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetStereoViewport(uint32_t LeftMinX, uint32_t RightMinX, uint32_t LeftMinY, uint32_t RightMinY, float MinZ, uint32_t LeftMaxX, uint32_t RightMaxX, uint32_t LeftMaxY, uint32_t RightMaxY, float MaxZ)
+void FD3D11DynamicRHI::RHISetStereoViewport(uint32_t LeftMinX, uint32_t RightMinX, uint32_t LeftMinY, uint32_t RightMinY, float MinZ, uint32_t LeftMaxX, uint32_t RightMaxX, uint32_t LeftMaxY, uint32_t RightMaxY, float MaxZ)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetScissorRect(bool bEnable, uint32_t MinX, uint32_t MinY, uint32_t MaxX, uint32_t MaxY)
+void FD3D11DynamicRHI::RHISetScissorRect(bool bEnable, uint32_t MinX, uint32_t MinY, uint32_t MaxX, uint32_t MaxY)
 {
 	if (bEnable)
 	{
@@ -1596,387 +1656,387 @@ void YD3D11DynamicRHI::RHISetScissorRect(bool bEnable, uint32_t MinX, uint32_t M
 	}
 }
 
-void YD3D11DynamicRHI::RHISetGraphicsPipelineState(FGraphicsPipelineStateRHIParamRef GraphicsState)
+void FD3D11DynamicRHI::RHISetGraphicsPipelineState(FGraphicsPipelineStateRHIParamRef GraphicsState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderTexture(FVertexShaderRHIParamRef VertexShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
+void FD3D11DynamicRHI::RHISetShaderTexture(FVertexShaderRHIParamRef VertexShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderTexture(FHullShaderRHIParamRef HullShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
+void FD3D11DynamicRHI::RHISetShaderTexture(FHullShaderRHIParamRef HullShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderTexture(FDomainShaderRHIParamRef DomainShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
+void FD3D11DynamicRHI::RHISetShaderTexture(FDomainShaderRHIParamRef DomainShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderTexture(FGeometryShaderRHIParamRef GeometryShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
+void FD3D11DynamicRHI::RHISetShaderTexture(FGeometryShaderRHIParamRef GeometryShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderTexture(FPixelShaderRHIParamRef PixelShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
+void FD3D11DynamicRHI::RHISetShaderTexture(FPixelShaderRHIParamRef PixelShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderTexture(FComputeShaderRHIParamRef PixelShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
+void FD3D11DynamicRHI::RHISetShaderTexture(FComputeShaderRHIParamRef PixelShader, uint32_t TextureIndex, FTextureRHIParamRef NewTexture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderSampler(FComputeShaderRHIParamRef ComputeShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
+void FD3D11DynamicRHI::RHISetShaderSampler(FComputeShaderRHIParamRef ComputeShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderSampler(FVertexShaderRHIParamRef VertexShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
+void FD3D11DynamicRHI::RHISetShaderSampler(FVertexShaderRHIParamRef VertexShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderSampler(FGeometryShaderRHIParamRef GeometryShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
+void FD3D11DynamicRHI::RHISetShaderSampler(FGeometryShaderRHIParamRef GeometryShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderSampler(FDomainShaderRHIParamRef DomainShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
+void FD3D11DynamicRHI::RHISetShaderSampler(FDomainShaderRHIParamRef DomainShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderSampler(FHullShaderRHIParamRef HullShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
+void FD3D11DynamicRHI::RHISetShaderSampler(FHullShaderRHIParamRef HullShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderSampler(FPixelShaderRHIParamRef PixelShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
+void FD3D11DynamicRHI::RHISetShaderSampler(FPixelShaderRHIParamRef PixelShader, uint32_t SamplerIndex, FSamplerStateRHIParamRef NewState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetUAVParameter(FComputeShaderRHIParamRef ComputeShader, uint32_t UAVIndex, FUnorderedAccessViewRHIParamRef UAV)
+void FD3D11DynamicRHI::RHISetUAVParameter(FComputeShaderRHIParamRef ComputeShader, uint32_t UAVIndex, FUnorderedAccessViewRHIParamRef UAV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetUAVParameter(FComputeShaderRHIParamRef ComputeShader, uint32_t UAVIndex, FUnorderedAccessViewRHIParamRef UAV, uint32_t InitialCount)
+void FD3D11DynamicRHI::RHISetUAVParameter(FComputeShaderRHIParamRef ComputeShader, uint32_t UAVIndex, FUnorderedAccessViewRHIParamRef UAV, uint32_t InitialCount)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderResourceViewParameter(FPixelShaderRHIParamRef PixelShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
+void FD3D11DynamicRHI::RHISetShaderResourceViewParameter(FPixelShaderRHIParamRef PixelShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderResourceViewParameter(FVertexShaderRHIParamRef VertexShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
+void FD3D11DynamicRHI::RHISetShaderResourceViewParameter(FVertexShaderRHIParamRef VertexShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderResourceViewParameter(FComputeShaderRHIParamRef ComputeShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
+void FD3D11DynamicRHI::RHISetShaderResourceViewParameter(FComputeShaderRHIParamRef ComputeShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderResourceViewParameter(FHullShaderRHIParamRef HullShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
+void FD3D11DynamicRHI::RHISetShaderResourceViewParameter(FHullShaderRHIParamRef HullShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderResourceViewParameter(FDomainShaderRHIParamRef DomainShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
+void FD3D11DynamicRHI::RHISetShaderResourceViewParameter(FDomainShaderRHIParamRef DomainShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderResourceViewParameter(FGeometryShaderRHIParamRef GeometryShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
+void FD3D11DynamicRHI::RHISetShaderResourceViewParameter(FGeometryShaderRHIParamRef GeometryShader, uint32_t SamplerIndex, FShaderResourceViewRHIParamRef SRV)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderUniformBuffer(FVertexShaderRHIParamRef VertexShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHISetShaderUniformBuffer(FVertexShaderRHIParamRef VertexShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderUniformBuffer(FHullShaderRHIParamRef HullShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHISetShaderUniformBuffer(FHullShaderRHIParamRef HullShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderUniformBuffer(FDomainShaderRHIParamRef DomainShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHISetShaderUniformBuffer(FDomainShaderRHIParamRef DomainShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderUniformBuffer(FGeometryShaderRHIParamRef GeometryShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHISetShaderUniformBuffer(FGeometryShaderRHIParamRef GeometryShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderUniformBuffer(FPixelShaderRHIParamRef PixelShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHISetShaderUniformBuffer(FPixelShaderRHIParamRef PixelShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderUniformBuffer(FComputeShaderRHIParamRef ComputeShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
+void FD3D11DynamicRHI::RHISetShaderUniformBuffer(FComputeShaderRHIParamRef ComputeShader, uint32_t BufferIndex, FUniformBufferRHIParamRef Buffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderParameter(FVertexShaderRHIParamRef VertexShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
+void FD3D11DynamicRHI::RHISetShaderParameter(FVertexShaderRHIParamRef VertexShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderParameter(FPixelShaderRHIParamRef PixelShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
+void FD3D11DynamicRHI::RHISetShaderParameter(FPixelShaderRHIParamRef PixelShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderParameter(FHullShaderRHIParamRef HullShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
+void FD3D11DynamicRHI::RHISetShaderParameter(FHullShaderRHIParamRef HullShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderParameter(FDomainShaderRHIParamRef DomainShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
+void FD3D11DynamicRHI::RHISetShaderParameter(FDomainShaderRHIParamRef DomainShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderParameter(FGeometryShaderRHIParamRef GeometryShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
+void FD3D11DynamicRHI::RHISetShaderParameter(FGeometryShaderRHIParamRef GeometryShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetShaderParameter(FComputeShaderRHIParamRef ComputeShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
+void FD3D11DynamicRHI::RHISetShaderParameter(FComputeShaderRHIParamRef ComputeShader, uint32_t BufferIndex, uint32_t BaseIndex, uint32_t NumBytes, const void* NewValue)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetStencilRef(uint32_t StencilRef)
+void FD3D11DynamicRHI::RHISetStencilRef(uint32_t StencilRef)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetBlendFactor(const FLinearColor& BlendFactor)
+void FD3D11DynamicRHI::RHISetBlendFactor(const FLinearColor& BlendFactor)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetRenderTargets(uint32_t NumSimultaneousRenderTargets, const FRHIRenderTargetView* NewRenderTargets, const FRHIDepthRenderTargetView* NewDepthStencilTarget, uint32_t NumUAVs, const FUnorderedAccessViewRHIParamRef* UAVs)
+void FD3D11DynamicRHI::RHISetRenderTargets(uint32_t NumSimultaneousRenderTargets, const FRHIRenderTargetView* NewRenderTargets, const FRHIDepthRenderTargetView* NewDepthStencilTarget, uint32_t NumUAVs, const FUnorderedAccessViewRHIParamRef* UAVs)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetRenderTargetsAndClear(const FRHISetRenderTargetsInfo& RenderTargetsInfo)
+void FD3D11DynamicRHI::RHISetRenderTargetsAndClear(const FRHISetRenderTargetsInfo& RenderTargetsInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBindClearMRTValues(bool bClearColor, bool bClearDepth, bool bClearStencil)
+void FD3D11DynamicRHI::RHIBindClearMRTValues(bool bClearColor, bool bClearDepth, bool bClearStencil)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDrawPrimitive(uint32_t PrimitiveType, uint32_t BaseVertexIndex, uint32_t NumPrimitives, uint32_t NumInstances)
+void FD3D11DynamicRHI::RHIDrawPrimitive(uint32_t PrimitiveType, uint32_t BaseVertexIndex, uint32_t NumPrimitives, uint32_t NumInstances)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDrawPrimitiveIndirect(uint32_t PrimitiveType, FVertexBufferRHIParamRef ArgumentBuffer, uint32_t ArgumentOffset)
+void FD3D11DynamicRHI::RHIDrawPrimitiveIndirect(uint32_t PrimitiveType, FVertexBufferRHIParamRef ArgumentBuffer, uint32_t ArgumentOffset)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDrawIndexedIndirect(FIndexBufferRHIParamRef IndexBufferRHI, uint32_t PrimitiveType, FStructuredBufferRHIParamRef ArgumentsBufferRHI, int32_t DrawArgumentsIndex, uint32_t NumInstances)
+void FD3D11DynamicRHI::RHIDrawIndexedIndirect(FIndexBufferRHIParamRef IndexBufferRHI, uint32_t PrimitiveType, FStructuredBufferRHIParamRef ArgumentsBufferRHI, int32_t DrawArgumentsIndex, uint32_t NumInstances)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDrawIndexedPrimitive(FIndexBufferRHIParamRef IndexBuffer, uint32_t PrimitiveType, int32_t BaseVertexIndex, uint32_t FirstInstance, uint32_t NumVertices, uint32_t StartIndex, uint32_t NumPrimitives, uint32_t NumInstances)
+void FD3D11DynamicRHI::RHIDrawIndexedPrimitive(FIndexBufferRHIParamRef IndexBuffer, uint32_t PrimitiveType, int32_t BaseVertexIndex, uint32_t FirstInstance, uint32_t NumVertices, uint32_t StartIndex, uint32_t NumPrimitives, uint32_t NumInstances)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIDrawIndexedPrimitiveIndirect(uint32_t PrimitiveType, FIndexBufferRHIParamRef IndexBuffer, FVertexBufferRHIParamRef ArgumentBuffer, uint32_t ArgumentOffset)
+void FD3D11DynamicRHI::RHIDrawIndexedPrimitiveIndirect(uint32_t PrimitiveType, FIndexBufferRHIParamRef IndexBuffer, FVertexBufferRHIParamRef ArgumentBuffer, uint32_t ArgumentOffset)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginDrawPrimitiveUP(uint32_t PrimitiveType, uint32_t NumPrimitives, uint32_t NumVertices, uint32_t VertexDataStride, void*& OutVertexData)
+void FD3D11DynamicRHI::RHIBeginDrawPrimitiveUP(uint32_t PrimitiveType, uint32_t NumPrimitives, uint32_t NumVertices, uint32_t VertexDataStride, void*& OutVertexData)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndDrawPrimitiveUP()
+void FD3D11DynamicRHI::RHIEndDrawPrimitiveUP()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginDrawIndexedPrimitiveUP(uint32_t PrimitiveType, uint32_t NumPrimitives, uint32_t NumVertices, uint32_t VertexDataStride, void*& OutVertexData, uint32_t MinVertexIndex, uint32_t NumIndices, uint32_t IndexDataStride, void*& OutIndexData)
+void FD3D11DynamicRHI::RHIBeginDrawIndexedPrimitiveUP(uint32_t PrimitiveType, uint32_t NumPrimitives, uint32_t NumVertices, uint32_t VertexDataStride, void*& OutVertexData, uint32_t MinVertexIndex, uint32_t NumIndices, uint32_t IndexDataStride, void*& OutIndexData)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndDrawIndexedPrimitiveUP()
+void FD3D11DynamicRHI::RHIEndDrawIndexedPrimitiveUP()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetDepthBounds(float MinDepth, float MaxDepth)
+void FD3D11DynamicRHI::RHISetDepthBounds(float MinDepth, float MaxDepth)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIPushEvent(const TCHAR* Name, FColor Color)
+void FD3D11DynamicRHI::RHIPushEvent(const TCHAR* Name, FColor Color)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIPopEvent()
+void FD3D11DynamicRHI::RHIPopEvent()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIUpdateTextureReference(FTextureReferenceRHIParamRef TextureRef, FTextureRHIParamRef NewTexture)
+void FD3D11DynamicRHI::RHIUpdateTextureReference(FTextureReferenceRHIParamRef TextureRef, FTextureRHIParamRef NewTexture)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginRenderPass(const FRHIRenderPassInfo& InInfo, const TCHAR* InName)
+void FD3D11DynamicRHI::RHIBeginRenderPass(const FRHIRenderPassInfo& InInfo, const TCHAR* InName)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndRenderPass()
+void FD3D11DynamicRHI::RHIEndRenderPass()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIBeginComputePass(const TCHAR* InName)
+void FD3D11DynamicRHI::RHIBeginComputePass(const TCHAR* InName)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEndComputePass()
+void FD3D11DynamicRHI::RHIEndComputePass()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHICopyTexture(FTextureRHIParamRef SourceTexture, FTextureRHIParamRef DestTexture, const FRHICopyTextureInfo& CopyInfo)
+void FD3D11DynamicRHI::RHICopyTexture(FTextureRHIParamRef SourceTexture, FTextureRHIParamRef DestTexture, const FRHICopyTextureInfo& CopyInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetComputePipelineState(FRHIComputePipelineState* ComputePipelineState)
+void FD3D11DynamicRHI::RHISetComputePipelineState(FRHIComputePipelineState* ComputePipelineState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIInvalidateCachedState()
+void FD3D11DynamicRHI::RHIInvalidateCachedState()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetBoundShaderState(FBoundShaderStateRHIParamRef BoundShaderState)
+void FD3D11DynamicRHI::RHISetBoundShaderState(FBoundShaderStateRHIParamRef BoundShaderState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetDepthStencilState(FDepthStencilStateRHIParamRef NewState, uint32_t StencilRef)
+void FD3D11DynamicRHI::RHISetDepthStencilState(FDepthStencilStateRHIParamRef NewState, uint32_t StencilRef)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetRasterizerState(FRasterizerStateRHIParamRef NewState)
+void FD3D11DynamicRHI::RHISetRasterizerState(FRasterizerStateRHIParamRef NewState)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHISetBlendState(FBlendStateRHIParamRef NewState, const FLinearColor& BlendFactor)
+void FD3D11DynamicRHI::RHISetBlendState(FBlendStateRHIParamRef NewState, const FLinearColor& BlendFactor)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIEnableDepthBoundsTest(bool bEnable)
+void FD3D11DynamicRHI::RHIEnableDepthBoundsTest(bool bEnable)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-uint64 YD3D11DynamicRHI::RHICalcTexture2DPlatformSize(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, uint32& OutAlign)
+uint64 FD3D11DynamicRHI::RHICalcTexture2DPlatformSize(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, uint32& OutAlign)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-uint64 YD3D11DynamicRHI::RHICalcTexture3DPlatformSize(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, uint32& OutAlign)
+uint64 FD3D11DynamicRHI::RHICalcTexture3DPlatformSize(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, uint32& OutAlign)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-uint64 YD3D11DynamicRHI::RHICalcTextureCubePlatformSize(uint32 Size, uint8 Format, uint32 NumMips, uint32 Flags, uint32& OutAlign)
+uint64 FD3D11DynamicRHI::RHICalcTextureCubePlatformSize(uint32 Size, uint8 Format, uint32 NumMips, uint32 Flags, uint32& OutAlign)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIGetTextureMemoryStats(FTextureMemoryStats& OutStats)
+void FD3D11DynamicRHI::RHIGetTextureMemoryStats(FTextureMemoryStats& OutStats)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-bool YD3D11DynamicRHI::RHIGetTextureMemoryVisualizeData(FColor* TextureData, int32 SizeX, int32 SizeY, int32 Pitch, int32 PixelSize)
+bool FD3D11DynamicRHI::RHIGetTextureMemoryVisualizeData(FColor* TextureData, int32 SizeX, int32 SizeY, int32 Pitch, int32 PixelSize)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTextureReferenceRHIRef YD3D11DynamicRHI::RHICreateTextureReference(FLastRenderTimeContainer* LastRenderTime)
+FTextureReferenceRHIRef FD3D11DynamicRHI::RHICreateTextureReference(FLastRenderTimeContainer* LastRenderTime)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::RHICreateTexture2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTexture2DRHIRef FD3D11DynamicRHI::RHICreateTexture2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::RHICreateTextureExternal2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTexture2DRHIRef FD3D11DynamicRHI::RHICreateTextureExternal2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FStructuredBufferRHIRef YD3D11DynamicRHI::RHICreateRTWriteMaskBuffer(FTexture2DRHIParamRef RenderTarget)
+FStructuredBufferRHIRef FD3D11DynamicRHI::RHICreateRTWriteMaskBuffer(FTexture2DRHIParamRef RenderTarget)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef YD3D11DynamicRHI::RHIAsyncCreateTexture2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 Flags, void** InitialMipData, uint32 NumInitialMips)
+FTexture2DRHIRef FD3D11DynamicRHI::RHIAsyncCreateTexture2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 Flags, void** InitialMipData, uint32 NumInitialMips)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHICopySharedMips(FTexture2DRHIParamRef DestTexture2D, FTexture2DRHIParamRef SrcTexture2D)
+void FD3D11DynamicRHI::RHICopySharedMips(FTexture2DRHIParamRef DestTexture2D, FTexture2DRHIParamRef SrcTexture2D)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DArrayRHIRef YD3D11DynamicRHI::RHICreateTexture2DArray(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTexture2DArrayRHIRef FD3D11DynamicRHI::RHICreateTexture2DArray(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture3DRHIRef YD3D11DynamicRHI::RHICreateTexture3D(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
+FTexture3DRHIRef FD3D11DynamicRHI::RHICreateTexture3D(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void YD3D11DynamicRHI::RHIGetResourceInfo(FTextureRHIParamRef Ref, FRHIResourceInfo& OutInfo)
+void FD3D11DynamicRHI::RHIGetResourceInfo(FTextureRHIParamRef Ref, FRHIResourceInfo& OutInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
@@ -2067,7 +2127,7 @@ FDynamicRHI* YD3D11DynamicRHIModule::CreateRHI(ERHIFeatureLevel::Type RequestedF
 	TRefCountPtr<IDXGIFactory1> DXGIFactory1;
 	SafeCreateDXGIFactory(DXGIFactory1.GetInitReference());
 	check(DXGIFactory1);
-	return new YD3D11DynamicRHI(DXGIFactory1, adapter_.MaxSupportedFeatureLevel, adapter_.AdapterIndex, ChosenDescription);
+	return new FD3D11DynamicRHI(DXGIFactory1, adapter_.MaxSupportedFeatureLevel, adapter_.AdapterIndex, ChosenDescription);
 }
 
 /**
@@ -2358,5 +2418,70 @@ void YD3D11DynamicRHIModule::FindAdapter()
 		{
 			ChosenAdapter.MaxSupportedFeatureLevel = D3D_FEATURE_LEVEL_10_0;
 		}*/
+	}
+}
+
+void UpdateBufferStats(TRefCountPtr<ID3D11Buffer> Buffer, bool bAllocating)
+{
+	D3D11_BUFFER_DESC Desc;
+	Buffer->GetDesc(&Desc);
+
+	const bool bUniformBuffer = !!(Desc.BindFlags & D3D11_BIND_CONSTANT_BUFFER);
+	const bool bIndexBuffer = !!(Desc.BindFlags & D3D11_BIND_INDEX_BUFFER);
+	const bool bVertexBuffer = !!(Desc.BindFlags & D3D11_BIND_VERTEX_BUFFER);
+
+	if (bAllocating)
+	{
+		if (bUniformBuffer)
+		{
+			//INC_MEMORY_STAT_BY(STAT_UniformBufferMemory, Desc.ByteWidth);
+		}
+		else if (bIndexBuffer)
+		{
+			//INC_MEMORY_STAT_BY(STAT_IndexBufferMemory, Desc.ByteWidth);
+		}
+		else if (bVertexBuffer)
+		{
+			//INC_MEMORY_STAT_BY(STAT_VertexBufferMemory, Desc.ByteWidth);
+		}
+		else
+		{
+			//INC_MEMORY_STAT_BY(STAT_StructuredBufferMemory, Desc.ByteWidth);
+		}
+
+//#if PLATFORM_WINDOWS
+//		// this is a work-around on Windows. Due to the fact that there is no way
+//		// to hook the actual d3d allocations we can't track the memory in the normal way.
+//		// Instead we simply tell LLM the size of these resources.
+//		LLM_SCOPED_PAUSE_TRACKING_WITH_ENUM_AND_AMOUNT(ELLMTag::Meshes, Desc.ByteWidth, ELLMTracker::Default, ELLMAllocType::None);
+//		LLM_SCOPED_PAUSE_TRACKING_WITH_ENUM_AND_AMOUNT(ELLMTag::GraphicsPlatform, Desc.ByteWidth, ELLMTracker::Platform, ELLMAllocType::None);
+//#endif
+	}
+	else
+	{ //-V523
+		if (bUniformBuffer)
+		{
+			//DEC_MEMORY_STAT_BY(STAT_UniformBufferMemory, Desc.ByteWidth);
+		}
+		else if (bIndexBuffer)
+		{
+			//DEC_MEMORY_STAT_BY(STAT_IndexBufferMemory, Desc.ByteWidth);
+		}
+		else if (bVertexBuffer)
+		{
+			//DEC_MEMORY_STAT_BY(STAT_VertexBufferMemory, Desc.ByteWidth);
+		}
+		else
+		{
+			//DEC_MEMORY_STAT_BY(STAT_StructuredBufferMemory, Desc.ByteWidth);
+		}
+
+//#if PLATFORM_WINDOWS
+//		// this is a work-around on Windows. Due to the fact that there is no way
+//		// to hook the actual d3d allocations we can't track the memory in the normal way.
+//		// Instead we simply tell LLM the size of these resources.
+//		LLM_SCOPED_PAUSE_TRACKING_WITH_ENUM_AND_AMOUNT(ELLMTag::Meshes, -(int64)Desc.ByteWidth, ELLMTracker::Default, ELLMAllocType::None);
+//		LLM_SCOPED_PAUSE_TRACKING_WITH_ENUM_AND_AMOUNT(ELLMTag::GraphicsPlatform, -(int64)Desc.ByteWidth, ELLMTracker::Platform, ELLMAllocType::None);
+//#endif
 	}
 }

@@ -17,6 +17,7 @@
 #include  "RHI/RHI.h"
 #include "RHI/RHICommandList.h"
 #include <thread>
+#include "Render/RenderUtils.h"
 
 
 
@@ -318,7 +319,7 @@ bool YEngine::PreInit()
 	RHIInit(WITH_EDITOR);
 
 	//	GetRendererModule()
-
+	PostInitRHI();
 	//PostInitRHI();
 	if (GUseThreadedRendering)
 	{
@@ -385,6 +386,17 @@ bool YEngine::Init()
 	return true;
 }
 
+
+void YEngine::PostInitRHI()
+{
+	std::vector<uint32> PixelFormatByteWidth;
+	PixelFormatByteWidth.assign(PF_MAX,0);
+	for (int i = 0; i < PF_MAX; i++)
+	{
+		PixelFormatByteWidth[i] = GPixelFormats[i].BlockBytes;
+	}
+	RHIPostInit(PixelFormatByteWidth);
+}
 
 static void sleep_for(double dt)
 {

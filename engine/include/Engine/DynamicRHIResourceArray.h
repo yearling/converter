@@ -4,6 +4,7 @@
 
 #include "Engine/YCommonHeader.h"
 #include "Engine/ResourceArray.h"
+#include <vector>
 
 /** alignment for supported resource types */
 enum EResourceAlignment
@@ -22,10 +23,10 @@ enum EResourceAlignment
 template< typename ElementType, uint32 Alignment = DEFAULT_ALIGNMENT >
 class TResourceArray
 	:	public FResourceArrayInterface
-	,	public TArray<ElementType, TAlignedHeapAllocator<Alignment> >
+	,	public std::vector<ElementType>
 {
 public:
-	typedef TArray<ElementType, TAlignedHeapAllocator<Alignment> > Super;
+	typedef std::vector<ElementType> Super;
 
 	/** 
 	* Constructor 
@@ -69,7 +70,8 @@ public:
 	*/
 	virtual void Discard()
 	{
-		if(!bNeedsCPUAccess/* && FPlatformProperties::RequiresCookedData() && !IsRunningCommandlet()*/)
+		//if(!bNeedsCPUAccess && FPlatformProperties::RequiresCookedData() /* && !IsRunningCommandlet() */ )
+		if(!bNeedsCPUAccess && (!WITH_EDITOR) /* && !IsRunningCommandlet() */ )
 		{
 			this->Empty();
 		}
@@ -114,20 +116,20 @@ public:
 	*
 	* @param Ar	FArchive to bulk serialize this TArray to/from
 	*/
-	void BulkSerialize(FArchive& Ar)
+	/*void BulkSerialize(FArchive& Ar)
 	{
 		Super::BulkSerialize(Ar);
-	}
+	}*/
 
 	/**
 	* Serializer for this class
 	* @param Ar - archive to serialize to
 	* @param ResourceArray - resource array data to serialize
 	*/
-	friend FArchive& operator<<(FArchive& Ar,TResourceArray<ElementType,Alignment>& ResourceArray)
-	{
-		return Ar << *(Super*)&ResourceArray;
-	}	
+	//friend FArchive& operator<<(FArchive& Ar,TResourceArray<ElementType,Alignment>& ResourceArray)
+	//{
+	//	return Ar << *(Super*)&ResourceArray;
+	//}	
 
 private:
 	/** 

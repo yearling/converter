@@ -10,7 +10,7 @@
 #include "RHI/RHICommandList.h"
 #include "RHI/PipelineStateCache.h"
 #include "RHI/NullRHI/NullRHI.h"
-#include "RHI/DirectX11/D3D11RHI.h"
+#include "RHI/D3D11RHI/D3D11RHI.h"
 //#include "PipelineStateCache.h"
 
 #ifndef PLATFORM_ALLOW_NULL_RHI
@@ -168,7 +168,7 @@ FDynamicRHI* PlatformCreateDynamicRHI()
 {
 	//return nullptr;
 	YD3D11DynamicRHIModule* d3d11_dynamic_module = new YD3D11DynamicRHIModule();
-	if (d3d11_dynamic_module->IsSupported())
+	if (!d3d11_dynamic_module->IsSupported())
 	{
 		return d3d11_dynamic_module->CreateRHI(ERHIFeatureLevel::SM5);
 	}

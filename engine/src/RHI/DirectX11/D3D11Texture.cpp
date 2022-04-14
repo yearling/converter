@@ -2,12 +2,7 @@
 #include <cassert>
 #include "RHI/DirectX11/D3D11Texture.h"
 #include "Engine/YLog.h"
-#include "RHI/DirectX11/D3D11RHI.h"
-
-int64 FD3D11GlobalStats::GDedicatedVideoMemory = 0;
-int64 FD3D11GlobalStats::GDedicatedSystemMemory = 0;
-int64 FD3D11GlobalStats::GSharedSystemMemory = 0;
-int64 FD3D11GlobalStats::GTotalGraphicsMemory = 0;
+#include "RHI/D3D11RHI/D3D11RHI.h"
 
 static DXGI_FORMAT PixelFormatToDXPixelFormat(EPixelFormat pixel_format) {
 	static const DXGI_FORMAT kDXPixelFormatTable[] = {

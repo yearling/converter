@@ -45,6 +45,7 @@ public:
 public:
 	bool PreInit();
 	bool Init();
+	void PostInitRHI();
 	void Update();
 	void Update1();
 	void ShutDown();

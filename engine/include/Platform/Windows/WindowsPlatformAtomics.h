@@ -5,9 +5,7 @@
 #include <assert.h>
 #include <intrin.h>
 #include "Platform/YGenericPlatformAtomics.h"
-#define  PLATFORM_64BITS 1
-#define  PLATFORM_HAS_64BIT_ATOMICS 1
-#define  PLATFORM_HAS_128BIT_ATOMICS 0
+#include "Engine/PlatformMacro.h"
 
 //#if !PLATFORM_XBOXONE
 #if 1

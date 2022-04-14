@@ -5,11 +5,23 @@
 #include "Engine/YLog.h"
 #include "RHI/DirectX11/D3D11Texture.h"
 #include "Engine/YWindowEventManger.h"
+#include "Engine/YReferenceCount.h"
+#include <dxgi.h>
 
 D3D11Device* g_device = nullptr;
 D3D11Device::D3D11Device() {}
 D3D11Device::~D3D11Device() {}
 std::unique_ptr<D3D11Device>D3D11Device::CreateD3D11Device() {
+	//find intel adapter
+	TRefCountPtr<IDXGIAdapter> adapter;
+	TRefCountPtr<IDXGIFactory1> DXGIFactory1;
+	CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)DXGIFactory1.GetInitReference());
+	const bool use_intel_graphics = false;
+	// 0 is nvida , 1 is intel
+	if (DXGIFactory1->EnumAdapters(use_intel_graphics?1:0, adapter.GetInitReference()) == DXGI_ERROR_NOT_FOUND)
+	{
+		adapter = nullptr;
+	}
 	std::unique_ptr<D3D11Device> device = std::make_unique<D3D11Device>();
 
 	D3D_FEATURE_LEVEL d3d_feature_level;
@@ -19,7 +31,7 @@ std::unique_ptr<D3D11Device>D3D11Device::CreateD3D11Device() {
 #    endif
 	ID3D11Device* d3d_device = nullptr;
 	ID3D11DeviceContext* d3d_dc = nullptr;
-	HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0, create_device_flags, nullptr, 0, D3D11_SDK_VERSION, &d3d_device,
+	HRESULT hr = D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, 0, create_device_flags, nullptr, 0, D3D11_SDK_VERSION, &d3d_device,
 		&d3d_feature_level, &d3d_dc);
 	if (FAILED(hr)) {
 		ERROR_INFO("Create D3D11 device failed!");
