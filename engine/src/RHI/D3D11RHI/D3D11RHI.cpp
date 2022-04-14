@@ -746,21 +746,6 @@ FUniformBufferRHIRef FD3D11DynamicRHI::RHICreateUniformBuffer(const void* Conten
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FIndexBufferRHIRef FD3D11DynamicRHI::RHICreateIndexBuffer(uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void* FD3D11DynamicRHI::RHILockIndexBuffer(FIndexBufferRHIParamRef IndexBuffer, uint32 Offset, uint32 Size, EResourceLockMode LockMode)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIUnlockIndexBuffer(FIndexBufferRHIParamRef IndexBuffer)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 FStructuredBufferRHIRef FD3D11DynamicRHI::RHICreateStructuredBuffer(uint32 Stride, uint32 Size, uint32 InUsage, FRHIResourceCreateInfo& CreateInfo)
 {
 	throw std::logic_error("The method or operation is not implemented.");
