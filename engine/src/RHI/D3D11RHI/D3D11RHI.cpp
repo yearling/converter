@@ -711,11 +711,6 @@ FGPUFenceRHIRef FD3D11DynamicRHI::RHICreateGPUFence(const std::string& Name)
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FStagingBufferRHIRef FD3D11DynamicRHI::RHICreateStagingBuffer()
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 FBoundShaderStateRHIRef FD3D11DynamicRHI::RHICreateBoundShaderState(FVertexDeclarationRHIParamRef VertexDeclaration, FVertexShaderRHIParamRef VertexShader, FHullShaderRHIParamRef HullShader, FDomainShaderRHIParamRef DomainShader, FPixelShaderRHIParamRef PixelShader, FGeometryShaderRHIParamRef GeometryShader)
 {
 	throw std::logic_error("The method or operation is not implemented.");
