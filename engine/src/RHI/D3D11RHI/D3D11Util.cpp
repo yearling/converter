@@ -53,10 +53,10 @@ static std::string GetD3D11ErrorString(HRESULT ErrorCode, ID3D11Device* Device)
 		D3DERR(S_OK);
 		D3DERR(D3D11_ERROR_FILE_NOT_FOUND)
 			D3DERR(D3D11_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS)
-#if WITH_D3DX_LIBS
-			D3DERR(D3DERR_INVALIDCALL)
-			D3DERR(D3DERR_WASSTILLDRAWING)
-#endif	//WITH_D3DX_LIBS
+//#if WITH_D3DX_LIBS
+//			D3DERR(D3DERR_INVALIDCALL)
+//			D3DERR(D3DERR_WASSTILLDRAWING)
+//#endif	//WITH_D3DX_LIBS
 			D3DERR(E_FAIL)
 			D3DERR(E_INVALIDARG)
 			D3DERR(E_OUTOFMEMORY)
@@ -78,7 +78,78 @@ static std::string GetD3D11ErrorString(HRESULT ErrorCode, ID3D11Device* Device)
 
 #undef D3DERR
 
+const char* GetD3D11TextureFormatString(DXGI_FORMAT TextureFormat)
+{
+	static const char* EmptyString = "";
+	const char* TextureFormatText = EmptyString;
+#define D3DFORMATCASE(x) case x: TextureFormatText = #x; break;
+	switch (TextureFormat)
+	{
+		D3DFORMATCASE(DXGI_FORMAT_R8G8B8A8_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_B8G8R8A8_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_B8G8R8X8_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_BC1_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_BC2_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_BC3_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_BC4_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_R16G16B16A16_FLOAT)
+			D3DFORMATCASE(DXGI_FORMAT_R32G32B32A32_FLOAT)
+			D3DFORMATCASE(DXGI_FORMAT_UNKNOWN)
+			D3DFORMATCASE(DXGI_FORMAT_R8_UNORM)
+//#if DEPTH_32_BIT_CONVERSION
+//			D3DFORMATCASE(DXGI_FORMAT_D32_FLOAT_S8X24_UINT)
+//			D3DFORMATCASE(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS)
+//#endif
+			D3DFORMATCASE(DXGI_FORMAT_R32G8X24_TYPELESS)
+			D3DFORMATCASE(DXGI_FORMAT_D24_UNORM_S8_UINT)
+			D3DFORMATCASE(DXGI_FORMAT_R24_UNORM_X8_TYPELESS)
+			D3DFORMATCASE(DXGI_FORMAT_R32_FLOAT)
+			D3DFORMATCASE(DXGI_FORMAT_R16G16_UINT)
+			D3DFORMATCASE(DXGI_FORMAT_R16G16_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_R16G16_SNORM)
+			D3DFORMATCASE(DXGI_FORMAT_R16G16_FLOAT)
+			D3DFORMATCASE(DXGI_FORMAT_R32G32_FLOAT)
+			D3DFORMATCASE(DXGI_FORMAT_R10G10B10A2_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_R16G16B16A16_UINT)
+			D3DFORMATCASE(DXGI_FORMAT_R8G8_SNORM)
+			D3DFORMATCASE(DXGI_FORMAT_BC5_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_R1_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_R8G8B8A8_TYPELESS)
+			D3DFORMATCASE(DXGI_FORMAT_B8G8R8A8_TYPELESS)
+			D3DFORMATCASE(DXGI_FORMAT_BC7_UNORM)
+			D3DFORMATCASE(DXGI_FORMAT_BC6H_UF16)
+	default: TextureFormatText = EmptyString;
+	}
+#undef D3DFORMATCASE
+	return TextureFormatText;
+}
 
+static std::string GetD3D11TextureFlagString(uint32 TextureFlags)
+{
+	std::string TextureFormatText = TEXT("");
+
+	if (TextureFlags & D3D11_BIND_RENDER_TARGET)
+	{
+		TextureFormatText += TEXT("D3D11_BIND_RENDER_TARGET ");
+	}
+
+	if (TextureFlags & D3D11_BIND_DEPTH_STENCIL)
+	{
+		TextureFormatText += TEXT("D3D11_BIND_DEPTH_STENCIL ");
+	}
+
+	if (TextureFlags & D3D11_BIND_SHADER_RESOURCE)
+	{
+		TextureFormatText += TEXT("D3D11_BIND_SHADER_RESOURCE ");
+	}
+
+	if (TextureFlags & D3D11_BIND_UNORDERED_ACCESS)
+	{
+		TextureFormatText += TEXT("D3D11_BIND_UNORDERED_ACCESS ");
+	}
+
+	return TextureFormatText;
+}
 
 static void TerminateOnDeviceRemoved(HRESULT D3DResult, ID3D11Device* Direct3DDevice)
 {
@@ -89,38 +160,38 @@ static void TerminateOnDeviceRemoved(HRESULT D3DResult, ID3D11Device* Direct3DDe
 
 	if (D3DResult == DXGI_ERROR_DEVICE_REMOVED)
 	{
-#if NV_AFTERMATH
-		uint32 Result = 0xffffffff;
-		uint32 bDeviceActive = 0;
-		if (GDX11NVAfterMathEnabled)
-		{
-			GFSDK_Aftermath_Device_Status Status;
-			auto Res = GFSDK_Aftermath_GetDeviceStatus(&Status);
-			Result = uint32(Res);
-			if (Res == GFSDK_Aftermath_Result_Success)
-			{
-				bDeviceActive = Status == GFSDK_Aftermath_Device_Status_Active ? 1 : 0;
-			}
-		}
-		UE_LOG(LogD3D11RHI, Log, TEXT("[Aftermath] GDynamicRHI=%p, GDX11NVAfterMathEnabled=%d, Result=0x%08X, bDeviceActive=%d"), GDynamicRHI, GDX11NVAfterMathEnabled, Result, bDeviceActive);
-#else
-		//UE_LOG(LogD3D11RHI, Log, TEXT("[Aftermath] NV_AFTERMATH is not set"));
-#endif
+//#if NV_AFTERMATH
+//		uint32 Result = 0xffffffff;
+//		uint32 bDeviceActive = 0;
+//		if (GDX11NVAfterMathEnabled)
+//		{
+//			GFSDK_Aftermath_Device_Status Status;
+//			auto Res = GFSDK_Aftermath_GetDeviceStatus(&Status);
+//			Result = uint32(Res);
+//			if (Res == GFSDK_Aftermath_Result_Success)
+//			{
+//				bDeviceActive = Status == GFSDK_Aftermath_Device_Status_Active ? 1 : 0;
+//			}
+//		}
+//		UE_LOG(LogD3D11RHI, Log, TEXT("[Aftermath] GDynamicRHI=%p, GDX11NVAfterMathEnabled=%d, Result=0x%08X, bDeviceActive=%d"), GDynamicRHI, GDX11NVAfterMathEnabled, Result, bDeviceActive);
+//#else
+//		//UE_LOG(LogD3D11RHI, Log, TEXT("[Aftermath] NV_AFTERMATH is not set"));
+//#endif
 
 		GIsGPUCrashed = true;
 		if (Direct3DDevice)
 		{
 			HRESULT hRes = Direct3DDevice->GetDeviceRemovedReason();
 
-			const TCHAR* Reason = TEXT("?");
+			const char* Reason = "?";
 			switch (hRes)
 			{
-			case DXGI_ERROR_DEVICE_HUNG:			Reason = TEXT("HUNG"); break;
-			case DXGI_ERROR_DEVICE_REMOVED:			Reason = TEXT("REMOVED"); break;
-			case DXGI_ERROR_DEVICE_RESET:			Reason = TEXT("RESET"); break;
-			case DXGI_ERROR_DRIVER_INTERNAL_ERROR:	Reason = TEXT("INTERNAL_ERROR"); break;
-			case DXGI_ERROR_INVALID_CALL:			Reason = TEXT("INVALID_CALL"); break;
-			case S_OK:								Reason = TEXT("S_OK"); break;
+			case DXGI_ERROR_DEVICE_HUNG:			Reason = ("HUNG"); break;
+			case DXGI_ERROR_DEVICE_REMOVED:			Reason =("REMOVED"); break;
+			case DXGI_ERROR_DEVICE_RESET:			Reason =("RESET"); break;
+			case DXGI_ERROR_DRIVER_INTERNAL_ERROR:	Reason =("INTERNAL_ERROR"); break;
+			case DXGI_ERROR_INVALID_CALL:			Reason =("INVALID_CALL"); break;
+			case S_OK:								Reason =("S_OK"); break;
 			}
 
 			// We currently don't support removed devices because FTexture2DResource can't recreate its RHI resources from scratch.
@@ -177,5 +248,104 @@ void VerifyD3D11Result(HRESULT D3DResult, const char* Code, const char* Filename
 
 	//UE_LOG(LogD3D11RHI, Fatal, TEXT("%s failed \n at %s:%u \n with error %s"), ANSI_TO_TCHAR(Code), ANSI_TO_TCHAR(Filename), Line, *ErrorString);
 	ERROR_INFO(StringFormat("%s failed \n at %s:%u \n with error %s", Code,Filename,Line, ErrorString));
+}
+
+void VerifyD3D11ShaderResult(class FRHIShader* Shader, HRESULT D3DResult, const char* Code, const char* Filename, uint32 Line, ID3D11Device* Device)
+{
+	check(FAILED(D3DResult));
+
+	const std::string& ErrorString = GetD3D11ErrorString(D3DResult, Device);
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	if (Shader->ShaderName.length())
+	{
+		//UE_LOG(LogD3D11RHI, Error, TEXT("%s failed trying to create shader %s\n at %s:%u \n with error %s"), ANSI_TO_TCHAR(Code), *Shader->ShaderName, ANSI_TO_TCHAR(Filename), Line, *ErrorString);
+		ERROR_INFO(StringFormat("%s failed trying to create shader %s\n at %s:%u \n with error %s", Code, Shader->ShaderName.c_str(), Filename, Line, ErrorString.c_str()));
+		TerminateOnDeviceRemoved(D3DResult, Device);
+		TerminateOnOutOfMemory(D3DResult, false);
+
+	}
+	else
+#endif
+	{
+		VerifyD3D11Result(D3DResult, Code, Filename, Line, Device);
+	}
+}
+
+void VerifyD3D11CreateTextureResult(HRESULT D3DResult, const char* Code, const char* Filename, uint32 Line, uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 D3DFormat, uint32 NumMips, uint32 Flags, ID3D11Device* Device)
+{
+	check(FAILED(D3DResult));
+
+	const std::string ErrorString = GetD3D11ErrorString(D3DResult, 0);
+	const char* D3DFormatString = GetD3D11TextureFormatString((DXGI_FORMAT)D3DFormat);
+
+	ERROR_INFO(StringFormat("%s failed \n at %s:%u \n with error %s, \n Size=%ix%ix%i Format=%s(0x%08X), NumMips=%i, Flags=%s", Code, Filename, Line, ErrorString.c_str(), SizeX, SizeY, SizeZ, D3DFormatString, D3DFormat, NumMips, GetD3D11TextureFlagString(Flags)));
+	//UE_LOG(LogD3D11RHI, Error,
+	//	TEXT("%s failed \n at %s:%u \n with error %s, \n Size=%ix%ix%i Format=%s(0x%08X), NumMips=%i, Flags=%s"),
+	//	ANSI_TO_TCHAR(Code),
+	//	ANSI_TO_TCHAR(Filename),
+	//	Line,
+	//	*ErrorString,
+	//	SizeX,
+	//	SizeY,
+	//	SizeZ,
+	//	D3DFormatString,
+	//	D3DFormat,
+	//	NumMips,
+	//	*GetD3D11TextureFlagString(Flags));
+
+	TerminateOnDeviceRemoved(D3DResult, Device);
+	TerminateOnOutOfMemory(D3DResult, true);
+}
+
+void VerifyD3D11ResizeViewportResult(HRESULT D3DResult, const char* Code, const char* Filename, uint32 Line, uint32 SizeX, uint32 SizeY, uint8 Format, ID3D11Device* Device)
+{
+	check(FAILED(D3DResult));
+
+	const std::string ErrorString = GetD3D11ErrorString(D3DResult, 0);
+	const char* D3DFormatString = GetD3D11TextureFormatString((DXGI_FORMAT)Format);
+	ERROR_INFO(StringFormat("%s failed \n at %s:%u \n with error %s, \n Size=%ix%i Format=%s(0x%08X)",Code,Filename,Line,ErrorString.c_str(),SizeX,SizeY,D3DFormatString,Format));
+	//UE_LOG(LogD3D11RHI, Error,
+	//	TEXT("%s failed \n at %s:%u \n with error %s, \n Size=%ix%i Format=%s(0x%08X)"),
+	//	ANSI_TO_TCHAR(Code),
+	//	ANSI_TO_TCHAR(Filename),
+	//	Line,
+	//	*ErrorString,
+	//	SizeX,
+	//	SizeY,
+	//	D3DFormatString,
+	//	Format);
+
+	TerminateOnDeviceRemoved(D3DResult, Device);
+	TerminateOnOutOfMemory(D3DResult, true);
+
+}
+
+void VerifyComRefCount(IUnknown* Object, int32 ExpectedRefs, const char* Code, const char* Filename, int32 Line)
+{
+	int32 NumRefs;
+
+	if (Object)
+	{
+		Object->AddRef();
+		NumRefs = Object->Release();
+
+		checkSlow(NumRefs == ExpectedRefs);
+
+		if (NumRefs != ExpectedRefs)
+		{
+			ERROR_INFO(StringFormat("%s:(%d): %s has %d refs, expected %d", Filename, Line, Code, NumRefs, ExpectedRefs));
+			/*	UE_LOG(
+					LogD3D11RHI,
+					Error,
+					TEXT("%s:(%d): %s has %d refs, expected %d"),
+					Filename,
+					Line,
+					Code,
+					NumRefs,
+					ExpectedRefs
+				);*/
+		}
+	}
 }
 

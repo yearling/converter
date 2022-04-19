@@ -315,7 +315,6 @@ bool YEngine::PreInit()
 	{
 		GUseThreadedRendering = true;
 	}
-
 	RHIInit(WITH_EDITOR);
 
 	//	GetRendererModule()

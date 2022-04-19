@@ -6,6 +6,7 @@
 
 #include "RHI/D3D11RHI/D3D11State.h"
 #include "RHI/D3D11RHI/D3D11RHI.h"
+#include "RHI/RHIUtilities.h"
 
 // Cache of Sampler States; we store pointers to both as we don't want the TMap to be artificially
 // modifying ref counts if not needed; so we manage that ourselves

@@ -858,7 +858,7 @@ inline uint32 ComputeAnisotropyRT(int32 InitializerMaxAnisotropy)
 {
 	//static const auto CVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.MaxAnisotropy"));
 	//int32 CVarValue = CVar->GetValueOnRenderThread();
-	static const int32 CVarValue = 16;
+	static const int32 CVarValue = 8;
 	return YMath::Clamp(1, 16, InitializerMaxAnisotropy > 0 ? InitializerMaxAnisotropy : CVarValue);
 }
 

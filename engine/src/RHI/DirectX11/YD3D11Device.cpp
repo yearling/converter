@@ -98,7 +98,6 @@ bool D3D11Device::CreateSwapChain(void* wnd) {
 	if (FAILED(hr = dxgi_factory->CreateSwapChainForHwnd(d3d_device_, *(reinterpret_cast<HWND*>(wnd)), &chain_des, &full_desc, nullptr, &d3d_swap_chain_))) {
 		return false;
 	}
-#
 	// get back buffer
 	TComPtr<ID3D11Texture2D> back_buffer;
 	d3d_swap_chain_->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&back_buffer));
@@ -182,6 +181,7 @@ bool D3D11Device::OnResize(int width, int height) {
 			chain_des.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 		}
 		if (FAILED(hr = dxgi_factory->CreateSwapChainForHwnd(d3d_device_, cur_hwnd_, &chain_des, &full_desc, nullptr, &d3d_swap_chain_))) {
+			ERROR_INFO("Create swap chain failed!");
 			return false;
 		}
 	}

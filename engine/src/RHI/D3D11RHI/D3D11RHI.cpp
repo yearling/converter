@@ -5,6 +5,7 @@
 #include "Engine/List.h"
 #include "Render/RenderResource.h"
 #include <delayimp.h>
+#include "RHI/RHIDefinitions.h"
 
 int64 FD3D11GlobalStats::GDedicatedVideoMemory = 0;
 int64 FD3D11GlobalStats::GDedicatedSystemMemory = 0;
@@ -12,10 +13,33 @@ int64 FD3D11GlobalStats::GSharedSystemMemory = 0;
 int64 FD3D11GlobalStats::GTotalGraphicsMemory = 0;
 
 FD3D11DynamicRHI::FD3D11DynamicRHI(IDXGIFactory1* InDXGIFactory1, D3D_FEATURE_LEVEL InFeatureLevel, int32 InChosenAdapter, const DXGI_ADAPTER_DESC& InChosenDescription)
-	:DXGIFactory1(InDXGIFactory1),
-	FeatureLevel(InFeatureLevel),
-	ChosenAdapter(InChosenAdapter),
-	DXGIAdpaterDesc(InChosenDescription)
+:DXGIFactory1(InDXGIFactory1),
+//#if NV_AFTERMATH
+//NVAftermathIMContextHandle(nullptr),
+//#endif
+FeatureLevel(InFeatureLevel),
+//AmdAgsContext(NULL),
+bCurrentDepthStencilStateIsReadOnly(false),
+PSOPrimitiveType(PT_Num),
+CurrentDepthTexture(NULL),
+NumSimultaneousRenderTargets(0),
+NumUAVs(0),
+SceneFrameCounter(0),
+PresentCounter(0),
+ResourceTableFrameCounter(-1),
+CurrentDSVAccessType(FExclusiveDepthStencil::DepthWrite_StencilWrite),
+bDiscardSharedConstants(false),
+bUsingTessellation(false),
+PendingNumVertices(0),
+PendingVertexDataStride(0),
+PendingPrimitiveType(0),
+PendingNumPrimitives(0),
+PendingMinVertexIndex(0),
+PendingNumIndices(0),
+PendingIndexDataStride(0),
+//GPUProfilingData(this),
+ChosenAdapter(InChosenAdapter),
+ChosenDescription(InChosenDescription)
 {
 	// This should be called once at the start 
 	check(ChosenAdapter >= 0);
@@ -416,10 +440,37 @@ void FD3D11DynamicRHI::CleanupD3DDevice()
 }
 
 
+template <EShaderFrequency ShaderFrequency>
+void FD3D11DynamicRHI::ClearAllShaderResourcesForFrequency()
+{
+	int32 MaxIndex = MaxBoundShaderResourcesIndex[ShaderFrequency];
+	for (int32 ResourceIndex = MaxIndex; ResourceIndex >= 0; --ResourceIndex)
+	{
+		if (CurrentResourcesBoundAsSRVs[ShaderFrequency][ResourceIndex] != nullptr)
+		{
+			// Unset the SRV from the device context
+			InternalSetShaderResourceView<ShaderFrequency>(nullptr, nullptr, ResourceIndex, "");
+		}
+	}
+	StateCache.ClearConstantBuffers<ShaderFrequency>();
+}
+
+void FD3D11DynamicRHI::ClearAllShaderResources()
+{
+	ClearAllShaderResourcesForFrequency<SF_Vertex>();
+	ClearAllShaderResourcesForFrequency<SF_Hull>();
+	ClearAllShaderResourcesForFrequency<SF_Domain>();
+	ClearAllShaderResourcesForFrequency<SF_Geometry>();
+	ClearAllShaderResourcesForFrequency<SF_Pixel>();
+	ClearAllShaderResourcesForFrequency<SF_Compute>();
+}
+
+
 void FD3D11DynamicRHI::ClearState()
 {
 	StateCache.ClearState();
 }
+
 template <EShaderFrequency ShaderFrequency>
 void FD3D11DynamicRHI::InternalSetShaderResourceView(FD3D11BaseShaderResource* Resource, ID3D11ShaderResourceView* SRV, int32 ResourceIndex, const std::string& SRVName, FD3D11StateCache::ESRV_Type SrvType)
 {
@@ -605,6 +656,66 @@ uint32 FD3D11DynamicRHI::GetMaxMSAAQuality(uint32 SampleCount)
 	}
 	// not supported
 	return 0xffffffff;
+}
+
+void FD3D11DynamicRHI::CommitRenderTargetsAndUAVs()
+{
+	ID3D11RenderTargetView* RTArray[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
+	for (uint32 RenderTargetIndex = 0; RenderTargetIndex < NumSimultaneousRenderTargets; ++RenderTargetIndex)
+	{
+		RTArray[RenderTargetIndex] = CurrentRenderTargets[RenderTargetIndex];
+	}
+	ID3D11UnorderedAccessView* UAVArray[D3D11_PS_CS_UAV_REGISTER_COUNT];
+	uint32 UAVInitialCountArray[D3D11_PS_CS_UAV_REGISTER_COUNT];
+	for (uint32 UAVIndex = 0; UAVIndex < NumUAVs; ++UAVIndex)
+	{
+		UAVArray[UAVIndex] = CurrentUAVs[UAVIndex];
+		// Using the value that indicates to keep the current UAV counter
+		UAVInitialCountArray[UAVIndex] = -1;
+	}
+
+	if (NumUAVs > 0)
+	{
+		d3d_dc_->OMSetRenderTargetsAndUnorderedAccessViews(
+			NumSimultaneousRenderTargets,
+			RTArray,
+			CurrentDepthStencilTarget,
+			NumSimultaneousRenderTargets,
+			NumUAVs,
+			UAVArray,
+			UAVInitialCountArray
+		);
+	}
+	else
+	{
+		// Use OMSetRenderTargets if there are no UAVs, works around a crash in PIX
+		d3d_dc_->OMSetRenderTargets(
+			NumSimultaneousRenderTargets,
+			RTArray,
+			CurrentDepthStencilTarget
+		);
+	}
+}
+
+static bool bIsQuadBufferStereoEnabled = false;
+bool FD3D11DynamicRHI::IsQuadBufferStereoEnabled()
+{
+	return bIsQuadBufferStereoEnabled;
+}
+
+void FD3D11DynamicRHI::DisableQuadBufferStereo()
+{
+	bIsQuadBufferStereoEnabled = false;
+}
+
+void FD3D11DynamicRHI::EnableHDR()
+{
+
+}
+
+void FD3D11DynamicRHI::ShutdownHDR()
+{
+
 }
 
 void FD3D11DynamicRHI::Shutdown()
@@ -941,22 +1052,12 @@ bool FD3D11DynamicRHI::RHIGetRenderQueryResult(FRenderQueryRHIParamRef RenderQue
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef FD3D11DynamicRHI::RHIGetViewportBackBuffer(FViewportRHIParamRef Viewport)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHIGetViewportBackBufferUAV(FViewportRHIParamRef ViewportRHI)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
 FTexture2DRHIRef FD3D11DynamicRHI::RHIGetFMaskTexture(FTextureRHIParamRef SourceTextureRHI)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIAdvanceFrameForGetViewportBackBuffer(FViewportRHIParamRef Viewport)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
@@ -979,25 +1080,6 @@ uint32 FD3D11DynamicRHI::RHIGetGPUFrameCycles()
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FViewportRHIRef FD3D11DynamicRHI::RHICreateViewport(void* WindowHandle, uint32 SizeX, uint32 SizeY, bool bIsFullscreen, EPixelFormat PreferredPixelFormat)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIResizeViewport(FViewportRHIParamRef Viewport, uint32 SizeX, uint32 SizeY, bool bIsFullscreen)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIResizeViewport(FViewportRHIParamRef Viewport, uint32 SizeX, uint32 SizeY, bool bIsFullscreen, EPixelFormat PreferredPixelFormat)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHITick(float DeltaTime)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
 void FD3D11DynamicRHI::RHISetStreamOutTargets(uint32 NumTargets, const FVertexBufferRHIParamRef* VertexBuffers, const uint32* Offsets)
 {
@@ -1545,16 +1627,6 @@ void FD3D11DynamicRHI::RHISubmitCommandsHint()
 }
 
 void FD3D11DynamicRHI::RHIDiscardRenderTargets(bool Depth, bool Stencil, uint32_t ColorBitMask)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIBeginDrawingViewport(FViewportRHIParamRef Viewport, FTextureRHIParamRef RenderTargetRHI)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIEndDrawingViewport(FViewportRHIParamRef Viewport, bool bPresent, bool bLockToVsync)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }

@@ -13,9 +13,40 @@
  * @param	Line - The line number of Code within Filename.
  */
 void VerifyD3D11Result(HRESULT Result, const char* Code, const char* Filename, uint32_t Line, ID3D11Device* Device);
+/**
+ * Checks that the given result isn't a failure.  If it is, the application exits with an appropriate error message.
+ * @param	Shader - The shader we are trying to create.
+ * @param	Result - The result code to check.
+ * @param	Code - The code which yielded the result.
+ * @param	Filename - The filename of the source file containing Code.
+ * @param	Line - The line number of Code within Filename.
+ * @param	Device - The D3D device used to create the shadr.
+ */
+void VerifyD3D11ShaderResult(class FRHIShader* Shader, HRESULT Result, const char* Code, const char* Filename, uint32 Line, ID3D11Device* Device);
+
+/**
+* Checks that the given result isn't a failure.  If it is, the application exits with an appropriate error message.
+* @param	Result - The result code to check
+* @param	Code - The code which yielded the result.
+* @param	Filename - The filename of the source file containing Code.
+* @param	Line - The line number of Code within Filename.
+*/
+void VerifyD3D11CreateTextureResult(HRESULT D3DResult, const char* Code, const char* Filename, uint32 Line,
+	uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 D3DFormat, uint32 NumMips, uint32 Flags, ID3D11Device* Device);
+
+
+void VerifyD3D11ResizeViewportResult(HRESULT D3DResult, const char* Code, const char* Filename, uint32 Line, uint32 SizeX, uint32 SizeY, uint8 D3DFormat, ID3D11Device* Device);
 
 #define VERIFYD3D11RESULT_EX(x, Device)	{HRESULT hr = x; if (FAILED(hr)) { VerifyD3D11Result(hr,#x,__FILE__,__LINE__, Device); }}
 #define VERIFYD3D11RESULT(x)			{HRESULT hr = x; if (FAILED(hr)) { VerifyD3D11Result(hr,#x,__FILE__,__LINE__, 0); }}
+#define VERIFYD3D11SHADERRESULT(Result, Shader, Device) {HRESULT hr = (Result); if (FAILED(hr)) { VerifyD3D11ShaderResult(Shader, hr, #Result,__FILE__,__LINE__, Device); }}
+#define VERIFYD3D11CREATETEXTURERESULT(x,SizeX,SizeY,SizeZ,Format,NumMips,Flags, Device) {HRESULT hr = x; if (FAILED(hr)) { VerifyD3D11CreateTextureResult(hr,#x,__FILE__,__LINE__,SizeX,SizeY,SizeZ,Format,NumMips,Flags, Device); }}
+#define VERIFYD3D11RESIZEVIEWPORTRESULT(x,SizeX,SizeY,Format, Device) {HRESULT hr = x; if (FAILED(hr)) { VerifyD3D11ResizeViewportResult(hr,#x,__FILE__,__LINE__,SizeX,SizeY,Format, Device); }}
+/**
+ * Checks that a COM object has the expected number of references.
+ */
+void VerifyComRefCount(IUnknown* Object, int32 ExpectedRefs, const char* Code, const char* Filename, int32 Line);
+#define checkComRefCount(Obj,ExpectedRefs) VerifyComRefCount(Obj,ExpectedRefs, #Obj , __FILE__,__LINE__)
 
 /**
  * Keeps track of Locks for D3D11 objects
@@ -125,11 +156,3 @@ private:
 	// then FreeData
 	bool bAllocDataWasUsed;
 };
-inline uint32 ComputeAnisotropyRT(int32 InitializerMaxAnisotropy)
-{
-	//static const auto CVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.MaxAnisotropy"));
-	//int32 CVarValue = CVar->GetValueOnRenderThread();
-	int32 CVarValue = 8;
-	return YMath::Clamp(InitializerMaxAnisotropy > 0 ? InitializerMaxAnisotropy : CVarValue, 1, 16);
-}
-
