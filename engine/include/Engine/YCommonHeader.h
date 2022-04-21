@@ -14,24 +14,7 @@ typedef uint32_t uint32;
 typedef int64_t int64;
 typedef uint64_t uint64;
 
-#define check assert
-#define ensure assert
-#define checkf assert
-#define checkSlow assert
-#define DO_CHECK 1
-#ifndef FORCEINLINE
-#define  FORCEINLINE inline
-#endif
 
-#ifndef FORCEINLINE_DEBUGGABLE
-#define  FORCEINLINE_DEBUGGABLE FORCEINLINE
-#endif
-
-#define STAT(a) 
-#define STATS 0
-#define UE_BUILD_SHIPPING 0
-#define UE_BUILD_TEST 0
-#define PLATFORM_MAC 0
 
 static FORCEINLINE void* Memzero(void* Dest, SIZE_T Count)
 {
@@ -54,3 +37,5 @@ enum
 #define QUICK_SCOPE_CYCLE_COUNTER(x)
 #define  SCOPE_TIME_GUARD(x)
 #define  SCOPE_CYCLE_COUNTER(x)
+
+typedef int TStatId;

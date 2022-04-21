@@ -224,7 +224,7 @@ void RHIInit(bool bHasEditorToken)
 	}
 
 #if PLATFORM_WINDOWS
-	RHIDetectAndWarnOfBadDrivers();
+	//RHIDetectAndWarnOfBadDrivers();
 #endif
 }
 

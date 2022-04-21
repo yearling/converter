@@ -37,7 +37,7 @@ PendingNumPrimitives(0),
 PendingMinVertexIndex(0),
 PendingNumIndices(0),
 PendingIndexDataStride(0),
-//GPUProfilingData(this),
+GPUProfilingData(this),
 ChosenAdapter(InChosenAdapter),
 ChosenDescription(InChosenDescription)
 {
@@ -817,11 +817,6 @@ FComputeFenceRHIRef FD3D11DynamicRHI::RHICreateComputeFence(const std::string& N
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FGPUFenceRHIRef FD3D11DynamicRHI::RHICreateGPUFence(const std::string& Name)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 FBoundShaderStateRHIRef FD3D11DynamicRHI::RHICreateBoundShaderState(FVertexDeclarationRHIParamRef VertexDeclaration, FVertexShaderRHIParamRef VertexShader, FHullShaderRHIParamRef HullShader, FDomainShaderRHIParamRef DomainShader, FPixelShaderRHIParamRef PixelShader, FGeometryShaderRHIParamRef GeometryShader)
 {
 	throw std::logic_error("The method or operation is not implemented.");
@@ -887,10 +882,6 @@ FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FIndex
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FStructuredBufferRHIParamRef StructuredBuffer)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
 FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FVertexBufferRHIParamRef VertexBuffer, uint32 Stride, uint8 Format)
 {
@@ -902,152 +893,12 @@ FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FIndexBu
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel)
+FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FStructuredBufferRHIParamRef StructuredBuffer)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DRHIParamRef Texture2DRHI, uint8 MipLevel, uint8 NumMipLevels, uint8 Format)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTexture3DRHIParamRef Texture3DRHI, uint8 MipLevel)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTexture2DArrayRHIParamRef Texture2DArrayRHI, uint8 MipLevel)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FTextureCubeRHIParamRef TextureCubeRHI, uint8 MipLevel)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIGenerateMips(FTextureRHIParamRef Texture)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-uint32 FD3D11DynamicRHI::RHIComputeMemorySize(FTextureRHIParamRef TextureRHI)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FTexture2DRHIRef FD3D11DynamicRHI::RHIAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, int32 NewMipCount, int32 NewSizeX, int32 NewSizeY, FThreadSafeCounter* RequestStatus)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-ETextureReallocationStatus FD3D11DynamicRHI::RHIFinalizeAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-ETextureReallocationStatus FD3D11DynamicRHI::RHICancelAsyncReallocateTexture2D(FTexture2DRHIParamRef Texture2D, bool bBlockUntilCompleted)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void* FD3D11DynamicRHI::RHILockTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIUnlockTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, bool bLockWithinMiptail)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void* FD3D11DynamicRHI::RHILockTexture2DArray(FTexture2DArrayRHIParamRef Texture, uint32 TextureIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIUnlockTexture2DArray(FTexture2DArrayRHIParamRef Texture, uint32 TextureIndex, uint32 MipIndex, bool bLockWithinMiptail)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIUpdateTexture2D(FTexture2DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion2D& UpdateRegion, uint32 SourcePitch, const uint8* SourceData)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIUpdateTexture3D(FTexture3DRHIParamRef Texture, uint32 MipIndex, const struct FUpdateTextureRegion3D& UpdateRegion, uint32 SourceRowPitch, uint32 SourceDepthPitch, const uint8* SourceData)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FTextureCubeRHIRef FD3D11DynamicRHI::RHICreateTextureCube(uint32 Size, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FTextureCubeRHIRef FD3D11DynamicRHI::RHICreateTextureCubeArray(uint32 Size, uint32 ArraySize, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void* FD3D11DynamicRHI::RHILockTextureCubeFace(FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIUnlockTextureCubeFace(FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, bool bLockWithinMiptail)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIBindDebugLabelName(FTextureRHIParamRef Texture, const TCHAR* Name)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIBindDebugLabelName(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const TCHAR* Name)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FColor>& OutData, FReadSurfaceDataFlags InFlags)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FLinearColor>& OutData, FReadSurfaceDataFlags InFlags)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIMapStagingSurface(FTextureRHIParamRef Texture, void*& OutData, int32& OutWidth, int32& OutHeight)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIUnmapStagingSurface(FTextureRHIParamRef Texture)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIReadSurfaceFloatData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FFloat16Color>& OutData, ECubeFace CubeFace, int32 ArrayIndex, int32 MipIndex)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIRead3DSurfaceFloatData(FTextureRHIParamRef Texture, FIntRect Rect, FIntPoint ZMinMax, std::vector<FFloat16Color>& OutData)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FRenderQueryRHIRef FD3D11DynamicRHI::RHICreateRenderQuery(ERenderQueryType QueryType)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-bool FD3D11DynamicRHI::RHIGetRenderQueryResult(FRenderQueryRHIParamRef RenderQuery, uint64& OutResult, bool bWait)
+void FD3D11DynamicRHI::RHIBindDebugLabelName(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const char* Name)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
@@ -1137,16 +988,6 @@ bool FD3D11DynamicRHI::RHIGetAvailableResolutions(FScreenResolutionArray& Resolu
 }
 
 void FD3D11DynamicRHI::RHIGetSupportedResolution(uint32& Width, uint32& Height)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIVirtualTextureSetFirstMipInMemory(FTexture2DRHIParamRef Texture, uint32 FirstMip)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIVirtualTextureSetFirstMipVisible(FTexture2DRHIParamRef Texture, uint32 FirstMip)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
@@ -1531,22 +1372,12 @@ void FD3D11DynamicRHI::RHICopySubTextureRegion_RenderThread(class FRHICommandLis
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void FD3D11DynamicRHI::RHICopySubTextureRegion(FTexture2DRHIParamRef SourceTexture, FTexture2DRHIParamRef DestinationTexture, FBox2D SourceBox, FBox2D DestinationBox)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 FRHIFlipDetails FD3D11DynamicRHI::RHIWaitForFlip(double TimeoutInSeconds)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
 void FD3D11DynamicRHI::RHISignalFlipEvent()
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHICalibrateTimers()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
@@ -1596,11 +1427,6 @@ void FD3D11DynamicRHI::RHIClearTinyUAV(FUnorderedAccessViewRHIParamRef Unordered
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void FD3D11DynamicRHI::RHICopyToResolveTarget(FTextureRHIParamRef SourceTexture, FTextureRHIParamRef DestTexture, const FResolveParams& ResolveParams)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 void FD3D11DynamicRHI::RHITransitionResources(EResourceTransitionAccess TransitionType, FTextureRHIParamRef* InTextures, int32_t NumTextures)
 {
 	throw std::logic_error("The method or operation is not implemented.");
@@ -1611,15 +1437,7 @@ void FD3D11DynamicRHI::RHITransitionResources(EResourceTransitionAccess Transiti
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void FD3D11DynamicRHI::RHIBeginRenderQuery(FRenderQueryRHIParamRef RenderQuery)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
-void FD3D11DynamicRHI::RHIEndRenderQuery(FRenderQueryRHIParamRef RenderQuery)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
 void FD3D11DynamicRHI::RHISubmitCommandsHint()
 {
@@ -1958,11 +1776,6 @@ void FD3D11DynamicRHI::RHIPopEvent()
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-void FD3D11DynamicRHI::RHIUpdateTextureReference(FTextureReferenceRHIParamRef TextureRef, FTextureRHIParamRef NewTexture)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 void FD3D11DynamicRHI::RHIBeginRenderPass(const FRHIRenderPassInfo& InInfo, const TCHAR* InName)
 {
 	throw std::logic_error("The method or operation is not implemented.");
@@ -2023,40 +1836,11 @@ void FD3D11DynamicRHI::RHIEnableDepthBoundsTest(bool bEnable)
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-uint64 FD3D11DynamicRHI::RHICalcTexture2DPlatformSize(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, uint32& OutAlign)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
-uint64 FD3D11DynamicRHI::RHICalcTexture3DPlatformSize(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, uint32& OutAlign)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
-uint64 FD3D11DynamicRHI::RHICalcTextureCubePlatformSize(uint32 Size, uint8 Format, uint32 NumMips, uint32 Flags, uint32& OutAlign)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
-void FD3D11DynamicRHI::RHIGetTextureMemoryStats(FTextureMemoryStats& OutStats)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
-bool FD3D11DynamicRHI::RHIGetTextureMemoryVisualizeData(FColor* TextureData, int32 SizeX, int32 SizeY, int32 Pitch, int32 PixelSize)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
-FTextureReferenceRHIRef FD3D11DynamicRHI::RHICreateTextureReference(FLastRenderTimeContainer* LastRenderTime)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FTexture2DRHIRef FD3D11DynamicRHI::RHICreateTexture2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
 FTexture2DRHIRef FD3D11DynamicRHI::RHICreateTextureExternal2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
 {
@@ -2068,30 +1852,7 @@ FStructuredBufferRHIRef FD3D11DynamicRHI::RHICreateRTWriteMaskBuffer(FTexture2DR
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FTexture2DRHIRef FD3D11DynamicRHI::RHIAsyncCreateTexture2D(uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, uint32 Flags, void** InitialMipData, uint32 NumInitialMips)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
-void FD3D11DynamicRHI::RHICopySharedMips(FTexture2DRHIParamRef DestTexture2D, FTexture2DRHIParamRef SrcTexture2D)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FTexture2DArrayRHIRef FD3D11DynamicRHI::RHICreateTexture2DArray(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FTexture3DRHIRef FD3D11DynamicRHI::RHICreateTexture3D(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIGetResourceInfo(FTextureRHIParamRef Ref, FRHIResourceInfo& OutInfo)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
 bool YD3D11DynamicRHIModule::IsSupported()
 {
@@ -2536,4 +2297,366 @@ void UpdateBufferStats(TRefCountPtr<ID3D11Buffer> Buffer, bool bAllocating)
 //		LLM_SCOPED_PAUSE_TRACKING_WITH_ENUM_AND_AMOUNT(ELLMTag::GraphicsPlatform, -(int64)Desc.ByteWidth, ELLMTracker::Platform, ELLMAllocType::None);
 //#endif
 	}
+}
+
+void FD3DGPUProfiler::BeginFrame(FD3D11DynamicRHI* InRHI)
+{
+	//CurrentEventNode = NULL;
+	//check(!bTrackingEvents);
+	//check(!CurrentEventNodeFrame); // this should have already been cleaned up and the end of the previous frame
+
+	///*static auto* CrashCollectionEnableCvar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.gpucrash.collectionenable"));
+	//static auto* CrashCollectionDataDepth = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.gpucrash.datadepth"));*/
+
+	//bTrackingGPUCrashData = /*CrashCollectionEnableCvar ? CrashCollectionEnableCvar->GetValueOnRenderThread() != 0 :*/ false;
+	//GPUCrashDataDepth =/* CrashCollectionDataDepth ? CrashCollectionDataDepth->GetValueOnRenderThread() :*/ -1;
+
+	//// latch the bools from the game thread into our private copy
+	//bLatchedGProfilingGPU = GTriggerGPUProfile;
+	//bLatchedGProfilingGPUHitches = GTriggerGPUHitchProfile;
+	//if (bLatchedGProfilingGPUHitches)
+	//{
+	//	bLatchedGProfilingGPU = false; // we do NOT permit an ordinary GPU profile during hitch profiles
+	//}
+
+	//// if we are starting a hitch profile or this frame is a gpu profile, then save off the state of the draw events
+	//if (bLatchedGProfilingGPU || (!bPreviousLatchedGProfilingGPUHitches && bLatchedGProfilingGPUHitches))
+	//{
+	//	bOriginalGEmitDrawEvents = GetEmitDrawEvents();
+	//}
+
+	//if (bLatchedGProfilingGPU || bLatchedGProfilingGPUHitches)
+	//{
+	//	if (bLatchedGProfilingGPUHitches && GPUHitchDebounce)
+	//	{
+	//		// if we are doing hitches and we had a recent hitch, wait to recover
+	//		// the reasoning is that collecting the hitch report may itself hitch the GPU
+	//		GPUHitchDebounce--;
+	//	}
+	//	else
+	//	{
+	//		SetEmitDrawEvents(true);  // thwart an attempt to turn this off on the game side
+	//		bTrackingEvents = true;
+	//		CurrentEventNodeFrame = new FD3D11EventNodeFrame(InRHI);
+	//		CurrentEventNodeFrame->StartFrame();
+	//	}
+	//}
+	//else if (bPreviousLatchedGProfilingGPUHitches)
+	//{
+	//	// hitch profiler is turning off, clear history and restore draw events
+	//	GPUHitchEventNodeFrames.Empty();
+	//	SetEmitDrawEvents(bOriginalGEmitDrawEvents);
+	//}
+	//bPreviousLatchedGProfilingGPUHitches = bLatchedGProfilingGPUHitches;
+
+	//// Skip timing events when using SLI, they will not be accurate anyway
+	//if (GNumAlternateFrameRenderingGroups == 1)
+	//{
+	//	FrameTiming.StartTiming();
+	//}
+
+	//if (GetEmitDrawEvents())
+	//{
+	//	PushEvent(TEXT("FRAME"), FColor(0, 255, 0, 255));
+	//}
+}
+
+
+void FD3DGPUProfiler::EndFrame()
+{
+	//if (GetEmitDrawEvents())
+	//{
+	//	PopEvent();
+	//}
+
+	//// Skip timing events when using SLI, they will not be accurate anyway
+	//if (GNumAlternateFrameRenderingGroups == 1)
+	//{
+	//	FrameTiming.EndTiming();
+	//}
+
+	//// Skip timing events when using SLI, as they will block the GPU and we want maximum throughput
+	//// Stat unit GPU time is not accurate anyway with SLI
+	//if (FrameTiming.IsSupported() && GNumAlternateFrameRenderingGroups == 1)
+	//{
+	//	uint64 GPUTiming = FrameTiming.GetTiming();
+	//	uint64 GPUFreq = FrameTiming.GetTimingFrequency();
+	//	GGPUFrameTime = FMath::TruncToInt(double(GPUTiming) / double(GPUFreq) / FPlatformTime::GetSecondsPerCycle());
+	//}
+	//else
+	//{
+	//	GGPUFrameTime = 0;
+	//}
+
+	//// if we have a frame open, close it now.
+	//if (CurrentEventNodeFrame)
+	//{
+	//	CurrentEventNodeFrame->EndFrame();
+	//}
+
+	//check(!bTrackingEvents || bLatchedGProfilingGPU || bLatchedGProfilingGPUHitches);
+	//check(!bTrackingEvents || CurrentEventNodeFrame);
+	//if (bLatchedGProfilingGPU)
+	//{
+	//	if (bTrackingEvents)
+	//	{
+	//		SetEmitDrawEvents(bOriginalGEmitDrawEvents);
+	//		UE_LOG(LogD3D11RHI, Warning, TEXT(""));
+	//		UE_LOG(LogD3D11RHI, Warning, TEXT(""));
+	//		CurrentEventNodeFrame->DumpEventTree();
+	//		GTriggerGPUProfile = false;
+	//		bLatchedGProfilingGPU = false;
+
+	//		if (RHIConfig::ShouldSaveScreenshotAfterProfilingGPU()
+	//			&& GEngine->GameViewport)
+	//		{
+	//			GEngine->GameViewport->Exec(NULL, TEXT("SCREENSHOT"), *GLog);
+	//		}
+	//	}
+	//}
+	//else if (bLatchedGProfilingGPUHitches)
+	//{
+	//	//@todo this really detects any hitch, even one on the game thread.
+	//	// it would be nice to restrict the test to stalls on D3D, but for now...
+	//	// this needs to be out here because bTrackingEvents is false during the hitch debounce
+	//	static double LastTime = -1.0;
+	//	double Now = FPlatformTime::Seconds();
+	//	if (bTrackingEvents)
+	//	{
+	//		/** How long, in seconds a frame much be to be considered a hitch **/
+	//		const float HitchThreshold = RHIConfig::GetGPUHitchThreshold();
+	//		float ThisTime = Now - LastTime;
+	//		bool bHitched = (ThisTime > HitchThreshold) && LastTime > 0.0 && CurrentEventNodeFrame;
+	//		if (bHitched)
+	//		{
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT("*******************************************************************************"));
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT("********** Hitch detected on CPU, frametime = %6.1fms"), ThisTime * 1000.0f);
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT("*******************************************************************************"));
+
+	//			for (int32 Frame = 0; Frame < GPUHitchEventNodeFrames.Num(); Frame++)
+	//			{
+	//				UE_LOG(LogD3D11RHI, Warning, TEXT(""));
+	//				UE_LOG(LogD3D11RHI, Warning, TEXT(""));
+	//				UE_LOG(LogD3D11RHI, Warning, TEXT("********** GPU Frame: Current - %d"), GPUHitchEventNodeFrames.Num() - Frame);
+	//				GPUHitchEventNodeFrames[Frame].DumpEventTree();
+	//			}
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT(""));
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT(""));
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT("********** GPU Frame: Current"));
+	//			CurrentEventNodeFrame->DumpEventTree();
+
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT("*******************************************************************************"));
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT("********** End Hitch GPU Profile"));
+	//			UE_LOG(LogD3D11RHI, Warning, TEXT("*******************************************************************************"));
+	//			if (GEngine->GameViewport)
+	//			{
+	//				GEngine->GameViewport->Exec(NULL, TEXT("SCREENSHOT"), *GLog);
+	//			}
+
+	//			GPUHitchDebounce = 5; // don't trigger this again for a while
+	//			GPUHitchEventNodeFrames.Empty(); // clear history
+	//		}
+	//		else if (CurrentEventNodeFrame) // this will be null for discarded frames while recovering from a recent hitch
+	//		{
+	//			/** How many old frames to buffer for hitch reports **/
+	//			static const int32 HitchHistorySize = 4;
+
+	//			if (GPUHitchEventNodeFrames.Num() >= HitchHistorySize)
+	//			{
+	//				GPUHitchEventNodeFrames.RemoveAt(0);
+	//			}
+	//			GPUHitchEventNodeFrames.Add((FD3D11EventNodeFrame*)CurrentEventNodeFrame);
+	//			CurrentEventNodeFrame = NULL;  // prevent deletion of this below; ke kept it in the history
+	//		}
+	//	}
+	//	LastTime = Now;
+	//}
+	//bTrackingEvents = false;
+	//bTrackingGPUCrashData = false;
+	//delete CurrentEventNodeFrame;
+	//CurrentEventNodeFrame = NULL;
+}
+
+FD3DGPUProfiler::FD3DGPUProfiler(class FD3D11DynamicRHI* InD3DRHI) :
+	FGPUProfiler(),
+	FrameTiming(InD3DRHI, 4),
+	D3D11RHI(InD3DRHI)
+{
+	// Initialize Buffered timestamp queries 
+	FrameTiming.InitResource();
+//	CachedStrings.Emplace(EventDeepCRC, EventDeepString);
+}
+
+void FD3DGPUProfiler::PushEvent(const TCHAR* Name, FColor Color)
+{
+//#if NV_AFTERMATH
+//	if (GDX11NVAfterMathEnabled && bTrackingGPUCrashData)
+//	{
+//		uint32 CRC = 0;
+//		if (GPUCrashDataDepth < 0 || PushPopStack.Num() < GPUCrashDataDepth)
+//		{
+//			CRC = FCrc::StrCrc32<TCHAR>(Name);
+//
+//			if (CachedStrings.Num() > 10000)
+//			{
+//				CachedStrings.Empty(10000);
+//				CachedStrings.Emplace(EventDeepCRC, EventDeepString);
+//			}
+//
+//			if (CachedStrings.Find(CRC) == nullptr)
+//			{
+//				CachedStrings.Emplace(CRC, FString(Name));
+//			}
+//
+//		}
+//		else
+//		{
+//			CRC = EventDeepCRC;
+//		}
+//		PushPopStack.Push(CRC);
+//
+//		auto AftermathContext = D3D11RHI->GetNVAftermathContext();
+//		GFSDK_Aftermath_SetEventMarker(AftermathContext, &PushPopStack[0], PushPopStack.Num() * sizeof(uint32));
+//	}
+//#endif
+//
+//#if WITH_DX_PERF
+//	D3DPERF_BeginEvent(Color.DWColor(), Name);
+//#endif
+//
+//	FGPUProfiler::PushEvent(Name, Color);
+}
+
+void FD3DGPUProfiler::PopEvent()
+{
+//#if NV_AFTERMATH
+//	if (GDX11NVAfterMathEnabled && bTrackingGPUCrashData)
+//	{
+//		PushPopStack.Pop(false);
+//	}
+//#endif
+//
+//#if WITH_DX_PERF
+//	D3DPERF_EndEvent();
+//#endif
+//
+//	FGPUProfiler::PopEvent();
+}
+
+extern bool GIsGPUCrashed;
+bool FD3DGPUProfiler::CheckGpuHeartbeat() const
+{
+#if NV_AFTERMATH
+#define NVAFTERMATH_ON_ERROR() do { if (D3D11RHI) { D3D11RHI->StopNVAftermath(); GDX11NVAfterMathEnabled = false; } } while (false)
+
+	if (GDX11NVAfterMathEnabled && bTrackingGPUCrashData)
+	{
+		GFSDK_Aftermath_Device_Status Status;
+		auto Result = GFSDK_Aftermath_GetDeviceStatus(&Status);
+		if (Result == GFSDK_Aftermath_Result_Success)
+		{
+			if (Status != GFSDK_Aftermath_Device_Status_Active)
+			{
+				GIsGPUCrashed = true;
+				const TCHAR* AftermathReason[] = { TEXT("Active"), TEXT("Timeout"), TEXT("OutOfMemory"), TEXT("PageFault"), TEXT("Unknown") };
+				check(Status < 5);
+				UE_LOG(LogRHI, Error, TEXT("[Aftermath] Status: %s"), AftermathReason[Status]);
+				auto AftermathContext = D3D11RHI->GetNVAftermathContext();
+
+				if (AftermathContext)
+				{
+					GFSDK_Aftermath_ContextData ContextDataOut;
+					Result = GFSDK_Aftermath_GetData(1, &AftermathContext, &ContextDataOut);
+					if (Result == GFSDK_Aftermath_Result_Success)
+					{
+						UE_LOG(LogRHI, Error, TEXT("[Aftermath] GPU Stack Dump"));
+						uint32 NumCRCs = ContextDataOut.markerSize / sizeof(uint32);
+						uint32* Data = (uint32*)ContextDataOut.markerData;
+						for (uint32 i = 0; i < NumCRCs; i++)
+						{
+							const FString* Frame = CachedStrings.Find(Data[i]);
+							if (Frame != nullptr)
+							{
+								UE_LOG(LogRHI, Error, TEXT("[Aftermath] %i: %s"), i, *(*Frame));
+							}
+						}
+						UE_LOG(LogRHI, Error, TEXT("[Aftermath] GPU Stack Dump"));
+					}
+					else
+					{
+						UE_LOG(LogRHI, Error, TEXT("[Aftermath] GFSDK_Aftermath_GetData failed with result: 0x%08X"), (uint32)Result);
+						NVAFTERMATH_ON_ERROR();
+					}
+				}
+				else
+				{
+					UE_LOG(LogRHI, Error, TEXT("[Aftermath] Invalid context handle"));
+					NVAFTERMATH_ON_ERROR();
+				}
+
+				return false;
+			}
+		}
+		else
+		{
+			UE_LOG(LogRHI, Error, TEXT("[Aftermath] GFSDK_Aftermath_GetDeviceStatus failed with result: 0x%08X"), (uint32)Result);
+			NVAFTERMATH_ON_ERROR();
+		}
+	}
+#undef NVAFTERMATH_ON_ERROR
+#endif
+	return true;
+}
+
+/** Start this frame of per tracking */
+void FD3D11EventNodeFrame::StartFrame()
+{
+	EventTree.clear();
+	DisjointQuery.StartTracking();
+	RootEventTiming.StartTiming();
+}
+
+/** End this frame of per tracking, but do not block yet */
+void FD3D11EventNodeFrame::EndFrame()
+{
+	RootEventTiming.EndTiming();
+	DisjointQuery.EndTracking();
+}
+
+float FD3D11EventNodeFrame::GetRootTimingResults()
+{
+	double RootResult = 0.0f;
+	if (RootEventTiming.IsSupported())
+	{
+		const uint64 GPUTiming = RootEventTiming.GetTiming(true);
+		const uint64 GPUFreq = RootEventTiming.GetTimingFrequency();
+
+		RootResult = double(GPUTiming) / double(GPUFreq);
+	}
+
+	return (float)RootResult;
+}
+
+void FD3D11EventNodeFrame::LogDisjointQuery()
+{
+	/*UE_LOG(LogRHI, Warning, TEXT("%s"),
+		DisjointQuery.IsResultValid()
+		? TEXT("Profiled range was continuous.")
+		: TEXT("Profiled range was disjoint!  GPU switched to doing something else while profiling."));*/
+}
+
+float FD3D11EventNode::GetTiming()
+{
+	float Result = 0;
+
+	if (Timing.IsSupported())
+	{
+		// Get the timing result and block the CPU until it is ready
+		const uint64 GPUTiming = Timing.GetTiming(true);
+		const uint64 GPUFreq = Timing.GetTimingFrequency();
+
+		Result = double(GPUTiming) / double(GPUFreq);
+	}
+
+	return Result;
 }

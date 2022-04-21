@@ -66,7 +66,7 @@ enum EForceInit
 	ForceInit,
 	ForceInitToZero
 };
-
+enum { INDEX_NONE = -1 };
 struct YMath
 {
 	template< class T >

@@ -427,47 +427,47 @@ public:
 		GRenderThreadId = 0;
 	}
 
-#if PLATFORM_WINDOWS && !PLATFORM_SEH_EXCEPTIONS_DISABLED
-	static int32 FlushRHILogsAndReportCrash(Windows::LPEXCEPTION_POINTERS ExceptionInfo)
-	{
-		if (GDynamicRHI)
-		{
-			GDynamicRHI->FlushPendingLogs();
-		}
-
-		return ReportCrash(ExceptionInfo);
-	}
-#endif
+//#if PLATFORM_WINDOWS && !PLATFORM_SEH_EXCEPTIONS_DISABLED
+//	static int32 FlushRHILogsAndReportCrash(Windows::LPEXCEPTION_POINTERS ExceptionInfo)
+//	{
+//		if (GDynamicRHI)
+//		{
+//			GDynamicRHI->FlushPendingLogs();
+//		}
+//
+//		return ReportCrash(ExceptionInfo);
+//	}
+//#endif
 
 	virtual uint32 Run(void) override
 	{
 		//FMemory::SetupTLSCachesOnCurrentThread();
 		FPlatformProcess::SetupRenderThread();
 
-#if PLATFORM_WINDOWS
-		if (!FPlatformMisc::IsDebuggerPresent() || GAlwaysReportCrash)
-		{
-#if !PLATFORM_SEH_EXCEPTIONS_DISABLED
-			__try
-#endif
-			{
-				RenderingThreadMain(TaskGraphBoundSyncEvent);
-			}
-#if !PLATFORM_SEH_EXCEPTIONS_DISABLED
-			__except (FlushRHILogsAndReportCrash(GetExceptionInformation()))
-			{
-				GRenderingThreadError = GErrorHist;
-
-				// Use a memory barrier to ensure that the game thread sees the write to GRenderingThreadError before
-				// the write to GIsRenderingThreadHealthy.
-				FPlatformMisc::MemoryBarrier();
-
-				GIsRenderingThreadHealthy = false;
-			}
-#endif
-		}
-		else
-#endif // PLATFORM_WINDOWS
+//#if PLATFORM_WINDOWS
+//		if (!FPlatformMisc::IsDebuggerPresent() || GAlwaysReportCrash)
+//		{
+//#if !PLATFORM_SEH_EXCEPTIONS_DISABLED
+//			__try
+//#endif
+//			{
+//				RenderingThreadMain(TaskGraphBoundSyncEvent);
+//			}
+//#if !PLATFORM_SEH_EXCEPTIONS_DISABLED
+//			__except (FlushRHILogsAndReportCrash(GetExceptionInformation()))
+//			{
+//				GRenderingThreadError = GErrorHist;
+//
+//				// Use a memory barrier to ensure that the game thread sees the write to GRenderingThreadError before
+//				// the write to GIsRenderingThreadHealthy.
+//				FPlatformMisc::MemoryBarrier();
+//
+//				GIsRenderingThreadHealthy = false;
+//			}
+//#endif
+//		}
+//		else
+//#endif // PLATFORM_WINDOWS
 		{
 			RenderingThreadMain(TaskGraphBoundSyncEvent);
 		}

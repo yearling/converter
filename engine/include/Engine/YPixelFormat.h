@@ -1,11 +1,11 @@
 // Copyright 1998-2018 Epic Games, Inc. All Rights Reserved.
 
-
-#pragma once
-
 #if defined(PF_MAX)
 #undef PF_MAX
 #endif
+
+#pragma once
+
 
 enum EPixelFormat
 {
@@ -74,6 +74,7 @@ enum EPixelFormat
 	PF_R16G16B16A16_UNORM	=62,
 	PF_R16G16B16A16_SNORM	=63,
 	PF_MAX                  =64,
+	PF_FORMAT_MAX           =64
 };
 #define FOREACH_ENUM_EPIXELFORMAT(op) \
 	op(PF_Unknown) \

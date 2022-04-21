@@ -3,6 +3,11 @@
 #include "Math/YMatrix.h"
 #include "Math/YBox.h"
 #include "Math/YRay.h"
+#include "Math/IntPoint.h"
+
+
+const FIntPoint FIntPoint::ZeroValue(0, 0);
+const FIntPoint FIntPoint::NoneValue(INDEX_NONE, INDEX_NONE);
 float YMath::Atan2(float y, float x)
 {
 	//return atan2f(Y,X);

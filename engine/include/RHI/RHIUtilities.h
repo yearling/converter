@@ -1044,3 +1044,29 @@ FRHIGPUMemoryUpdate *RHIScheduleGPUMemoryUpdate(FRHICommandList& CmdList, FVerte
 	return Update;
 }
 */
+
+
+/**
+* Convert from ECubeFace to D3DCUBEMAP_FACES type
+* @param Face - ECubeFace type to convert
+* @return D3D cube face enum value
+*/
+FORCEINLINE uint32 GetD3D11CubeFace(ECubeFace Face)
+{
+	switch (Face)
+	{
+	case CubeFace_PosX:
+	default:
+		return 0;//D3DCUBEMAP_FACE_POSITIVE_X;
+	case CubeFace_NegX:
+		return 1;//D3DCUBEMAP_FACE_NEGATIVE_X;
+	case CubeFace_PosY:
+		return 2;//D3DCUBEMAP_FACE_POSITIVE_Y;
+	case CubeFace_NegY:
+		return 3;//D3DCUBEMAP_FACE_NEGATIVE_Y;
+	case CubeFace_PosZ:
+		return 4;//D3DCUBEMAP_FACE_POSITIVE_Z;
+	case CubeFace_NegZ:
+		return 5;//D3DCUBEMAP_FACE_NEGATIVE_Z;
+	};
+}

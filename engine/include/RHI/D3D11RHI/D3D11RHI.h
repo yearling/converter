@@ -10,6 +10,7 @@
 #include "D3D11Util.h"
 #include "D3D11Viewport.h"
 #include "D3D11ConstantBuffer.h"
+#include "RHI/GPUProfiler.h"
 #define CHECK_SRV_TRANSITIONS 0
 // DX11 doesn't support higher MSAA count
 #define DX_MAX_MSAA_COUNT 8
@@ -70,6 +71,212 @@ public:
 	TRefCountPtr<ID3D11SamplerState> resource_inner;
 };
 
+
+
+// This class has multiple inheritance but really FGPUTiming is a static class
+class FD3D11BufferedGPUTiming : public FRenderResource, public FGPUTiming
+{
+public:
+	/**
+	 * Constructor.
+	 *
+	 * @param InD3DRHI			RHI interface
+	 * @param InBufferSize		Number of buffered measurements
+	 */
+	FD3D11BufferedGPUTiming(class FD3D11DynamicRHI* InD3DRHI, int32 BufferSize);
+
+	/**
+	 * Start a GPU timing measurement.
+	 */
+	void	StartTiming();
+
+	/**
+	 * End a GPU timing measurement.
+	 * The timing for this particular measurement will be resolved at a later time by the GPU.
+	 */
+	void	EndTiming();
+
+	/**
+	 * Retrieves the most recently resolved timing measurement.
+	 * The unit is the same as for FPlatformTime::Cycles(). Returns 0 if there are no resolved measurements.
+	 *
+	 * @return	Value of the most recently resolved timing, or 0 if no measurements have been resolved by the GPU yet.
+	 */
+	uint64	GetTiming(bool bGetCurrentResultsAndBlock = false);
+
+	/**
+	 * Initializes all D3D resources.
+	 */
+	virtual void InitDynamicRHI() override;
+
+	/**
+	 * Releases all D3D resources.
+	 */
+	virtual void ReleaseDynamicRHI() override;
+
+	static void CalibrateTimers(FD3D11DynamicRHI* InD3DRHI);
+
+private:
+	/**
+	 * Initializes the static variables, if necessary.
+	 */
+	static void PlatformStaticInitialize(void* UserData);
+
+	/** RHI interface */
+	FD3D11DynamicRHI* D3DRHI;
+	/** Number of timestamps created in 'StartTimestamps' and 'EndTimestamps'. */
+	int32						BufferSize;
+	/** Current timing being measured on the CPU. */
+	int32						CurrentTimestamp;
+	/** Number of measurements in the buffers (0 - BufferSize). */
+	int32						NumIssuedTimestamps;
+	/** Timestamps for all StartTimings. */
+	TRefCountPtr<ID3D11Query>* StartTimestamps;
+	/** Timestamps for all EndTimings. */
+	TRefCountPtr<ID3D11Query>* EndTimestamps;
+	/** Whether we are currently timing the GPU: between StartTiming() and EndTiming(). */
+	bool						bIsTiming;
+};
+
+/** Used to track whether a period was disjoint on the GPU, which means GPU timings are invalid. */
+class FD3D11DisjointTimeStampQuery : public FRenderResource
+{
+public:
+	FD3D11DisjointTimeStampQuery(class FD3D11DynamicRHI* InD3DRHI);
+
+	void StartTracking();
+	void EndTracking();
+	bool IsResultValid();
+	D3D11_QUERY_DATA_TIMESTAMP_DISJOINT GetResult();
+
+	/**
+	 * Initializes all D3D resources.
+	 */
+	virtual void InitDynamicRHI() override;
+
+	/**
+	 * Releases all D3D resources.
+	 */
+	virtual void ReleaseDynamicRHI() override;
+
+
+private:
+
+	TRefCountPtr<ID3D11Query> DisjointQuery;
+
+	FD3D11DynamicRHI* D3DRHI;
+};
+
+/** A single perf event node, which tracks information about a appBeginDrawEvent/appEndDrawEvent range. */
+class FD3D11EventNode : public FGPUProfilerEventNode
+{
+public:
+	FD3D11EventNode(const TCHAR* InName, FGPUProfilerEventNode* InParent, class FD3D11DynamicRHI* InRHI) :
+		FGPUProfilerEventNode(InName, InParent),
+		Timing(InRHI, 1)
+	{
+		// Initialize Buffered timestamp queries 
+		Timing.InitResource(); // can't do this from the RHI thread
+	}
+
+	virtual ~FD3D11EventNode()
+	{
+		Timing.ReleaseResource();  // can't do this from the RHI thread
+	}
+
+	/**
+	 * Returns the time in ms that the GPU spent in this draw event.
+	 * This blocks the CPU if necessary, so can cause hitching.
+	 */
+	virtual float GetTiming() override;
+
+
+	virtual void StartTiming() override
+	{
+		Timing.StartTiming();
+	}
+
+	virtual void StopTiming() override
+	{
+		Timing.EndTiming();
+	}
+
+	FD3D11BufferedGPUTiming Timing;
+};
+
+/** An entire frame of perf event nodes, including ancillary timers. */
+class FD3D11EventNodeFrame : public FGPUProfilerEventNodeFrame
+{
+public:
+
+	FD3D11EventNodeFrame(class FD3D11DynamicRHI* InRHI) :
+		FGPUProfilerEventNodeFrame(),
+		RootEventTiming(InRHI, 1),
+		DisjointQuery(InRHI)
+	{
+		RootEventTiming.InitResource();
+		DisjointQuery.InitResource();
+	}
+
+	~FD3D11EventNodeFrame()
+	{
+		RootEventTiming.ReleaseResource();
+		DisjointQuery.ReleaseResource();
+	}
+
+	/** Start this frame of per tracking */
+	virtual void StartFrame() override;
+
+	/** End this frame of per tracking, but do not block yet */
+	virtual void EndFrame() override;
+
+	/** Calculates root timing base frequency (if needed by this RHI) */
+	virtual float GetRootTimingResults() override;
+
+	virtual void LogDisjointQuery() override;
+
+	/** Timer tracking inclusive time spent in the root nodes. */
+	FD3D11BufferedGPUTiming RootEventTiming;
+
+	/** Disjoint query tracking whether the times reported by DumpEventTree are reliable. */
+	FD3D11DisjointTimeStampQuery DisjointQuery;
+};
+
+/**
+ * Encapsulates GPU profiling logic and data.
+ * There's only one global instance of this struct so it should only contain global data, nothing specific to a frame.
+ */
+struct FD3DGPUProfiler : public FGPUProfiler
+{
+	/** Used to measure GPU time per frame. */
+	FD3D11BufferedGPUTiming FrameTiming;
+
+	class FD3D11DynamicRHI* D3D11RHI;
+
+	/** GPU hitch profile histories */
+	std::vector<FD3D11EventNodeFrame> GPUHitchEventNodeFrames;
+
+	FD3DGPUProfiler(class FD3D11DynamicRHI* InD3DRHI);
+
+	virtual FGPUProfilerEventNode* CreateEventNode(const TCHAR* InName, FGPUProfilerEventNode* InParent) override
+	{
+		FD3D11EventNode* EventNode = new FD3D11EventNode(InName, InParent, D3D11RHI);
+		return EventNode;
+	}
+
+	virtual void PushEvent(const TCHAR* Name, FColor Color) override;
+	virtual void PopEvent() override;
+
+	void BeginFrame(class FD3D11DynamicRHI* InRHI);
+
+	void EndFrame();
+
+	bool CheckGpuHeartbeat() const;
+
+private:
+	std::unordered_map<uint32, std::string> CachedStrings;
+	std::vector<uint32> PushPopStack;
+};
 
 class FD3D11DynamicRHI :public FDynamicRHI, public IRHICommandContext
 {
@@ -177,8 +384,8 @@ public:
 	virtual FTextureCubeRHIRef RHICreateTextureCubeArray(uint32 Size, uint32 ArraySize, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo) override;
 	virtual void* RHILockTextureCubeFace(FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, EResourceLockMode LockMode, uint32& DestStride, bool bLockWithinMiptail) override;
 	virtual void RHIUnlockTextureCubeFace(FTextureCubeRHIParamRef Texture, uint32 FaceIndex, uint32 ArrayIndex, uint32 MipIndex, bool bLockWithinMiptail) override;
-	virtual void RHIBindDebugLabelName(FTextureRHIParamRef Texture, const TCHAR* Name) override;
-	virtual void RHIBindDebugLabelName(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const TCHAR* Name) override;
+	virtual void RHIBindDebugLabelName(FTextureRHIParamRef Texture, const char* Name) override;
+	virtual void RHIBindDebugLabelName(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const char* Name) override;
 	virtual void RHIReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FColor>& OutData, FReadSurfaceDataFlags InFlags) override;
 	virtual void RHIReadSurfaceData(FTextureRHIParamRef Texture, FIntRect Rect, std::vector<FLinearColor>& OutData, FReadSurfaceDataFlags InFlags) override;
 	virtual void RHIMapStagingSurface(FTextureRHIParamRef Texture, void*& OutData, int32& OutWidth, int32& OutHeight) override;
@@ -306,6 +513,8 @@ public:
 	virtual void RHITransitionResources(EResourceTransitionAccess TransitionType, EResourceTransitionPipeline TransitionPipeline, FUnorderedAccessViewRHIParamRef* InUAVs, int32_t NumUAVs, FComputeFenceRHIParamRef WriteComputeFence) override;
 	virtual void RHIBeginRenderQuery(FRenderQueryRHIParamRef RenderQuery) override;
 	virtual void RHIEndRenderQuery(FRenderQueryRHIParamRef RenderQuery) override;
+	void RHIBeginOcclusionQueryBatch(uint32 NumQueriesInBatch);
+	void RHIEndOcclusionQueryBatch();
 	virtual void RHISubmitCommandsHint() override;
 	virtual void RHIDiscardRenderTargets(bool Depth, bool Stencil, uint32_t ColorBitMask) override;
 	virtual void RHIBeginDrawingViewport(FViewportRHIParamRef Viewport, FTextureRHIParamRef RenderTargetRHI) override;
@@ -406,11 +615,51 @@ public:
 	{
 		return DXGIFactory1;
 	}
+	virtual FTexture2DRHIRef RHICreateTexture2DFromResource(EPixelFormat Format, uint32 TexCreateFlags, const FClearValueBinding& ClearValueBinding, ID3D11Texture2D* Resource);
+	virtual FTextureCubeRHIRef RHICreateTextureCubeFromResource(EPixelFormat Format, uint32 TexCreateFlags, const FClearValueBinding& ClearValueBinding, ID3D11Texture2D* Resource);
+	virtual void RHIAliasTextureResources(FTextureRHIParamRef DestTexture, FTextureRHIParamRef SrcTexture);
+	template<typename TPixelShader>
+	void ResolveTextureUsingShader(
+		FRHICommandList_RecursiveHazardous& RHICmdList,
+		FD3D11Texture2D* SourceTexture,
+		FD3D11Texture2D* DestTexture,
+		ID3D11RenderTargetView* DestSurfaceRTV,
+		ID3D11DepthStencilView* DestSurfaceDSV,
+		const D3D11_TEXTURE2D_DESC& ResolveTargetDesc,
+		const FResolveRect& SourceRect,
+		const FResolveRect& DestRect,
+		ID3D11DeviceContext* Direct3DDeviceContext,
+		typename TPixelShader::FParameter PixelShaderParameter
+	);
+	/**
+* Returns a pointer to a texture resource that can be used for CPU reads.
+* Note: the returned resource could be the original texture or a new temporary texture.
+* @param TextureRHI - Source texture to create a staging texture from.
+* @param InRect - rectangle to 'stage'.
+* @param StagingRectOUT - parameter is filled with the rectangle to read from the returned texture.
+* @return The CPU readable Texture object.
+*/
+	TRefCountPtr<ID3D11Texture2D> GetStagingTexture(FTextureRHIParamRef TextureRHI, FIntRect InRect, FIntRect& OutRect, FReadSurfaceDataFlags InFlags);
+
+	void ReadSurfaceDataNoMSAARaw(FTextureRHIParamRef TextureRHI, FIntRect Rect, std::vector<uint8>& OutData, FReadSurfaceDataFlags InFlags);
+
+	void ReadSurfaceDataMSAARaw(FRHICommandList_RecursiveHazardous& RHICmdList, FTextureRHIParamRef TextureRHI, FIntRect Rect, std::vector<uint8>& OutData, FReadSurfaceDataFlags InFlags);
+
+	/**
+ * Reads a D3D query's data into the provided buffer.
+ * @param Query - The D3D query to read data from.
+ * @param Data - The buffer to read the data into.
+ * @param DataSize - The size of the buffer.
+ * @param bWait - If true, it will wait for the query to finish.
+ * @param QueryType e.g. RQT_Occlusion or RQT_AbsoluteTime
+ * @return true if the query finished.
+ */
+	bool GetQueryData(ID3D11Query* Query, void* Data, SIZE_T DataSize, bool bWait, ERenderQueryType QueryType);
 public:
 	void ClearState();
 	void ConditionalClearShaderResource(FD3D11BaseShaderResource* Resource);
 	void ClearAllShaderResources();
-
+	static DXGI_FORMAT GetPlatformTextureResourceFormat(DXGI_FORMAT InFormat, uint32 InFlags);
 
 protected:
 	void CleanupD3DDevice();
@@ -540,11 +789,108 @@ protected:
 	/** If HDR display detected, we store the output device. */
 	uint32 HDRDetectedDisplayIndex;
 	uint32 HDRDetectedDisplayIHVIndex;
-	//FD3DGPUProfiler GPUProfilingData;
+	FD3DGPUProfiler GPUProfilingData;
 	// we don't use AdapterDesc.Description as there is a bug with Optimus where it can report the wrong name
 	DXGI_ADAPTER_DESC ChosenDescription;
 
 
 	void CommitRenderTargetsAndUAVs();
+	template<typename BaseResourceType>
+	TD3D11Texture2D<BaseResourceType>* CreateD3D11Texture2D(uint32 SizeX, uint32 SizeY, uint32 SizeZ, bool bTextureArray, bool CubeTexture, uint8 Format,
+		uint32 NumMips, uint32 NumSamples, uint32 Flags, FRHIResourceCreateInfo& CreateInfo);
 
+	FD3D11Texture3D* CreateD3D11Texture3D(uint32 SizeX, uint32 SizeY, uint32 SizeZ, uint8 Format, uint32 NumMips, uint32 Flags, FRHIResourceCreateInfo& CreateInfo);
+
+	template<typename BaseResourceType>
+	TD3D11Texture2D<BaseResourceType>* CreateTextureFromResource(bool bTextureArray, bool bCubeTexture, EPixelFormat Format, uint32 TexCreateFlags, const FClearValueBinding& ClearValueBinding, ID3D11Texture2D* TextureResource);
 };
+
+/** Find an appropriate DXGI format for the input format and SRGB setting. */
+inline DXGI_FORMAT FindShaderResourceDXGIFormat(DXGI_FORMAT InFormat, bool bSRGB)
+{
+	if (bSRGB)
+	{
+		switch (InFormat)
+		{
+		case DXGI_FORMAT_B8G8R8A8_TYPELESS:    return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+		case DXGI_FORMAT_R8G8B8A8_TYPELESS:    return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		case DXGI_FORMAT_BC1_TYPELESS:         return DXGI_FORMAT_BC1_UNORM_SRGB;
+		case DXGI_FORMAT_BC2_TYPELESS:         return DXGI_FORMAT_BC2_UNORM_SRGB;
+		case DXGI_FORMAT_BC3_TYPELESS:         return DXGI_FORMAT_BC3_UNORM_SRGB;
+		case DXGI_FORMAT_BC7_TYPELESS:         return DXGI_FORMAT_BC7_UNORM_SRGB;
+		};
+	}
+	else
+	{
+		switch (InFormat)
+		{
+		case DXGI_FORMAT_B8G8R8A8_TYPELESS: return DXGI_FORMAT_B8G8R8A8_UNORM;
+		case DXGI_FORMAT_R8G8B8A8_TYPELESS: return DXGI_FORMAT_R8G8B8A8_UNORM;
+		case DXGI_FORMAT_BC1_TYPELESS:      return DXGI_FORMAT_BC1_UNORM;
+		case DXGI_FORMAT_BC2_TYPELESS:      return DXGI_FORMAT_BC2_UNORM;
+		case DXGI_FORMAT_BC3_TYPELESS:      return DXGI_FORMAT_BC3_UNORM;
+		case DXGI_FORMAT_BC7_TYPELESS:      return DXGI_FORMAT_BC7_UNORM;
+		};
+	}
+	switch (InFormat)
+	{
+	case DXGI_FORMAT_R24G8_TYPELESS: return DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	case DXGI_FORMAT_R32_TYPELESS: return DXGI_FORMAT_R32_FLOAT;
+	case DXGI_FORMAT_R16_TYPELESS: return DXGI_FORMAT_R16_UNORM;
+//#if DEPTH_32_BIT_CONVERSION
+//		// Changing Depth Buffers to 32 bit on Dingo as D24S8 is actually implemented as a 32 bit buffer in the hardware
+//	case DXGI_FORMAT_R32G8X24_TYPELESS: return DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+//#endif
+	}
+	return InFormat;
+}
+
+/** Find an appropriate DXGI format unordered access of the raw format. */
+inline DXGI_FORMAT FindUnorderedAccessDXGIFormat(DXGI_FORMAT InFormat)
+{
+	switch (InFormat)
+	{
+	case DXGI_FORMAT_B8G8R8A8_TYPELESS: return DXGI_FORMAT_B8G8R8A8_UNORM;
+	case DXGI_FORMAT_R8G8B8A8_TYPELESS: return DXGI_FORMAT_R8G8B8A8_UNORM;
+	}
+	return InFormat;
+}
+
+/** Find the appropriate depth-stencil targetable DXGI format for the given format. */
+inline DXGI_FORMAT FindDepthStencilDXGIFormat(DXGI_FORMAT InFormat)
+{
+	switch (InFormat)
+	{
+	case DXGI_FORMAT_R24G8_TYPELESS:
+		return DXGI_FORMAT_D24_UNORM_S8_UINT;
+//#if DEPTH_32_BIT_CONVERSION
+//		// Changing Depth Buffers to 32 bit on Dingo as D24S8 is actually implemented as a 32 bit buffer in the hardware
+//	case DXGI_FORMAT_R32G8X24_TYPELESS:
+//		return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+//#endif
+	case DXGI_FORMAT_R32_TYPELESS:
+		return DXGI_FORMAT_D32_FLOAT;
+	case DXGI_FORMAT_R16_TYPELESS:
+		return DXGI_FORMAT_D16_UNORM;
+	};
+	return InFormat;
+}
+
+/**
+ * Returns whether the given format contains stencil information.
+ * Must be passed a format returned by FindDepthStencilDXGIFormat, so that typeless versions are converted to their corresponding depth stencil view format.
+ */
+inline bool HasStencilBits(DXGI_FORMAT InFormat)
+{
+	switch (InFormat)
+	{
+	case DXGI_FORMAT_D24_UNORM_S8_UINT:
+		return true;
+//#if  DEPTH_32_BIT_CONVERSION
+//		// Changing Depth Buffers to 32 bit on Dingo as D24S8 is actually implemented as a 32 bit buffer in the hardware
+//	case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+//		return true;
+//#endif
+	};
+	return false;
+}

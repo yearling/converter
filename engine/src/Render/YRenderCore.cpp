@@ -5,3 +5,5 @@ bool GPauseRenderingRealtimeClock;
 
 /** Global realtime clock for the rendering thread. */
 FTimer GRenderingRealtimeClock;
+
+FInputLatencyTimer GInputLatencyTimer(2.0f);

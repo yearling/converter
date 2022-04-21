@@ -48,6 +48,7 @@ void VerifyD3D11ResizeViewportResult(HRESULT D3DResult, const char* Code, const 
 void VerifyComRefCount(IUnknown* Object, int32 ExpectedRefs, const char* Code, const char* Filename, int32 Line);
 #define checkComRefCount(Obj,ExpectedRefs) VerifyComRefCount(Obj,ExpectedRefs, #Obj , __FILE__,__LINE__)
 
+const char* GetD3D11TextureFormatString(DXGI_FORMAT TextureFormat);
 /**
  * Keeps track of Locks for D3D11 objects
  */
