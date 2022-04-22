@@ -94,7 +94,7 @@ public:
 	/** Shutdown the RHI; handle shutdown and resource destruction before the RHI's actual destructor is called (so that all resources of the RHI are still available for shutdown). */
 	virtual void Shutdown() = 0;
 
-	virtual const TCHAR* GetName() = 0;
+	virtual const char* GetName() = 0;
 
 	/** Called after PostInit to initialize the pixel format info, which is needed for some commands default implementations */
 	void InitPixelFormatInfo(const std::vector<uint32>& PixelFormatBlockBytesIn)

@@ -28,7 +28,7 @@
 #elif
 #define  PLATFORM_WINDOWS 0
 #endif
-
+#define  PLATFORM_LITTLE_ENDIAN 1
 #define check assert
 #define ensure assert
 #define checkf assert

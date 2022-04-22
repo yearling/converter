@@ -301,182 +301,238 @@ void MemoryFile::WriteBool(bool value)
 	WriteElemts(&value, 1);
 }
 
-MemoryFile& MemoryFile::operator<<( int& value)
+int64 MemoryFile::Tell()
 {
-	if(IsReading())
-	{ 
-		ReadInt32(value);
-	}
-	else
-	{
-		WriteInt32(value);
-	}
-	return *this;
+	throw std::logic_error("The method or operation is not implemented.");
 }
 
-MemoryFile& MemoryFile::operator<<(float& value)
+int64 MemoryFile::TotalSize()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+bool MemoryFile::AtEnd()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+void MemoryFile::Seek(int64 InPos)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+void MemoryFile::Flush()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+bool MemoryFile::Close()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+bool MemoryFile::GetError()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+void MemoryFile::Serialize(void* V, int64 Length)
 {
 	if (IsReading())
 	{
-		ReadFloat32(value);
-	}
-	else 
-	{
-		WriteFloat32(value);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<(char& value)
-{
-	if (IsReading())
-	{
-		ReadChar(value);
+		if (read_pos_ + Length > memory_content_.size())
+		{
+			SetError();
+			return;
+		}
+		memcpy(V, &memory_content_[read_pos_], Length);
+		read_pos_ += Length;
 	}
 	else
 	{
-		WriteChar(value);
+		FitSize(memory_content_.size() + Length);
+		size_t current_size = memory_content_.size();
+		AllocSizeUninitialized((uint32_t)(current_size + Length));
+		memcpy(&memory_content_[current_size], V, Length);
 	}
-	return *this;
 }
 
-MemoryFile& MemoryFile::operator<<(unsigned char& value)
-{
-	if (IsReading())
-	{
-		ReadUChar(value);
-	}
-	else
-	{
-		WriteUChar(value);
-	}
-	return *this;
-}
+//MemoryFile& MemoryFile::operator<<( int& value)
+//{
+//	if(IsReading())
+//	{ 
+//		ReadInt32(value);
+//	}
+//	else
+//	{
+//		WriteInt32(value);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<(float& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadFloat32(value);
+//	}
+//	else 
+//	{
+//		WriteFloat32(value);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<(char& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadChar(value);
+//	}
+//	else
+//	{
+//		WriteChar(value);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<(unsigned char& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadUChar(value);
+//	}
+//	else
+//	{
+//		WriteUChar(value);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<(std::string& value)
+//{
+//	if(IsReading())
+//	{
+//		ReadString(value);
+//	}
+//	else
+//	{
+//		WriteString(value);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<(YVector2& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadFloat32Vector(&value.x, 2);
+//	}
+//	else
+//	{
+//		WriteFloat32Vector(&value.x, 2);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<(YVector& value)
+//{
+//	if(IsReading())
+//	{ 
+//		ReadFloat32Vector(&value.x, 3);
+//	}
+//	else
+//	{
+//		WriteFloat32Vector(&value.x, 3);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<( YVector4& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadFloat32Vector(&value.x, 4);
+//	}
+//	else
+//	{
+//		WriteFloat32Vector(&value.x, 4);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<( YMatrix& value)
+//{
+//
+//	if (IsReading())
+//	{
+//		ReadFloat32Vector(&value.m[0][0], 16);
+//	}
+//	else
+//	{
+//		WriteFloat32Vector(&value.m[0][0], 16);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<( YRotator& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadFloat32Vector(&value.pitch, 3);
+//	}
+//	else
+//	{
+//		WriteFloat32Vector(&value.pitch, 3);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<( YQuat& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadFloat32Vector(&value.x, 4);
+//	}
+//	else
+//	{
+//		WriteFloat32Vector(&value.x, 4);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<(uint32_t& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadUInt32(value);
+//	}
+//	else
+//	{
+//		WriteUInt32(value);
+//	}
+//	return *this;
+//}
+//
+//MemoryFile& MemoryFile::operator<<(bool& value)
+//{
+//	if (IsReading())
+//	{
+//		ReadBool(value);
+//	}
+//	else
+//	{
+//		WriteBool(value);
+//	}
+//	return *this;
+//}
 
-MemoryFile& MemoryFile::operator<<(std::string& value)
+void MemoryFile::FitSize(uint64 increase_size)
 {
-	if(IsReading())
-	{
-		ReadString(value);
-	}
-	else
-	{
-		WriteString(value);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<(YVector2& value)
-{
-	if (IsReading())
-	{
-		ReadFloat32Vector(&value.x, 2);
-	}
-	else
-	{
-		WriteFloat32Vector(&value.x, 2);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<(YVector& value)
-{
-	if(IsReading())
-	{ 
-		ReadFloat32Vector(&value.x, 3);
-	}
-	else
-	{
-		WriteFloat32Vector(&value.x, 3);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<( YVector4& value)
-{
-	if (IsReading())
-	{
-		ReadFloat32Vector(&value.x, 4);
-	}
-	else
-	{
-		WriteFloat32Vector(&value.x, 4);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<( YMatrix& value)
-{
-
-	if (IsReading())
-	{
-		ReadFloat32Vector(&value.m[0][0], 16);
-	}
-	else
-	{
-		WriteFloat32Vector(&value.m[0][0], 16);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<( YRotator& value)
-{
-	if (IsReading())
-	{
-		ReadFloat32Vector(&value.pitch, 3);
-	}
-	else
-	{
-		WriteFloat32Vector(&value.pitch, 3);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<( YQuat& value)
-{
-	if (IsReading())
-	{
-		ReadFloat32Vector(&value.x, 4);
-	}
-	else
-	{
-		WriteFloat32Vector(&value.x, 4);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<(uint32_t& value)
-{
-	if (IsReading())
-	{
-		ReadUInt32(value);
-	}
-	else
-	{
-		WriteUInt32(value);
-	}
-	return *this;
-}
-
-MemoryFile& MemoryFile::operator<<(bool& value)
-{
-	if (IsReading())
-	{
-		ReadBool(value);
-	}
-	else
-	{
-		WriteBool(value);
-	}
-	return *this;
-}
-
-void MemoryFile::FitSize(size_t increased_size)
-{
-	if (increased_size > memory_content_.capacity())
+	if (increase_size > memory_content_.capacity())
 	{
 		size_t new_size = memory_content_.capacity();
-		while (new_size < increased_size)
+		while (new_size < increase_size)
 		{
 			new_size += increase_block_size;
 		}

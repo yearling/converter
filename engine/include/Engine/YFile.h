@@ -6,6 +6,7 @@
 #include "Math/YMatrix.h"
 #include "Engine/YLog.h"
 #include <unordered_map>
+#include "YArchive.h"
 
 
 class MemoryFile;
@@ -36,15 +37,14 @@ protected:
 	FileType type_;
 };
 
-class MemoryFile
+class MemoryFile:public YArchive
 {
 public:
 	enum FileType
 	{
 		FT_Read = 1 << 1,
 		FT_Write = 1 << 2
-	};
-
+	}; 
 	MemoryFile();
 	~MemoryFile();
 	explicit MemoryFile(FileType type);
@@ -106,83 +106,79 @@ public:
 		memcpy(&memory_content_[current_size], value, write_size);
 	}
 
-	MemoryFile& operator<<(bool& value);
-	MemoryFile& operator<<(int& value);
-	MemoryFile& operator<<(uint32_t& value);
-	MemoryFile& operator<<(float& value);
-	MemoryFile& operator<<(char& value);
-	MemoryFile& operator<<(unsigned char& value);
-	MemoryFile& operator<<(std::string& value);
-	MemoryFile& operator<<(YVector2& value);
-	MemoryFile& operator<<(YVector& value);
-	MemoryFile& operator<<(YVector4& value);
-	MemoryFile& operator<<(YMatrix& value);
-	MemoryFile& operator<<(YRotator& value);
-	MemoryFile& operator<<(YQuat& value);
+	virtual int64 Tell() override;
+	virtual int64 TotalSize() override;
+	virtual bool AtEnd() override;
+	virtual void Seek(int64 InPos) override;
+	virtual void Flush() override;
+	virtual bool Close() override;
+	virtual bool GetError() override;
+	virtual void Serialize(void* V, int64 Length) override;
+
 protected:
 	friend YFile;
-	void FitSize(size_t increase_size);
-	uint32_t read_pos_{ 0 };
+	void FitSize(uint64 increase_size);
+	uint64 read_pos_{ 0 };
 	const int increase_block_size = 2 * 1024 * 1024;
 	std::vector<unsigned char> memory_content_;
 	FileType type_;
 };
 
 
-template <typename T>
-typename std::enable_if<std::is_pod<T>::value>::type SFINAE_Operator(MemoryFile& mem_file, std::vector<T>& value)
-{
-	if (mem_file.IsReading())
-	{
-		uint32_t value_element_size = 0;
-		mem_file << value_element_size;
-		value.resize(value_element_size);
-		if (value_element_size > 0)
-		{
-			mem_file.ReadElemts(&value[0], value_element_size);
-		}
-	}
-	else
-	{
-		uint32_t value_element_size = (uint32_t)value.size();
-		mem_file << value_element_size;
-		if (value_element_size > 0)
-		{
-			mem_file.WriteElemts(&value[0], value_element_size);
-		}
-	}
-}
-
-template <typename T>
-typename std::enable_if<!std::is_pod<T>::value>::type SFINAE_Operator(MemoryFile& mem_file, std::vector<T>& value)
-{
-	if (mem_file.IsReading())
-	{
-		uint32_t vector_size = 0;
-		mem_file << vector_size;
-		value.resize(vector_size);
-		for (auto& elem : value)
-		{
-			mem_file << elem;
-		}
-	}
-	else
-	{
-		uint32_t value_element_size = (uint32_t)value.size();
-		mem_file << value_element_size;
-		for (auto& elem : value)
-		{
-			mem_file << elem;
-		}
-	}
-}
-
-template<class T>
-MemoryFile& operator<<(MemoryFile& mem_file, std::vector<T>& value)
-{
-	SFINAE_Operator(mem_file, value);
-	return mem_file;
-}
+//template <typename T>
+//typename std::enable_if<std::is_pod<T>::value>::type SFINAE_Operator(MemoryFile& mem_file, std::vector<T>& value)
+//{
+//	if (mem_file.IsReading())
+//	{
+//		uint32_t value_element_size = 0;
+//		mem_file << value_element_size;
+//		value.resize(value_element_size);
+//		if (value_element_size > 0)
+//		{
+//			mem_file.ReadElemts(&value[0], value_element_size);
+//		}
+//	}
+//	else
+//	{
+//		uint32_t value_element_size = (uint32_t)value.size();
+//		mem_file << value_element_size;
+//		if (value_element_size > 0)
+//		{
+//			mem_file.WriteElemts(&value[0], value_element_size);
+//		}
+//	}
+//}
+//
+//template <typename T>
+//typename std::enable_if<!std::is_pod<T>::value>::type SFINAE_Operator(MemoryFile& mem_file, std::vector<T>& value)
+//{
+//	if (mem_file.IsReading())
+//	{
+//		uint32_t vector_size = 0;
+//		mem_file << vector_size;
+//		value.resize(vector_size);
+//		for (auto& elem : value)
+//		{
+//			mem_file << elem;
+//		}
+//	}
+//	else
+//	{
+//		uint32_t value_element_size = (uint32_t)value.size();
+//		mem_file << value_element_size;
+//		for (auto& elem : value)
+//		{
+//			mem_file << elem;
+//		}
+//	}
+//}
+//
+//template<class T>
+//MemoryFile& operator<<(MemoryFile& mem_file, std::vector<T>& value)
+//{
+//	SFINAE_Operator(mem_file, value);
+//	return mem_file;
+//}
 
 template<class k, class v>
 MemoryFile& operator<<(MemoryFile& mem_file, std::unordered_map<k, v>& in_map)

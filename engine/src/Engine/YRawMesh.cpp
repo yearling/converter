@@ -1,6 +1,7 @@
 #include "Engine/YRawMesh.h"
 #include "Math/YVector.h"
 #include <cassert>
+#include "Engine/YArchive.h"
 YLODMesh::YLODMesh()
 {
 
@@ -125,7 +126,7 @@ void YMeshVertex::AddVertexInstance(int index)
 
 }
 
-MemoryFile& operator<<(MemoryFile& mem_file, YLODMesh& lod_mesh)
+YArchive& operator<<(YArchive& mem_file, YLODMesh& lod_mesh)
 {
 	mem_file << lod_mesh.LOD_index;
 	mem_file << lod_mesh.sub_meshes;
@@ -138,13 +139,13 @@ MemoryFile& operator<<(MemoryFile& mem_file, YLODMesh& lod_mesh)
 	return mem_file;
 }
 
-MemoryFile& operator<<(MemoryFile& mem_file, YRawMesh& raw_mesh)
+YArchive& operator<<(YArchive& mem_file, YRawMesh& raw_mesh)
 {
 	mem_file << raw_mesh.mesh_name;
 	return mem_file;
 }
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshEdge& mesh_edge)
+YArchive& operator<<(YArchive& mem_file,  YMeshEdge& mesh_edge)
 {
 	mem_file << mesh_edge.VertexIDs[0];
 	mem_file << mesh_edge.VertexIDs[1];
@@ -155,20 +156,20 @@ MemoryFile& operator<<(MemoryFile& mem_file,  YMeshEdge& mesh_edge)
 	return mem_file;
 }
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshPolygonGroup& mesh_polygon_group)
+YArchive& operator<<(YArchive& mem_file,  YMeshPolygonGroup& mesh_polygon_group)
 {
 	mem_file << mesh_polygon_group.polygons;
 	return mem_file;
 }
 
-MemoryFile& operator<<(MemoryFile& mem_file, YMeshPolygon& mesh_polygon)
+YArchive& operator<<(YArchive& mem_file, YMeshPolygon& mesh_polygon)
 {
 	mem_file << mesh_polygon.polygon_group_id;
 	mem_file << mesh_polygon.vertex_instance_ids;
 	return mem_file;
 }
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshVertexInstance& mesh_vertex_instance)
+YArchive& operator<<(YArchive& mem_file,  YMeshVertexInstance& mesh_vertex_instance)
 {
 	mem_file << mesh_vertex_instance.vertex_id;
 	mem_file << mesh_vertex_instance.connected_triangles;
@@ -181,7 +182,7 @@ MemoryFile& operator<<(MemoryFile& mem_file,  YMeshVertexInstance& mesh_vertex_i
 	return mem_file;
 }
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshVertex& mesh_vertex)
+YArchive& operator<<(YArchive& mem_file,  YMeshVertex& mesh_vertex)
 {
 	mem_file << mesh_vertex.vertex_instance_ids;
 	mem_file << mesh_vertex.connect_edge_ids;

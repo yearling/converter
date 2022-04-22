@@ -7,6 +7,7 @@
 #include "math/YVector.h"
 #include "YFile.h"
 #include "Math/YBox.h"
+#include "YArchive.h"
 
 const int INVALID_ID = -1;
 struct YMeshVertex
@@ -90,18 +91,18 @@ public:
 	void ComputeAABB();
 };
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YLODMesh& lod_mesh);
+YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YRawMesh& raw_mesh);
+YArchive& operator<<(YArchive& mem_file,  YRawMesh& raw_mesh);
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshEdge& mesh_edge);
+YArchive& operator<<(YArchive& mem_file,  YMeshEdge& mesh_edge);
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshPolygonGroup& mesh_polygon_group);
+YArchive& operator<<(YArchive& mem_file,  YMeshPolygonGroup& mesh_polygon_group);
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshPolygon& mesh_polygon);
+YArchive& operator<<(YArchive& mem_file,  YMeshPolygon& mesh_polygon);
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshVertexInstance& mesh_vertex_instance);
+YArchive& operator<<(YArchive& mem_file,  YMeshVertexInstance& mesh_vertex_instance);
 
-MemoryFile& operator<<(MemoryFile& mem_file,  YMeshVertex& mesh_vertex);
+YArchive& operator<<(YArchive& mem_file,  YMeshVertex& mesh_vertex);
 
 

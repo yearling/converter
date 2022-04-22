@@ -727,14 +727,14 @@ void FD3D11DynamicRHI::Shutdown()
 	CleanupD3DDevice();
 }
 
-const TCHAR* FD3D11DynamicRHI::GetName()
+const char* FD3D11DynamicRHI::GetName()
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	return "DirectX11";
 }
 
 FPixelShaderRHIRef FD3D11DynamicRHI::RHICreatePixelShader(const std::vector<uint8>& Code)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	return nullptr;
 }
 
 FPixelShaderRHIRef FD3D11DynamicRHI::RHICreatePixelShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)

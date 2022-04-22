@@ -302,7 +302,7 @@ public:
 		return static_cast<typename TD3D11ResourceTraits<TRHIType>::TConcreteType*>(Resource);
 	}
 
-	virtual const TCHAR* GetName() override;
+	virtual const char* GetName() override;
 	virtual FSamplerStateRHIRef RHICreateSamplerState(const FSamplerStateInitializerRHI& Initializer) override;
 	virtual FRasterizerStateRHIRef RHICreateRasterizerState(const FRasterizerStateInitializerRHI& Initializer) override;
 	virtual FDepthStencilStateRHIRef RHICreateDepthStencilState(const FDepthStencilStateInitializerRHI& Initializer) override;
