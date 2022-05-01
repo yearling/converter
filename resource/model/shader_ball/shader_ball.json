@@ -1,0 +1,10 @@
+{
+    "model_asset": "shader_ball_mesh",
+    "material_slot": [
+        {
+            "slot": 0,
+            "slot_name": "default",
+            "material": "shader_ball_mtl"
+        }
+    ]
+}

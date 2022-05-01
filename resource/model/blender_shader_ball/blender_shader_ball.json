@@ -1,0 +1,9 @@
+{
+    "model_asset": "blender_shader_ball_mesh",
+    "material_slot": [
+        {
+            "id": 0,
+            "material": "blender_shader_ball_mtl"
+        }
+    ]
+}

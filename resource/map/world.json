@@ -1,0 +1,58 @@
+{
+    "actors" :
+    [
+        {
+            "root_component":
+            {
+                    "type":"StaticMesh",
+                    "model":"/model/shader_ball/shader_ball",
+                    "local_translation":[ 3.0,0.0,0.0],
+                    "local_rotation":[0.0,0.0,0.0],
+                    "local_scale":[1.0,1.0,1.0],
+                    "children":
+                    [
+                        {
+                   
+                                "type":"StaticMesh",
+                                "model":"/model/blender_shader_ball/blender_shader_ball",
+                                "local_translation":[ 5.0,0.0,0.0],
+                                "local_rotation":[0.0,0.0,0.0],
+                                "local_scale":[2.0,2.0,2.0]
+                        }
+                    ]
+            },
+            "name":"shader_ball",
+            "id":0
+        }
+        ,
+        {
+            "root_component":
+             {
+                    "type":"DirectionLight",
+                    "strength":1.0,
+                    "color":[1.0,1.0,1.0,1.0],
+                    "local_translation":[ 0.0,0.0,0.0],
+                    "local_rotation":[45.0,-35.0,-15.0],
+                    "local_scale":[1.0,1.0,1.0]
+            },
+            "name":"direct_light",
+            "id":1
+        }
+        ,
+        {
+            "root_component":
+             {
+                    "type":"PerspectiveCamera",
+                    "fov":60.0,
+                    "aspec":1.7777777,
+                    "near_plane":0.1,
+                    "far_plane":1000.0,
+                    "local_translation":[ 0.0,5.0,-10.0],
+                    "local_rotation":[0.0,0.0,0.0],
+                    "local_scale":[1.0,1.0,1.0]
+            },
+            "name":"mian_camera",
+            "id":2
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "render_state": {
+        "material_domain": "surface",
+        "blend_mode": "opqaue",
+        "shading_mode": "lit",
+        "two_side": false
+    },
+    "shader_path": "default_material.hlsl",
+    "material_parameters": [
+        {
+            "name": "color",
+            "type": "vector4",
+            "value": [
+                0.8,
+                0.8,
+                0.8,
+                1.0
+            ]
+        }
+    ]
+}

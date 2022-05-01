@@ -1,0 +1,25 @@
+{
+    "render_state": {
+        "material_domain": "surface",
+        "blend_mode": "opqaue",
+        "shading_mode": "lit",
+        "two_side": false
+    },
+    "shader_path": "shader_ball.hlsl",
+    "material_parameters": [
+        {
+            "name": "diffuse_tex",
+            "type": "texture_2d",
+            "value": "textures/uv.png",
+            "filter": "bilinear",
+            "address_mode_u": "wrap",
+            "address_mode_v": "wrap",
+            "address_mode_w": "wrap"
+        },
+        {
+            "name": "strength",
+            "type": "float",
+            "value": 2.0
+        }
+    ]
+}
