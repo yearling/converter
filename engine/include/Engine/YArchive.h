@@ -58,7 +58,7 @@ public:
 	FORCEINLINE bool IsByteSwapping()
 	{
 #if PLATFORM_LITTLE_ENDIAN
-		const bool SwapBytes = 0;
+		const bool SwapBytes = false;
 #else
 		bool SwapBytes = this->IsPersistent();
 #endif
