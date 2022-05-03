@@ -795,6 +795,9 @@ protected:
 
 	template<typename BaseResourceType>
 	TD3D11Texture2D<BaseResourceType>* CreateTextureFromResource(bool bTextureArray, bool bCubeTexture, EPixelFormat Format, uint32 TexCreateFlags, const FClearValueBinding& ClearValueBinding, ID3D11Texture2D* TextureResource);
+
+	/** Initializes the constant buffers.  Called once at RHI initialization time. */
+	void InitConstantBuffers();
 };
 
 /** Find an appropriate DXGI format for the input format and SRGB setting. */

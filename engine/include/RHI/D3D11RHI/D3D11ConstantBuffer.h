@@ -9,6 +9,7 @@
 #include "Engine/YReferenceCount.h"
 #include "Render/RenderResource.h"
 #include "Math/YMath.h"
+#include <d3d11.h>
 
 class FD3D11DynamicRHI;
 
@@ -29,7 +30,7 @@ extern const uint32 GConstantBufferSizes[MAX_CONSTANT_BUFFER_SLOTS];
 /**
  * A D3D constant buffer
  */
-class FD3D11ConstantBuffer : public FRenderResource, public IRefCountedObject
+class FD3D11ConstantBuffer : public FRenderResource, public YRefCountedObject
 {
 public:
 
@@ -71,4 +72,38 @@ protected:
 };
 
 //DECLARE_CYCLE_STAT_EXTERN(TEXT("Global Constant buffer update time"),STAT_D3D11GlobalConstantBufferUpdateTime,STATGROUP_D3D11RHI, );
+
+class FWinD3D11ConstantBuffer : public FD3D11ConstantBuffer
+{
+public:
+	FWinD3D11ConstantBuffer(FD3D11DynamicRHI* InD3DRHI, uint32 InSize = 0, uint32 SubBuffers = 1) :
+		FD3D11ConstantBuffer(InD3DRHI, InSize, SubBuffers),
+		Buffers(nullptr),
+		CurrentSubBuffer(0),
+		NumSubBuffers(SubBuffers)
+	{
+	}
+
+	// FRenderResource interface.
+	virtual void	InitDynamicRHI() override;
+	virtual void	ReleaseDynamicRHI() override;
+
+	/**
+	* Get the current pool buffer
+	*/
+	ID3D11Buffer* GetConstantBuffer() const
+	{
+		return Buffers[CurrentSubBuffer];
+	}
+
+	/**
+	* Unlocks the constant buffer so the data can be transmitted to the device
+	*/
+	bool CommitConstantsToDevice(bool bDiscardSharedConstants);
+
+private:
+	TRefCountPtr<ID3D11Buffer>* Buffers;
+	uint32	CurrentSubBuffer;
+	uint32	NumSubBuffers;
+};
 
