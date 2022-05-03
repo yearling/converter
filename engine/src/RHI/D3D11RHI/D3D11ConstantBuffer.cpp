@@ -76,6 +76,7 @@ void FWinD3D11ConstantBuffer::InitDynamicRHI()
 
 	Buffers = new TRefCountPtr<ID3D11Buffer>[NumSubBuffers];
 	CurrentSubBuffer = 0;
+	//note by zyx, create constant buffer mipmaps
 	for (uint32 s = 0; s < NumSubBuffers; s++)
 	{
 		VERIFYD3D11RESULT_EX(D3DRHI->GetDevice()->CreateBuffer(&BufferDesc, NULL, Buffers[s].GetInitReference()), D3DRHI->GetDevice());
