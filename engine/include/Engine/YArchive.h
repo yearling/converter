@@ -18,8 +18,8 @@ public:
 	virtual	~YArchive();
 	bool IsReading() { return is_reading_; }
 	bool IsWriting() { return is_writing_; }
-	bool SetIsReading(bool is_reading) { is_reading_ = is_reading; }
-	bool SetIsWriting(bool is_writing) { is_writing_ = is_writing; }
+	void SetIsReading(bool is_reading) { is_reading_ = is_reading; }
+	void SetIsWriting(bool is_writing) { is_writing_ = is_writing; }
 	virtual int64 Tell()
 	{
 		return INDEX_NONE;

@@ -4026,7 +4026,7 @@ public:
 #if CAN_TOGGLE_COMMAND_LIST_BYPASS
 		return bLatchedUseParallelAlgorithms;
 #else
-		return  FApp::ShouldUseThreadingForPerformance() && !Bypass() && (GSupportsParallelRenderingTasksWithSeparateRHIThread || !IsRunningRHIInSeparateThread());
+		return /* FApp::ShouldUseThreadingForPerformance() && */!Bypass() && (GSupportsParallelRenderingTasksWithSeparateRHIThread || !IsRunningRHIInSeparateThread());
 #endif
 	}
 	static void CheckNoOutstandingCmdLists();

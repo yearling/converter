@@ -46,6 +46,31 @@ struct FBaseShaderResourceTable
 	}
 };
 
+inline YArchive& operator<<(YArchive& Ar, FBaseShaderResourceTable& SRT)
+{
+	Ar << SRT.ResourceTableBits;
+	Ar << SRT.ShaderResourceViewMap;
+	Ar << SRT.SamplerMap;
+	Ar << SRT.UnorderedAccessViewMap;
+	Ar << SRT.ResourceTableLayoutHashes;
+
+	return Ar;
+}
+
+// if this changes you need to make sure all D3D11 shaders get invalidated
+struct FShaderCodePackedResourceCounts
+{
+	// for FindOptionalData() and AddOptionalData()
+	static const uint8 Key = 'p';
+
+	bool bGlobalUniformBufferUsed;
+	uint8 NumSamplers;
+	uint8 NumSRVs;
+	uint8 NumCBs;
+	uint8 NumUAVs;
+};
+
+
 // later we can transform that to the actual class passed around at the RHI level
 class FShaderCodeReader
 {
@@ -281,7 +306,7 @@ public:
 		uint32 Size =strlen(InString) + 1;
 		AddOptionalData(Key, (uint8*)InString, Size);
 	}
-	friend MemoryFile& operator<<(MemoryFile& mem_file, FShaderCode& out_put)
+	friend YArchive& operator<<(YArchive& mem_file, FShaderCode& out_put)
 	{
 		if (mem_file.IsReading())
 		{

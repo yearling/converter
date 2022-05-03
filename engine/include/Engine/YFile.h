@@ -73,7 +73,7 @@ protected:
 	FileType type_;
 };
 
-class YBufferReader :public YArchive
-{
-	YBufferReader(void* buffer, )
-};
+//class YBufferReader :public YArchive
+//{
+//	YBufferReader(void* buffer, )
+//};

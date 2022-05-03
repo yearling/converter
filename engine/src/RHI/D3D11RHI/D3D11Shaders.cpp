@@ -6,7 +6,9 @@
 
 #include <d3d11.h>
 #include "RHI/D3D11RHI/D3D11RHI.h"
-#if 0
+#include "Engine/YMemoryArchive.h"
+#include <vector>
+#include "ShaderCore/ShaderCore.h"
 template <typename TShaderType>
 static inline void ReadShaderOptionalData(FShaderCodeReader& InShaderCode, TShaderType& OutShader)
 {
@@ -21,31 +23,31 @@ static inline void ReadShaderOptionalData(FShaderCodeReader& InShaderCode, TShad
 	if (UniformBufferData && UniformBufferTableSize > 0)
 	{
 		FBufferReader UBReader((void*)UniformBufferData, UniformBufferTableSize, false);
-		TArray<FString> Names;
+		std::vector<std::string> Names;
 		UBReader << Names;
-		check(OutShader.UniformBuffers.Num() == 0);
-		for (int32 Index = 0; Index < Names.Num(); ++Index)
+		check(OutShader.UniformBuffers.size() == 0);
+		for (int32 Index = 0; Index < Names.size(); ++Index)
 		{
-			OutShader.UniformBuffers.Add(FName(*Names[Index]));
+			OutShader.UniformBuffers.push_back(Names[Index]);
 		}
 	}
 #endif
 }
 
-FVertexShaderRHIRef FD3D11DynamicRHI::RHICreateVertexShader(const TArray<uint8>& Code)
+FVertexShaderRHIRef FD3D11DynamicRHI::RHICreateVertexShader(const std::vector<uint8>& Code)
 {
 	FShaderCodeReader ShaderCode(Code);
 
 	FD3D11VertexShader* Shader = new FD3D11VertexShader;
 
-	FMemoryReader Ar( Code, true );
+	YMemoryReader Ar( Code);
 	Ar << Shader->ShaderResourceTable;
 	int32 Offset = Ar.Tell();
-	const uint8* CodePtr = Code.GetData() + Offset;
+	const uint8* CodePtr = Code.data() + Offset;
 	const size_t CodeSize = ShaderCode.GetActualShaderCodeSize() - Offset;
 
 	ReadShaderOptionalData(ShaderCode, *Shader);
-	VERIFYD3D11SHADERRESULT(Direct3DDevice->CreateVertexShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, Direct3DDevice);
+	VERIFYD3D11SHADERRESULT(d3d_device_->CreateVertexShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, d3d_device_);
 	
 	// TEMP
 	Shader->Code = Code;
@@ -53,36 +55,35 @@ FVertexShaderRHIRef FD3D11DynamicRHI::RHICreateVertexShader(const TArray<uint8>&
 
 	return Shader;
 }
-
-FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShader(const TArray<uint8>& Code) 
+FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShader(const std::vector<uint8>& Code)
 { 
 	FShaderCodeReader ShaderCode(Code);
 
 	FD3D11GeometryShader* Shader = new FD3D11GeometryShader;
 
-	FMemoryReader Ar( Code, true );
+	YMemoryReader Ar( Code );
 	Ar << Shader->ShaderResourceTable;
 	int32 Offset = Ar.Tell();
-	const uint8* CodePtr = Code.GetData() + Offset;
+	const uint8* CodePtr = Code.data() + Offset;
 	const size_t CodeSize = ShaderCode.GetActualShaderCodeSize() - Offset;
 
 	ReadShaderOptionalData(ShaderCode, *Shader);
-	VERIFYD3D11SHADERRESULT(Direct3DDevice->CreateGeometryShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, Direct3DDevice);
+	VERIFYD3D11SHADERRESULT(d3d_device_->CreateGeometryShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, d3d_device_);
 
 
 	return Shader;
 }
 
-FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(const TArray<uint8>& Code, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream) 
+FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(const std::vector<uint8>& Code, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream)
 { 
 	FShaderCodeReader ShaderCode(Code);
 
 	FD3D11GeometryShader* Shader = new FD3D11GeometryShader;
 
-	FMemoryReader Ar( Code, true );
+	YMemoryReader Ar( Code);
 	Ar << Shader->ShaderResourceTable;
 	int32 Offset = Ar.Tell();
-	const uint8* CodePtr = Code.GetData() + Offset;
+	const uint8* CodePtr = Code.data() + Offset;
 	const size_t CodeSize = ShaderCode.GetActualShaderCodeSize() - Offset;
 
 	uint32 D3DRasterizedStream = RasterizedStream;
@@ -93,7 +94,7 @@ FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(
 
 	D3D11_SO_DECLARATION_ENTRY StreamOutEntries[D3D11_SO_STREAM_COUNT * D3D11_SO_OUTPUT_COMPONENT_COUNT];
 
-	for (int32 EntryIndex = 0; EntryIndex < ElementList.Num(); EntryIndex++)
+	for (int32 EntryIndex = 0; EntryIndex < ElementList.size(); EntryIndex++)
 	{
 		StreamOutEntries[EntryIndex].Stream = ElementList[EntryIndex].Stream;
 		StreamOutEntries[EntryIndex].SemanticName = ElementList[EntryIndex].SemanticName;
@@ -103,11 +104,11 @@ FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(
 		StreamOutEntries[EntryIndex].OutputSlot = ElementList[EntryIndex].OutputSlot;
 	}
 
-	VERIFYD3D11SHADERRESULT( Direct3DDevice->CreateGeometryShaderWithStreamOutput(
+	VERIFYD3D11SHADERRESULT( d3d_device_->CreateGeometryShaderWithStreamOutput(
 			(void*)CodePtr,
 			CodeSize,
 			StreamOutEntries,
-			ElementList.Num(),
+			ElementList.size(),
 			Strides,
 			NumStrides,
 			D3DRasterizedStream,
@@ -115,7 +116,7 @@ FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(
 			Shader->Resource.GetInitReference()
 			),
 		Shader,
-		Direct3DDevice);
+		d3d_device_);
 	
 	auto PackedResourceCounts = ShaderCode.FindOptionalData<FShaderCodePackedResourceCounts>();
 	check(PackedResourceCounts);
@@ -127,74 +128,74 @@ FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(
 	return Shader;
 }
 
-FHullShaderRHIRef FD3D11DynamicRHI::RHICreateHullShader(const TArray<uint8>& Code) 
+FHullShaderRHIRef FD3D11DynamicRHI::RHICreateHullShader(const std::vector<uint8>& Code) 
 { 
 	FShaderCodeReader ShaderCode(Code);
 
 	FD3D11HullShader* Shader = new FD3D11HullShader;
 
-	FMemoryReader Ar( Code, true );
+	YMemoryReader Ar( Code );
 	Ar << Shader->ShaderResourceTable;
 	int32 Offset = Ar.Tell();
-	const uint8* CodePtr = Code.GetData() + Offset;
+	const uint8* CodePtr = Code.data() + Offset;
 	const size_t CodeSize = ShaderCode.GetActualShaderCodeSize() - Offset;
 
 	ReadShaderOptionalData(ShaderCode, *Shader);
-	VERIFYD3D11SHADERRESULT( Direct3DDevice->CreateHullShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, Direct3DDevice);
+	VERIFYD3D11SHADERRESULT( d3d_device_->CreateHullShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, d3d_device_);
 
 	return Shader;
 }
 
-FDomainShaderRHIRef FD3D11DynamicRHI::RHICreateDomainShader(const TArray<uint8>& Code) 
+FDomainShaderRHIRef FD3D11DynamicRHI::RHICreateDomainShader(const std::vector<uint8>& Code)
 { 
 	FShaderCodeReader ShaderCode(Code);
 
 	FD3D11DomainShader* Shader = new FD3D11DomainShader;
 
-	FMemoryReader Ar( Code, true );
+	YMemoryReader Ar( Code);
 	Ar << Shader->ShaderResourceTable;
 	int32 Offset = Ar.Tell();
-	const uint8* CodePtr = Code.GetData() + Offset;
+	const uint8* CodePtr = Code.data() + Offset;
 	const size_t CodeSize = ShaderCode.GetActualShaderCodeSize() - Offset;
 
 	ReadShaderOptionalData(ShaderCode, *Shader);
-	VERIFYD3D11SHADERRESULT( Direct3DDevice->CreateDomainShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, Direct3DDevice);
+	VERIFYD3D11SHADERRESULT( d3d_device_->CreateDomainShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, d3d_device_);
 
 	return Shader;
 }
 
-FPixelShaderRHIRef FD3D11DynamicRHI::RHICreatePixelShader(const TArray<uint8>& Code)
+FPixelShaderRHIRef FD3D11DynamicRHI::RHICreatePixelShader(const std::vector<uint8>& Code)
 {
 	FShaderCodeReader ShaderCode(Code);
 
 	FD3D11PixelShader* Shader = new FD3D11PixelShader;
 
-	FMemoryReader Ar( Code, true );
+	YMemoryReader Ar( Code);
 	Ar << Shader->ShaderResourceTable;
 	int32 Offset = Ar.Tell();
-	const uint8* CodePtr = Code.GetData() + Offset;
+	const uint8* CodePtr = Code.data() + Offset;
 	const size_t CodeSize = ShaderCode.GetActualShaderCodeSize() - Offset;
 
 	ReadShaderOptionalData(ShaderCode, *Shader);
-	VERIFYD3D11SHADERRESULT(Direct3DDevice->CreatePixelShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, Direct3DDevice);
+	VERIFYD3D11SHADERRESULT(d3d_device_->CreatePixelShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, d3d_device_);
 
 	return Shader;
 }
 
-FComputeShaderRHIRef FD3D11DynamicRHI::RHICreateComputeShader(const TArray<uint8>& Code) 
+FComputeShaderRHIRef FD3D11DynamicRHI::RHICreateComputeShader(const  std::vector<uint8>& Code)
 { 
 	FShaderCodeReader ShaderCode(Code);
 
 	FD3D11ComputeShader* Shader = new FD3D11ComputeShader;
 
-	FMemoryReader Ar( Code, true );
+	YMemoryReader Ar( Code);
 	Ar << Shader->ShaderResourceTable;
 	int32 Offset = Ar.Tell();
-	const uint8* CodePtr = Code.GetData() + Offset;
+	const uint8* CodePtr = Code.data() + Offset;
 	const size_t CodeSize = ShaderCode.GetActualShaderCodeSize() - Offset;
 
 	ReadShaderOptionalData(ShaderCode, *Shader);
-	VERIFYD3D11SHADERRESULT( Direct3DDevice->CreateComputeShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, Direct3DDevice);
+	VERIFYD3D11SHADERRESULT( d3d_device_->CreateComputeShader( (void*)CodePtr, CodeSize, NULL, Shader->Resource.GetInitReference() ), Shader, d3d_device_);
 
 	return Shader;
 }
@@ -222,7 +223,7 @@ FD3D11BoundShaderState::FD3D11BoundShaderState(
 	):
 	CacheLink(InVertexDeclarationRHI,InVertexShaderRHI,InPixelShaderRHI,InHullShaderRHI,InDomainShaderRHI,InGeometryShaderRHI,this)
 {
-	INC_DWORD_STAT(STAT_D3D11NumBoundShaderState);
+	//INC_DWORD_STAT(STAT_D3D11NumBoundShaderState);
 
 	FD3D11VertexDeclaration* InVertexDeclaration = FD3D11DynamicRHI::ResourceCast(InVertexDeclarationRHI);
 	FD3D11VertexShader* InVertexShader = FD3D11DynamicRHI::ResourceCast(InVertexShaderRHI);
@@ -233,7 +234,7 @@ FD3D11BoundShaderState::FD3D11BoundShaderState(
 
 	// Create an input layout for this combination of vertex declaration and vertex shader.
 	D3D11_INPUT_ELEMENT_DESC NullInputElement;
-	FMemory::Memzero(&NullInputElement,sizeof(D3D11_INPUT_ELEMENT_DESC));
+	ZeroMemory(&NullInputElement,sizeof(D3D11_INPUT_ELEMENT_DESC));
 
 	FShaderCodeReader VertexShaderCode(InVertexShader->Code);
 
@@ -243,17 +244,17 @@ FD3D11BoundShaderState::FD3D11BoundShaderState(
 	}
 	else
 	{
-		FMemory::Memcpy(StreamStrides, InVertexDeclaration->StreamStrides, sizeof(StreamStrides));
+		memcpy(StreamStrides, InVertexDeclaration->StreamStrides, sizeof(StreamStrides));
 
 		VERIFYD3D11RESULT_EX(
-		Direct3DDevice->CreateInputLayout(
-			InVertexDeclaration && InVertexDeclaration->VertexElements.Num() ? InVertexDeclaration->VertexElements.GetData() : &NullInputElement,
-			InVertexDeclaration ? InVertexDeclaration->VertexElements.Num() : 0,
+			Direct3DDevice->CreateInputLayout(
+			InVertexDeclaration && InVertexDeclaration->VertexElements.size() ? InVertexDeclaration->VertexElements.data() : &NullInputElement,
+			InVertexDeclaration ? InVertexDeclaration->VertexElements.size() : 0,
 			&InVertexShader->Code[ InVertexShader->Offset ],			// TEMP ugly
 			VertexShaderCode.GetActualShaderCodeSize() - InVertexShader->Offset,
 			InputLayout.GetInitReference()
 			),
-		Direct3DDevice
+			Direct3DDevice
 		);
 	}
 
@@ -263,7 +264,7 @@ FD3D11BoundShaderState::FD3D11BoundShaderState(
 	DomainShader = InDomainShader ? InDomainShader->Resource : NULL;
 	GeometryShader = InGeometryShader ? InGeometryShader->Resource : NULL;
 
-	FMemory::Memzero(&bShaderNeedsGlobalConstantBuffer,sizeof(bShaderNeedsGlobalConstantBuffer));
+	ZeroMemory(&bShaderNeedsGlobalConstantBuffer,sizeof(bShaderNeedsGlobalConstantBuffer));
 
 	bShaderNeedsGlobalConstantBuffer[SF_Vertex] = InVertexShader->bShaderNeedsGlobalConstantBuffer;
 	bShaderNeedsGlobalConstantBuffer[SF_Hull] = InHullShader ? InHullShader->bShaderNeedsGlobalConstantBuffer : false;
@@ -276,7 +277,7 @@ FD3D11BoundShaderState::FD3D11BoundShaderState(
 
 FD3D11BoundShaderState::~FD3D11BoundShaderState()
 {
-	DEC_DWORD_STAT(STAT_D3D11NumBoundShaderState);
+	//DEC_DWORD_STAT(STAT_D3D11NumBoundShaderState);
 }
 
 
@@ -303,7 +304,7 @@ FBoundShaderStateRHIRef FD3D11DynamicRHI::RHICreateBoundShaderState(
 
 	SCOPE_CYCLE_COUNTER(STAT_D3D11CreateBoundShaderStateTime);
 
-	checkf(GIsRHIInitialized && Direct3DDeviceIMContext,(TEXT("Bound shader state RHI resource was created without initializing Direct3D first")));
+	checkf(GIsRHIInitialized && d3d_dc_	,(TEXT("Bound shader state RHI resource was created without initializing Direct3D first")));
 
 	// Check for an existing bound shader state which matches the parameters
 	FCachedBoundShaderStateLink* CachedBoundShaderStateLink = GetCachedBoundShaderState(
@@ -322,8 +323,6 @@ FBoundShaderStateRHIRef FD3D11DynamicRHI::RHICreateBoundShaderState(
 	else
 	{
 		SCOPE_CYCLE_COUNTER(STAT_D3D11NewBoundShaderStateTime);
-		return new FD3D11BoundShaderState(VertexDeclarationRHI,VertexShaderRHI,PixelShaderRHI,HullShaderRHI,DomainShaderRHI,GeometryShaderRHI,Direct3DDevice);
+		return new FD3D11BoundShaderState(VertexDeclarationRHI,VertexShaderRHI,PixelShaderRHI,HullShaderRHI,DomainShaderRHI,GeometryShaderRHI,d3d_device_);
 	}
 }
-
-#endif

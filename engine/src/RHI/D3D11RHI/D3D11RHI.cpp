@@ -732,92 +732,12 @@ const char* FD3D11DynamicRHI::GetName()
 	return "DirectX11";
 }
 
-FPixelShaderRHIRef FD3D11DynamicRHI::RHICreatePixelShader(const std::vector<uint8>& Code)
-{
-	return nullptr;
-}
-
-FPixelShaderRHIRef FD3D11DynamicRHI::RHICreatePixelShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FVertexShaderRHIRef FD3D11DynamicRHI::RHICreateVertexShader(const std::vector<uint8>& Code)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FVertexShaderRHIRef FD3D11DynamicRHI::RHICreateVertexShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FHullShaderRHIRef FD3D11DynamicRHI::RHICreateHullShader(const std::vector<uint8>& Code)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FHullShaderRHIRef FD3D11DynamicRHI::RHICreateHullShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FDomainShaderRHIRef FD3D11DynamicRHI::RHICreateDomainShader(const std::vector<uint8>& Code)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FDomainShaderRHIRef FD3D11DynamicRHI::RHICreateDomainShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShader(const std::vector<uint8>& Code)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(const std::vector<uint8>& Code, const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FGeometryShaderRHIRef FD3D11DynamicRHI::RHICreateGeometryShaderWithStreamOutput(const FStreamOutElementList& ElementList, uint32 NumStrides, const uint32* Strides, int32 RasterizedStream, FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 void FD3D11DynamicRHI::FlushPendingLogs()
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FComputeShaderRHIRef FD3D11DynamicRHI::RHICreateComputeShader(const std::vector<uint8>& Code)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FComputeShaderRHIRef FD3D11DynamicRHI::RHICreateComputeShader(FRHIShaderLibraryParamRef Library, FSHAHash Hash)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FRHIShaderLibraryRef FD3D11DynamicRHI::RHICreateShaderLibrary(EShaderPlatform Platform, std::string const& FilePath, std::string const& Name)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
 FComputeFenceRHIRef FD3D11DynamicRHI::RHICreateComputeFence(const std::string& Name)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FBoundShaderStateRHIRef FD3D11DynamicRHI::RHICreateBoundShaderState(FVertexDeclarationRHIParamRef VertexDeclaration, FVertexShaderRHIParamRef VertexShader, FHullShaderRHIParamRef HullShader, FDomainShaderRHIParamRef DomainShader, FPixelShaderRHIParamRef PixelShader, FGeometryShaderRHIParamRef GeometryShader)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }
@@ -1413,11 +1333,6 @@ void FD3D11DynamicRHI::RHIAutomaticCacheFlushAfterComputeShader(bool bEnable)
 }
 
 void FD3D11DynamicRHI::RHIFlushComputeShaderCache()
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHISetMultipleViewports(uint32_t Count, const FViewportBounds* Data)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }

@@ -22,10 +22,10 @@ struct FD3D11ShaderResourceTable : public FBaseShaderResourceTable
 	}
 };
 
-//inline FArchive& operator<<(FArchive& Ar, FD3D11ShaderResourceTable& SRT)
-//{
-//	FBaseShaderResourceTable& BaseSRT = SRT;
-//	Ar << BaseSRT;
-//	Ar << SRT.TextureMap;
-//	return Ar;
-//}
+inline YArchive& operator<<(YArchive& Ar, FD3D11ShaderResourceTable& SRT)
+{
+	FBaseShaderResourceTable& BaseSRT = SRT;
+	Ar << BaseSRT;
+	Ar << SRT.TextureMap;
+	return Ar;
+}
