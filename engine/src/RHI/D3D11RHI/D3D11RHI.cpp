@@ -782,46 +782,6 @@ void FD3D11DynamicRHI::RHIUnlockStructuredBuffer(FStructuredBufferRHIParamRef St
 	throw std::logic_error("The method or operation is not implemented.");
 }
 
-FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FStructuredBufferRHIParamRef StructuredBuffer, bool bUseUAVCounter, bool bAppendBuffer)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FTextureRHIParamRef Texture, uint32 MipLevel)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FVertexBufferRHIParamRef VertexBuffer, uint8 Format)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHICreateUnorderedAccessView(FIndexBufferRHIParamRef IndexBuffer, uint8 Format)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FVertexBufferRHIParamRef VertexBuffer, uint32 Stride, uint8 Format)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FIndexBufferRHIParamRef Buffer)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FShaderResourceViewRHIRef FD3D11DynamicRHI::RHICreateShaderResourceView(FStructuredBufferRHIParamRef StructuredBuffer)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIBindDebugLabelName(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const char* Name)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
 FUnorderedAccessViewRHIRef FD3D11DynamicRHI::RHIGetViewportBackBufferUAV(FViewportRHIParamRef ViewportRHI)
 {
@@ -1333,11 +1293,6 @@ void FD3D11DynamicRHI::RHIAutomaticCacheFlushAfterComputeShader(bool bEnable)
 }
 
 void FD3D11DynamicRHI::RHIFlushComputeShaderCache()
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-void FD3D11DynamicRHI::RHIClearTinyUAV(FUnorderedAccessViewRHIParamRef UnorderedAccessViewRHI, const uint32_t* Values)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }

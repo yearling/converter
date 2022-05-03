@@ -10,7 +10,7 @@
 #include "Render/RenderResource.h"
 #include "Math/YMath.h"
 #include <d3d11.h>
-
+#include "RHI/D3D11RHI/D3D11StateCache.h"
 class FD3D11DynamicRHI;
 
 /** Size of the default constant buffer. */
