@@ -655,7 +655,7 @@ public:
 
 protected:
 	void CleanupD3DDevice();
-
+	void ReleasePooledUniformBuffers();
 	template <EShaderFrequency ShaderFrequency>
 	void ClearShaderResourceViews(FD3D11BaseShaderResource* Resource);
 

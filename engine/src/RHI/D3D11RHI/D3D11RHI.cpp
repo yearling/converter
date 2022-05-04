@@ -148,13 +148,27 @@ ChosenDescription(InChosenDescription)
 		GMaxCubeTextureDimensions = D3D10_REQ_TEXTURECUBE_DIMENSION;
 		GMaxTextureArrayLayers = D3D10_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
 	}
-
+	// Initialize the constant buffers.
 	GMaxTextureMipCount = YMath::CeilLogTwo(GMaxTextureDimensions) + 1;
 	GMaxTextureMipCount = YMath::Min<int32>(MAX_TEXTURE_MIP_COUNT, GMaxTextureMipCount);
 	GMaxShadowDepthBufferSizeX = GMaxTextureDimensions;
 	GMaxShadowDepthBufferSizeY = GMaxTextureDimensions;
 	GSupportsTimestampRenderQueries = true;
 	GRHISupportsResolveCubemapFaces = true;
+
+	// Initialize the constant buffers.
+	InitConstantBuffers();
+
+	// Create the dynamic vertex and index buffers used for Draw[Indexed]PrimitiveUP.
+	//uint32 DynamicVBSizes[] = { 128,1024,64 * 1024,1024 * 1024,0 };
+	//DynamicVB = new FD3D11DynamicBuffer(this, D3D11_BIND_VERTEX_BUFFER, DynamicVBSizes);
+	//uint32 DynamicIBSizes[] = { 128,1024,64 * 1024,1024 * 1024,0 };
+	//DynamicIB = new FD3D11DynamicBuffer(this, D3D11_BIND_INDEX_BUFFER, DynamicIBSizes);
+
+	for (int32 Frequency = 0; Frequency < SF_NumFrequencies; ++Frequency)
+	{
+		DirtyUniformBuffers[Frequency] = 0;
+	}
 }
 
 FD3D11DynamicRHI::~FD3D11DynamicRHI()
@@ -758,11 +772,6 @@ TRefCountPtr<FRHIComputePipelineState> FD3D11DynamicRHI::RHICreateComputePipelin
 }
 
 TRefCountPtr<FRHIComputePipelineState> FD3D11DynamicRHI::RHICreateComputePipelineState(FRHIComputeShader* ComputeShader, FRHIPipelineBinaryLibraryParamRef PipelineBinary)
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
-
-FUniformBufferRHIRef FD3D11DynamicRHI::RHICreateUniformBuffer(const void* Contents, const FRHIUniformBufferLayout& Layout, EUniformBufferUsage Usage)
 {
 	throw std::logic_error("The method or operation is not implemented.");
 }

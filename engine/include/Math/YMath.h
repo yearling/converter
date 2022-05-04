@@ -296,7 +296,6 @@ struct YMath
 		return (T)(A + Alpha * (B - A));
 	}
 
-
 	/**
  * Converts a float to a nearest less or equal integer.
  * @param F		Floating point value to convert
@@ -535,6 +534,11 @@ struct YMath
 	{
 		int32 Bitmask = ((int32)(CountLeadingZeros(Arg) << 26)) >> 31;
 		return (32 - CountLeadingZeros(Arg - 1)) & (~Bitmask);
+	}
+
+	static FORCEINLINE uint32 RoundUpToPowerOfTwo(uint32 Arg)
+	{
+		return 1 << CeilLogTwo(Arg);
 	}
 };
 
