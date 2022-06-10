@@ -60,8 +60,8 @@ int YLODMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_id
 	{
 		vertex_instances[vertex_ins_ids[i]].AddTriangleID(polygon_id);
 		int i_next = (i + 1) % ((int)vertex_ins_ids.size());
-		int vertex_id = vertex_instances[vertex_ins_ids[i]].vertex_id;
-		int vertex_next_id = vertex_instances[vertex_ins_ids[i_next]].vertex_id;
+		int vertex_id = vertex_instances[vertex_ins_ids[i]].vertex_position_id;
+		int vertex_next_id = vertex_instances[vertex_ins_ids[i_next]].vertex_position_id;
 		int edge_idex = GetVertexPairEdge(vertex_id, vertex_next_id);
 		//create edges
 		if (edge_idex == INVALID_ID)
@@ -79,7 +79,7 @@ int YLODMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_id
 
 void YLODMesh::ComputeAABB()
 {
-	for (YMeshVertex& v : vertex_position)
+	for (YMeshVertexPosition& v : vertex_position)
 	{
 		aabb += v.position;
 	}
@@ -116,7 +116,7 @@ void YMeshVertexInstance::AddTriangleID(int triangle_id)
 	}
 }
 
-void YMeshVertex::AddVertexInstance(int index)
+void YMeshVertexPosition::AddVertexInstance(int index)
 {
 	auto find_reuslt = std::find(vertex_instance_ids.begin(), vertex_instance_ids.end(), index);
 	if (find_reuslt == vertex_instance_ids.end())
@@ -171,7 +171,7 @@ YArchive& operator<<(YArchive& mem_file, YMeshPolygon& mesh_polygon)
 
 YArchive& operator<<(YArchive& mem_file,  YMeshVertexInstance& mesh_vertex_instance)
 {
-	mem_file << mesh_vertex_instance.vertex_id;
+	mem_file << mesh_vertex_instance.vertex_position_id;
 	mem_file << mesh_vertex_instance.connected_triangles;
 	mem_file << mesh_vertex_instance.vertex_instance_normal;
 	mem_file << mesh_vertex_instance.vertex_instance_tangent;
@@ -182,7 +182,7 @@ YArchive& operator<<(YArchive& mem_file,  YMeshVertexInstance& mesh_vertex_insta
 	return mem_file;
 }
 
-YArchive& operator<<(YArchive& mem_file,  YMeshVertex& mesh_vertex)
+YArchive& operator<<(YArchive& mem_file,  YMeshVertexPosition& mesh_vertex)
 {
 	mem_file << mesh_vertex.vertex_instance_ids;
 	mem_file << mesh_vertex.connect_edge_ids;

@@ -232,6 +232,7 @@ void YFbxImporter::ParseSceneInfo()
 				scene_info_->no_skin_mesh++;
 				mesh_info.is_skeleton_mesh = false;
 			}
+			scene_info_->mesh_infos.push_back(mesh_info);
 		}
 	}
 	scene_info_->has_animation = false;

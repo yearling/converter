@@ -408,8 +408,8 @@ static void sleep_for(double dt)
 
 void YEngine::Update()
 {
-	int current_fence_index = frame_index % 2;
-	//int current_fence_index = 0;
+	//int current_fence_index = frame_index % 2;
+	int current_fence_index = 0;
 	//sleep_for(0.010);
 	if (render_fence[current_fence_index])
 	{
@@ -502,7 +502,7 @@ void YEngine::Update()
 	//Frame fence
 	{
 		static FFrameEndSync frame_end_sync;
-		frame_end_sync.Sync(true);
+		frame_end_sync.Sync(false);
 	}
 	delete PreviousPendingCleanupObjects;
 	frame_index++;

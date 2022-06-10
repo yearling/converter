@@ -9,7 +9,7 @@
 #include "Render/YForwardRenderer.h"
 #include "SObject/SObjectManager.h"
 #include "Engine/YLog.h"
-
+#include "YFbxImporter.h"
 
 GameApplication::GameApplication()
 {
@@ -131,6 +131,32 @@ bool GameApplication::Initial()
 	// g_editor = std::make_unique<Editor>(engine);
 	// g_editor->Init(windows_[0]->GetHWND());
 	engine->TestLoad();
+
+	//std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
+	//const std::string file_path = "E:/topo_split/head.fbx";
+	//if (static_mesh_importer->ImportFile(file_path))
+	//{
+	//	FbxImportParam importer_param;
+	//	importer_param.model_name = "head";
+	//	ConvertedResult result;
+	//	if (static_mesh_importer->ParseFile(importer_param, result))
+	//	{
+	//		auto& converted_static_mesh_vec = result.static_meshes;
+	//		for (auto& mesh : converted_static_mesh_vec)
+	//		{
+	//			mesh->SaveV0("head");
+	//		}
+	//	}
+	//	else
+	//	{
+	//		ERROR_INFO("parse file ", file_path, "failed!");
+	//	}
+	//}
+	//else
+	//{
+	//	ERROR_INFO("open file ", file_path, "failed!");
+	//}
+
 	return true;
 }
 

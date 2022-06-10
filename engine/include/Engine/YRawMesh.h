@@ -10,7 +10,7 @@
 #include "YArchive.h"
 
 const int INVALID_ID = -1;
-struct YMeshVertex
+struct YMeshVertexPosition
 {
 	/** All of vertex instances which reference this vertex (for split vertex support) */
 	std::vector<int> vertex_instance_ids;
@@ -26,7 +26,7 @@ struct YMeshVertexInstance
 {
 	YMeshVertexInstance();
 	/** The vertex this is instancing */
-	int vertex_id = -1;
+	int vertex_position_id = -1;
 
 	/** List of connected triangles */
 	std::vector<int> connected_triangles;
@@ -76,13 +76,13 @@ public:
 	YLODMesh();
 	int LOD_index;
 	std::vector<YRawMesh> sub_meshes;
-	std::vector<YMeshVertex> vertex_position;
+	std::vector<YMeshVertexPosition> vertex_position;
 	//std::vector<YMeshVertex> vertices;
 	std::vector<YMeshVertexInstance> vertex_instances;
 	std::vector< YMeshPolygon> polygons;
 	std::vector< YMeshEdge> edges;
 	std::vector<YMeshPolygonGroup> polygon_groups;
-	std::unordered_map<int, std::string> polygon_group_imported_material_slot_name;
+	std::unordered_map<int, std::string> polygon_group_to_material_name;
 	
 	YBox aabb;
 	int GetVertexPairEdge(int vertex_id0, int vertex_id1);
@@ -103,6 +103,6 @@ YArchive& operator<<(YArchive& mem_file,  YMeshPolygon& mesh_polygon);
 
 YArchive& operator<<(YArchive& mem_file,  YMeshVertexInstance& mesh_vertex_instance);
 
-YArchive& operator<<(YArchive& mem_file,  YMeshVertex& mesh_vertex);
+YArchive& operator<<(YArchive& mem_file,  YMeshVertexPosition& mesh_vertex);
 
 

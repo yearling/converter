@@ -160,9 +160,9 @@ bool YStaticMesh::AllocGpuResource()
 			YMeshVertexInstance& vertex_ins_0 = lod_mesh.vertex_instances[polygon.vertex_instance_ids[0]];
 			YMeshVertexInstance& vertex_ins_1 = lod_mesh.vertex_instances[polygon.vertex_instance_ids[1]];
 			YMeshVertexInstance& vertex_ins_2 = lod_mesh.vertex_instances[polygon.vertex_instance_ids[2]];
-			position_buffer.push_back(lod_mesh.vertex_position[vertex_ins_0.vertex_id].position);
-			position_buffer.push_back(lod_mesh.vertex_position[vertex_ins_1.vertex_id].position);
-			position_buffer.push_back(lod_mesh.vertex_position[vertex_ins_2.vertex_id].position);
+			position_buffer.push_back(lod_mesh.vertex_position[vertex_ins_0.vertex_position_id].position);
+			position_buffer.push_back(lod_mesh.vertex_position[vertex_ins_1.vertex_position_id].position);
+			position_buffer.push_back(lod_mesh.vertex_position[vertex_ins_2.vertex_position_id].position);
 			normal_buffer.push_back(vertex_ins_0.vertex_instance_normal);
 			normal_buffer.push_back(vertex_ins_1.vertex_instance_normal);
 			normal_buffer.push_back(vertex_ins_2.vertex_instance_normal);

@@ -154,7 +154,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 	int vertex_offset = (int)raw_mesh->vertex_position.size();
 	int vertex_instance_offset = (int)raw_mesh->vertex_instances.size();
 	int polygon_offset = (int)raw_mesh->polygons.size();
-	std::unordered_map<int, int> polygon_group_mapping;
+	std::unordered_map<int, int> material_to_polygon_group;
 	// When importing multiple mesh pieces to the same static mesh.  Ensure each mesh piece has the same number of Uv's
 	//int existing_UV_count = lod_mesh->vertex_instance_uvs.size();
 	//int uv_num = YMath::Max(existing_UV_count, fbx_uvs.unique_count);
@@ -168,7 +168,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 		FbxVector4 fbx_position = fbx_mesh->GetControlPoints()[vertex_index];
 		fbx_position = total_matrix.MultT(fbx_position);
 		const YVector vertex_position = converter_.ConvertPos(fbx_position);
-		YMeshVertex new_mesh_vertex;
+		YMeshVertexPosition new_mesh_vertex;
 		new_mesh_vertex.position = vertex_position;
 		raw_mesh->vertex_position.push_back(new_mesh_vertex);
 		if (raw_mesh->vertex_position.size() != (real_vertex_index + 1))
@@ -212,7 +212,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 		int skipped_vertex_instance = 0;
 		// keep those for all iterations to avoid heap allocations
 		std::vector<int> corner_instance_ids;
-		std::vector<int> corner_vertices_ids;
+		std::vector<int> corner_vertices_position_ids;
 		std::vector<YVector> P;
 
 		for (int polygon_index = 0; polygon_index < polygon_count; ++polygon_index)
@@ -241,29 +241,29 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 			int real_polygon_index = polygon_offset + polygon_index;
 			corner_instance_ids.clear();
 			corner_instance_ids.resize(polygon_vertex_count);
-			corner_vertices_ids.clear();
-			corner_vertices_ids.resize(polygon_vertex_count);
+			corner_vertices_position_ids.clear();
+			corner_vertices_position_ids.resize(polygon_vertex_count);
 			for (int corner_index = 0; corner_index < polygon_vertex_count; ++corner_index, ++current_vertex_instace_index)
 			{
-				int vertex_indstance_index = vertex_instance_offset + current_vertex_instace_index;
-				int real_fbx_vertex_index = skipped_vertex_instance + current_vertex_instace_index;
-				corner_instance_ids[corner_index] = vertex_indstance_index;
+				int vertex_instance_index_in_all_mesh = vertex_instance_offset + current_vertex_instace_index;
+				int real_fbx_vertex_index_in_current_mesh = skipped_vertex_instance + current_vertex_instace_index;
+				corner_instance_ids[corner_index] = vertex_instance_index_in_all_mesh;
 				const int control_point_index = fbx_mesh->GetPolygonVertex(polygon_index, corner_index);
 				int vertex_id = vertex_offset + control_point_index;
-				corner_vertices_ids[corner_index] = vertex_id;
+				corner_vertices_position_ids[corner_index] = vertex_id;
 				const YVector vertex_position = raw_mesh->vertex_position[vertex_id].position;
 				YMeshVertexInstance new_vertex_instance;
 				// vertex_ins 到 vertex的索引
-				new_vertex_instance.vertex_id = vertex_id;
+				new_vertex_instance.vertex_position_id = vertex_id;
 				// vertex 到 vertex_ins的索引，双向
-				raw_mesh->vertex_position[vertex_id].AddVertexInstance(vertex_indstance_index);
+				raw_mesh->vertex_position[vertex_id].AddVertexInstance(vertex_instance_index_in_all_mesh);
 				raw_mesh->vertex_instances.push_back(new_vertex_instance);
-				if ((vertex_indstance_index + 1) != raw_mesh->vertex_instances.size())
+				if ((vertex_instance_index_in_all_mesh + 1) != raw_mesh->vertex_instances.size())
 				{
 					ERROR_INFO("Cannot create valid vertex instance for mesh ", fbx_mesh->GetName());
 					return false;
 				}
-				YMeshVertexInstance& cur_vertex_instance = raw_mesh->vertex_instances[vertex_indstance_index];
+				YMeshVertexInstance& cur_vertex_instance = raw_mesh->vertex_instances[vertex_instance_index_in_all_mesh];
 
 				//uv
 				for (int uv_layer_index = 0; uv_layer_index < fbx_uvs.unique_count; ++uv_layer_index)
@@ -271,9 +271,10 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 					YVector2 final_uv_vector(0.0, 0.0);
 					if (fbx_uvs.layer_element_uv[uv_layer_index] != nullptr)
 					{
-						int uv_map_index = fbx_uvs.uv_mapping_mode[uv_layer_index] == FbxLayerElement::eByControlPoint ? control_point_index : real_fbx_vertex_index;
+						int uv_map_index = fbx_uvs.uv_mapping_mode[uv_layer_index] == FbxLayerElement::eByControlPoint ? control_point_index : real_fbx_vertex_index_in_current_mesh;
 						int uv_index = fbx_uvs.uv_reference_mode[uv_layer_index] == FbxLayerElement::eDirect ? uv_map_index : fbx_uvs.layer_element_uv[uv_layer_index]->GetIndexArray().GetAt(uv_map_index);
 						FbxVector2 uv_vector = fbx_uvs.layer_element_uv[uv_layer_index]->GetDirectArray().GetAt(uv_index);
+						int uv_counts = fbx_uvs.layer_element_uv[uv_layer_index]->GetDirectArray().GetCount();
 						final_uv_vector.x = static_cast<float>(uv_vector[0]);
 						final_uv_vector.y = 1.f - static_cast<float>(uv_vector[1]);   //flip the Y of UVs for DirectX
 					}
@@ -283,7 +284,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 				// color 
 				if (vertex_color)
 				{
-					int vertex_color_mapping_index = vertex_color_reference_mode == FbxLayerElement::eByControlPoint ? control_point_index : real_fbx_vertex_index;
+					int vertex_color_mapping_index = vertex_color_reference_mode == FbxLayerElement::eByControlPoint ? control_point_index : real_fbx_vertex_index_in_current_mesh;
 					int vertex_color_index = vertex_color_reference_mode == FbxLayerElement::eDirect ? vertex_color_mapping_index : vertex_color->GetIndexArray().GetAt(vertex_color_mapping_index);
 					FbxColor vertex_color_value = vertex_color->GetDirectArray().GetAt(vertex_color_index);
 					cur_vertex_instance.vertex_instance_color = YVector4((float)vertex_color_value.mRed, (float)vertex_color_value.mGreen, (float)vertex_color_value.mBlue, (float)vertex_color_value.mAlpha);
@@ -293,7 +294,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 				if (normal_layer)
 				{
 					//normals may have different reference and mapping mode than tangents and binormals
-					int normal_map_index = (normal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : real_fbx_vertex_index;
+					int normal_map_index = (normal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : real_fbx_vertex_index_in_current_mesh;
 					int normal_value_index = (normal_reference_mode == FbxLayerElement::eDirect) ? normal_map_index : normal_layer->GetIndexArray().GetAt(normal_map_index);
 
 					FbxVector4 temp_value = normal_layer->GetDirectArray().GetAt(normal_value_index);
@@ -303,14 +304,14 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 
 					if (has_NTB_information)
 					{
-						int tangent_map_index = (tangent_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : real_fbx_vertex_index;
+						int tangent_map_index = (tangent_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : real_fbx_vertex_index_in_current_mesh;
 						int tangent_value_index = (tangent_reference_mode == FbxLayerElement::eDirect) ? tangent_map_index : tangent_layer->GetIndexArray().GetAt(tangent_map_index);
 						FbxVector4 tangent_value = tangent_layer->GetDirectArray().GetAt(tangent_value_index);
 						tangent_value = total_matrix_for_normal.MultT(tangent_value);
 						YVector tangent_x = converter_.ConvertDir(tangent_value);
 						cur_vertex_instance.vertex_instance_tangent = tangent_x;
 
-						int binormal_map_index = (binormal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : real_fbx_vertex_index;
+						int binormal_map_index = (binormal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : real_fbx_vertex_index_in_current_mesh;
 						int binormal_value_index = (binormal_reference_mode == FbxLayerElement::eDirect) ? binormal_map_index : binormal_layer->GetIndexArray().GetAt(binormal_map_index);
 						FbxVector4 binormal_value = binormal_layer->GetDirectArray().GetAt(binormal_value_index);
 						binormal_value = total_matrix_for_normal.MultT(binormal_value);
@@ -326,9 +327,9 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 			{
 				float triagnle_comparsion_threshold = (float)import_param_->remove_degenerate_triangles ? THRESH_POINTS_ARE_SAME : 0.f;
 				YVector vertex_position[3];
-				vertex_position[0] = raw_mesh->vertex_position[corner_vertices_ids[0]].position;
-				vertex_position[1] = raw_mesh->vertex_position[corner_vertices_ids[1]].position;
-				vertex_position[2] = raw_mesh->vertex_position[corner_vertices_ids[2]].position;
+				vertex_position[0] = raw_mesh->vertex_position[corner_vertices_position_ids[0]].position;
+				vertex_position[1] = raw_mesh->vertex_position[corner_vertices_position_ids[1]].position;
+				vertex_position[2] = raw_mesh->vertex_position[corner_vertices_position_ids[2]].position;
 
 				if (!(vertex_position[0].Equals(vertex_position[1])
 					|| vertex_position[0].Equals(vertex_position[2])
@@ -366,15 +367,15 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 				material_index = 0;
 			}
 			//Create a polygon with the 3 vertex instances Add it to the material group
-			int real_material_index = material_index_offset + material_index;
-			if (!polygon_group_mapping.count(real_material_index))
+			int real_material_index_in_all_mesh = material_index_offset + material_index;
+			if (!material_to_polygon_group.count(real_material_index_in_all_mesh))
 			{
-				YFbxMaterial* material = existing_materials[real_material_index];
+				YFbxMaterial* material = existing_materials[real_material_index_in_all_mesh];
 				std::string material_name = material->name;
 				int existing_polygon_group_id = INVALID_ID;
 				for (int group_id = 0; group_id < raw_mesh->polygon_groups.size(); ++group_id)
 				{
-					if (raw_mesh->polygon_group_imported_material_slot_name.count(group_id) && raw_mesh->polygon_group_imported_material_slot_name[group_id] == material_name)
+					if (raw_mesh->polygon_group_to_material_name.count(group_id) && raw_mesh->polygon_group_to_material_name[group_id] == material_name)
 					{
 						existing_polygon_group_id = group_id;
 						break;
@@ -385,10 +386,12 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 					YMeshPolygonGroup tmp_group;
 					existing_polygon_group_id = (int)raw_mesh->polygon_groups.size();
 					raw_mesh->polygon_groups.push_back(tmp_group);
-					raw_mesh->polygon_group_imported_material_slot_name[existing_polygon_group_id] = material_name;
+					raw_mesh->polygon_group_to_material_name[existing_polygon_group_id] = material_name;
 				}
-				polygon_group_mapping[real_material_index] = existing_polygon_group_id;
+				material_to_polygon_group[real_material_index_in_all_mesh] = existing_polygon_group_id;
 			}
+			int polygon_group_id = material_to_polygon_group[real_material_index_in_all_mesh];
+			//raw_mesh->polygon_groups[polygon_group_id].polygons.push_back(real_polygon_index);
 
 			// create polygon edeges
 			{
@@ -401,8 +404,8 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 					corner_indices[1] = (polygon_edge_number + 1) % polygon_vertex_count;
 
 					int edge_vertex_ids[2];
-					edge_vertex_ids[0] = corner_vertices_ids[corner_indices[0]];
-					edge_vertex_ids[1] = corner_vertices_ids[corner_indices[1]];
+					edge_vertex_ids[0] = corner_vertices_position_ids[corner_indices[0]];
+					edge_vertex_ids[1] = corner_vertices_position_ids[corner_indices[1]];
 					int match_edge_id = raw_mesh->GetVertexPairEdge(edge_vertex_ids[0], edge_vertex_ids[1]);
 					if (match_edge_id == INVALID_ID)
 					{
@@ -458,7 +461,6 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 					}
 				}
 			}
-			int polygon_group_id = polygon_group_mapping[real_material_index];
 			std::vector<int> created_edges;
 			raw_mesh->CreatePolygon(polygon_group_id, corner_instance_ids, created_edges);
 			assert(created_edges.size() == 0);
