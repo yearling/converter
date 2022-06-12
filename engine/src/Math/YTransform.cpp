@@ -45,7 +45,7 @@ YMatrix YTransform::ToMatrix() const
 	return  scale_mat * rotation_mat * trans_mat;
 }
 
-YVector YTransform::TransformPosition(const YVector& v)
+YVector YTransform::TransformPosition(const YVector& v) const
 {
 	return ToMatrix().TransformPosition(v);
 }

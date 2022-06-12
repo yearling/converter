@@ -67,6 +67,7 @@ inline YVector operator*(float f, YVector in_v)
 {
 	return YVector(in_v.x * f, in_v.y * f, in_v.z * f);
 }
+
 struct YVector4
 {
 public:

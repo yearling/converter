@@ -132,30 +132,35 @@ bool GameApplication::Initial()
 	// g_editor->Init(windows_[0]->GetHWND());
 	engine->TestLoad();
 
-	//std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
+	std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
 	//const std::string file_path = "E:/topo_split/head.fbx";
-	//if (static_mesh_importer->ImportFile(file_path))
-	//{
-	//	FbxImportParam importer_param;
-	//	importer_param.model_name = "head";
-	//	ConvertedResult result;
-	//	if (static_mesh_importer->ParseFile(importer_param, result))
-	//	{
-	//		auto& converted_static_mesh_vec = result.static_meshes;
-	//		for (auto& mesh : converted_static_mesh_vec)
-	//		{
-	//			mesh->SaveV0("head");
-	//		}
-	//	}
-	//	else
-	//	{
-	//		ERROR_INFO("parse file ", file_path, "failed!");
-	//	}
-	//}
-	//else
-	//{
-	//	ERROR_INFO("open file ", file_path, "failed!");
-	//}
+	const std::string file_path = "E:/fbx/tube_with_animaiton.fbx";
+	if (static_mesh_importer->ImportFile(file_path))
+	{
+		FbxImportParam importer_param;
+		importer_param.model_name = "head";
+		importer_param.import_as_skelton = true;
+		importer_param.transform_vertex_to_absolute = false;
+		ConvertedResult result;
+		if (static_mesh_importer->ParseFile(importer_param, result))
+		{
+			//auto& converted_static_mesh_vec = result.static_meshes;
+			//for (auto& mesh : converted_static_mesh_vec)
+			//{
+				//mesh->SaveV0("head");
+			//}
+			YEngine* engine = YEngine::GetEngine();
+			engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
+		}
+		else
+		{
+			ERROR_INFO("parse file ", file_path, "failed!");
+		}
+	}
+	else
+	{
+		ERROR_INFO("open file ", file_path, "failed!");
+	}
 
 	return true;
 }

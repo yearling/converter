@@ -9,6 +9,7 @@
 #include "TaskGraphInterfaces.h"
 #include "Render/YRenderThread.h"
 #include "Render/RenderCommandFence.h"
+#include "YSkeletonMesh.h"
 
 class IRenderInterface;
 
@@ -52,6 +53,7 @@ public:
 	void TestLoad();
 	IRenderInterface* GetRender() const { return renderer.get(); }
 	double GetCurrentGameTime();
+	std::unique_ptr<YSkeletonMesh> skeleton_mesh_;
 private:
 	YEngine() = default;
 	~YEngine() = default;

@@ -135,7 +135,7 @@ YArchive& operator<<(YArchive& mem_file, YLODMesh& lod_mesh)
 	mem_file << lod_mesh.polygons;
 	mem_file << lod_mesh.edges;
 	mem_file << lod_mesh.polygon_groups;
-	mem_file << lod_mesh.polygon_group_imported_material_slot_name;
+	mem_file << lod_mesh.polygon_group_to_material_name;
 	return mem_file;
 }
 

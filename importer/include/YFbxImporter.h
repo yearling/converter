@@ -12,6 +12,7 @@
 #include "Engine/YMaterial.h"
 
 #include "Engine/YStaticMesh.h"
+#include "Engine/YSkeletonMesh.h"
 struct FbxImportParam 
 {
 	bool import_as_skelton = false;
@@ -50,6 +51,7 @@ struct ConvertedResult
 {
 	ConvertedResult();
 	std::vector<std::unique_ptr<YStaticMesh>> static_meshes;
+	std::unique_ptr<YSkeletonMesh> skeleton_mesh;
 };
 enum DCCSoftware {
 	E3dsMax,
@@ -82,6 +84,8 @@ protected:
 	YFbxMaterial* FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_material);
 	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
 	bool IsOddNegativeScale(FbxAMatrix& total_matrix);
+	std::unique_ptr<YSkeletonMesh> ImportSkeletonMesh(FbxNode* root_node, const std::string& mesh_name);
+	std::unique_ptr<YSkeleton> BuildSkeleton(std::set<FbxNode*>& nodes);
 private:
 	bool InitSDK();
 	FbxManager* fbx_manager_ = nullptr;

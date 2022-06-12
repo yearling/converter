@@ -6,7 +6,7 @@
             {
                     "type":"StaticMesh",
                     "model":"/model/shader_ball/shader_ball",
-                    "local_translation":[ 3.0,0.0,0.0],
+                    "local_translation":[ 3.0,0.0,20.0],
                     "local_rotation":[0.0,0.0,0.0],
                     "local_scale":[1.0,1.0,1.0],
                     "children":

@@ -31,8 +31,10 @@ public:
 	static YQuat Multiply(const YQuat& p, const YQuat& q);
 	YQuat operator*(const YQuat& q) const;
 	YVector operator*(const YVector& v) const;
+	YQuat operator-() const;
 };
 
+YVector operator*(const YVector& v, const YQuat& qua);
 namespace std
 {
 	template<>

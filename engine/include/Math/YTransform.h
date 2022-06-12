@@ -17,7 +17,7 @@ public:
 	static void YTransform::Multiply(YTransform* OutTransform, const YTransform* A, const YTransform* B);
 	static const YTransform identity;
 	YMatrix ToMatrix()const;
-	YVector TransformPosition(const YVector& v);
+	YVector TransformPosition(const YVector& v) const;
 };
 
 

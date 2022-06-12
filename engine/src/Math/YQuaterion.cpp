@@ -200,11 +200,29 @@ bool YQuat::IsNormalized() const
 
 YQuat YQuat::Multiply(const YQuat& p, const YQuat& q)
 {
+	// see ue TestVectorQuaternionMultiply
+	//typedef float Float4[4];
+	//const Float4& A = *((const Float4*)Quat1);
+	//const Float4& B = *((const Float4*)Quat2);
+	//Float4& R = *((Float4*)Result);
+
+	//// store intermediate results in temporaries
+	//const float TX = A[3] * B[0] + A[0] * B[3] + A[1] * B[2] - A[2] * B[1];
+	//const float TY = A[3] * B[1] - A[0] * B[2] + A[1] * B[3] + A[2] * B[0];
+	//const float TZ = A[3] * B[2] + A[0] * B[1] - A[1] * B[0] + A[2] * B[3];
+	//const float TW = A[3] * B[3] - A[0] * B[0] - A[1] * B[1] - A[2] * B[2];
+
+	//// copy intermediate result to *this
+	//R[0] = TX;
+	//R[1] = TY;
+	//R[2] = TZ;
+	//R[3] = TW;
+
 	return YQuat(
 		p.w * q.x + p.x * q.w + p.y * q.z - p.z * q.y,
-		q.w * q.y - p.x * q.z + p.y * q.w + p.z * q.x,
+		p.w * q.y - p.x * q.z + p.y * q.w + p.z * q.x,
 		p.w * q.z + p.x * q.y - p.y * q.x + p.z * q.w,
-		p.w * p.w - p.x * q.x - p.y * q.y - p.z * q.z
+		p.w * q.w - p.x * q.x - p.y * q.y - p.z * q.z
 	);
 }
 
@@ -216,6 +234,11 @@ YQuat YQuat::operator*(const YQuat& q) const
 YVector YQuat::operator*(const YVector& v) const
 {
 	return RotateVector(v);
+}
+
+YQuat YQuat::operator-() const
+{
+	return YQuat(-x, -y, -z, w);
 }
 
 YVector YQuat::RotateVector(const YVector& V) const

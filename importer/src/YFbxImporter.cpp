@@ -114,7 +114,8 @@ bool YFbxImporter::ParseFile(const FbxImportParam& import_param, ConvertedResult
 	ValidateAllMeshesAreReferenceByNodeAttribute();
 	FbxNode* root_node = fbx_scene_->GetRootNode();
 	if (import_param_->import_as_skelton) {
-
+		ApplyTransformSettingsToFbxNode(root_node);
+		out_result.skeleton_mesh = ImportSkeletonMesh(root_node,import_param_->model_name);
 	}
 	else {
 		//import static mesh
@@ -529,6 +530,7 @@ bool YFbxImporter::IsOddNegativeScale(FbxAMatrix& total_matrix)
 
 	return negative_num == 1 || negative_num == 3;
 }
+
 
 bool YFbxImporter::InitSDK() {
 	// create sdk manager

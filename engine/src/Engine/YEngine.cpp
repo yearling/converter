@@ -451,6 +451,10 @@ void YEngine::Update()
 	//Update(delta_time);
 	//FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	camera_controller->Update(delta_time);
+
+	if (skeleton_mesh_) {
+		skeleton_mesh_->Update(delta_time);
+	}
 	SWorld::GetWorld()->Update(delta_time);
 	pickup->Update(delta_time);
 
