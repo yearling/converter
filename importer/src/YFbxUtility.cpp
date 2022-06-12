@@ -92,6 +92,14 @@ YMatrix FbxDataConverter::ConvertFbxMatrix(const FbxAMatrix& matrix)
 	return us_matrix;
 }
 
+YTransform FbxDataConverter::ConverterFbxTransform(const FbxAMatrix& matrix)
+{
+	FbxQuaternion qua = matrix.GetQ();
+	FbxVector4 scale = matrix.GetS();
+	FbxVector4 t = matrix.GetT();
+	return YTransform(ConvertPos(t), ConvertFbxQutaToQuat(qua),ConvertScale(scale));
+}
+
 FbxVector4 FbxDataConverter::ConvertToFbxPos(const YVector& vector)
 {
 	FbxVector4 fbx_pos(vector.x, vector.y, vector.z);

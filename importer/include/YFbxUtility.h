@@ -13,6 +13,7 @@
 #include "Math/YMatrix.h"
 #include "Engine/YMaterial.h"
 #include "YFbxMaterial.h"
+#include "Math/YTransform.h"
 class FbxDataConverter
 {
 public:
@@ -25,6 +26,7 @@ public:
 	static YRotator ConvertRotation(const FbxQuaternion& quaternion);
 	static YQuat ConvertFbxQutaToQuat(const FbxQuaternion& quaternion);
 	static YMatrix ConvertFbxMatrix(const FbxAMatrix& matrix);
+	static YTransform ConverterFbxTransform(const FbxAMatrix& matrix);
 
 	//our to fbx
 	static FbxVector4 ConvertToFbxPos(const YVector& vector);

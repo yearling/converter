@@ -15,6 +15,7 @@
 #include "engine/YStaticMesh.h"
 #include "YFbxMaterial.h"
 #include "Utility/YPath.h"
+#include "fbxsdk/scene/animation/fbxanimstack.h"
 
 YFbxImporter::YFbxImporter()
 {
@@ -530,6 +531,7 @@ bool YFbxImporter::IsOddNegativeScale(FbxAMatrix& total_matrix)
 
 	return negative_num == 1 || negative_num == 3;
 }
+
 
 
 bool YFbxImporter::InitSDK() {

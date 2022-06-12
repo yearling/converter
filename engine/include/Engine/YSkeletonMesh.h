@@ -6,7 +6,21 @@
 #include <unordered_map>
 #include <memory>
 
-
+struct AnimationSequenceTrack
+{
+	std::vector<YVector> pos_keys_;
+	std::vector<YQuat> rot_keys_;
+	std::vector<YVector> scale_keys_;
+	std::string track_name_;
+};
+class AnimationData
+{
+public:
+	AnimationData();
+	float time_;
+	std::string name_;
+	std::unordered_map<std::string,AnimationSequenceTrack> sequence_track;
+};
 class YBone
 {
 public:
@@ -45,5 +59,6 @@ public:
 	void Update(double delta_time);
 	void Render();
 	std::unique_ptr<YSkeleton> skeleton_;
-	
+	std::unique_ptr<AnimationData> animation_data_;
+	float play_time;
 };

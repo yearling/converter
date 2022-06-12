@@ -11,22 +11,25 @@ struct ConverterBone :public YBone
 
 };
 
-inline bool IsABone(FbxNode* node) {
-	if (node &&node->GetNodeAttribute() && (node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton || node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eNull))
+inline bool IsABone(FbxNode* node) 
+{
+	if (node && node->GetNodeAttribute() && (node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton || 
+		node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eNull ||
+		node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eMesh))
 	{
 		return true;
 	}
 	return false;
 }
-std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes)
+std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes, std::unordered_map<int, FbxNode*>& out_map)
 {
-	
+
 	std::unique_ptr<YSkeleton> skeleton = std::make_unique<YSkeleton>();
-	
+
 	//find root_node
 	auto find_root_node = [](FbxNode* node) {
 		FbxNode* root_node = node;
-		while (root_node->GetParent()&& IsABone(root_node->GetParent()))
+		while (root_node->GetParent() && IsABone(root_node->GetParent()))
 		{
 			root_node = root_node->GetParent();
 		}
@@ -34,7 +37,7 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 	};
 
 	std::set<FbxNode*> skeleton_root_node;
-	for(auto fbx_node:nodes)
+	for (auto fbx_node : nodes)
 	{
 
 		skeleton_root_node.insert(find_root_node(fbx_node));
@@ -48,7 +51,7 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 		}
 		return nullptr;
 	}
-	
+
 	// build connection
 	std::unordered_map<FbxNode*, std::unique_ptr<ConverterBone>> bone_cache;
 	for (FbxNode* fbx_node : nodes)
@@ -62,8 +65,8 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 	{
 		std::unique_ptr<ConverterBone>& bone = bone_cache[fbx_node];
 		FbxNode* parent = fbx_node->GetParent();
-	
-		if (parent&& IsABone(parent)) {
+
+		if (parent && IsABone(parent)) {
 			std::unique_ptr<ConverterBone>& parent_bone = bone_cache[parent];
 			parent_bone->children_fbx_.insert(fbx_node);
 			bone->parent = parent;
@@ -81,9 +84,9 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 		node_queue.pop_front();
 		std::unique_ptr<ConverterBone>& bone = bone_cache[node];
 		YBone new_bone;
-	
+
 		new_bone.bone_name_ = bone->bone_name_;
-		
+
 		int bone_id = skeleton->bones_.size();
 		new_bone.bone_id_ = bone_id;
 		skeleton->bones_.push_back(new_bone);
@@ -99,9 +102,9 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 		{
 			node_queue.push_back(child_node);
 		}
-
+		out_map[bone_id] = node;
 		FbxNode* parent = node->GetParent();
-		if (parent&& IsABone(parent)) 
+		if (parent && IsABone(parent))
 		{
 			int parent_id = skeleton->bone_names_to_id_[parent->GetName()];
 			YBone& parent_bone = skeleton->bones_[parent_id];
@@ -110,20 +113,16 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 			FbxAMatrix parent_global_trans = parent->EvaluateGlobalTransform();
 			FbxAMatrix child_global_trans = node->EvaluateGlobalTransform();
 			//FbxAMatrix local_trans = child_global_trans * (parent_global_trans.Inverse());
-			FbxAMatrix local_trans = (parent_global_trans.Inverse())*child_global_trans;
-			FbxQuaternion qua = local_trans.GetQ();
-			FbxVector4 scale = local_trans.GetS();
-			FbxVector4 t = local_trans.GetT();
-			skeleton->bones_[bone_id].bone_bind_local_tranform_ = YTransform(converter_.ConvertPos(t), converter_.ConvertFbxQutaToQuat(qua), converter_.ConvertScale(scale));
+			FbxAMatrix local_trans = (parent_global_trans.Inverse()) * child_global_trans;
+			//skeleton->bones_[bone_id].bone_bind_local_tranform_ = YTransform(converter_.ConvertPos(t), converter_.ConvertFbxQutaToQuat(qua), converter_.ConvertScale(scale));
+			skeleton->bones_[bone_id].bone_bind_local_tranform_ = converter_.ConverterFbxTransform(local_trans);
 			skeleton->bones_[bone_id].bone_bind_local_matrix_ = converter_.ConvertFbxMatrix(local_trans);
-			skeleton->bones_[bone_id].rotator_ = YRotator(converter_.ConvertFbxQutaToQuat(qua));
-			
-			FbxAMatrix global_trans =  child_global_trans;
-			FbxQuaternion qua_g = global_trans.GetQ();
-			FbxVector4 scale_g = global_trans.GetS();
+
+			FbxAMatrix global_trans = child_global_trans;
 			FbxVector4 t_g = global_trans.GetT();
-			skeleton->bones_[bone_id].bind_global_transform_ = YTransform(converter_.ConvertPos(t_g), converter_.ConvertFbxQutaToQuat(qua_g), converter_.ConvertScale(scale_g));
-			skeleton->bones_[bone_id].bind_global_matrix_ =converter_.ConvertFbxMatrix(child_global_trans);
+			//skeleton->bones_[bone_id].bind_global_transform_ = YTransform(converter_.ConvertPos(t_g), converter_.ConvertFbxQutaToQuat(qua_g), converter_.ConvertScale(scale_g));
+			skeleton->bones_[bone_id].bind_global_transform_ = converter_.ConverterFbxTransform(global_trans);
+			skeleton->bones_[bone_id].bind_global_matrix_ = converter_.ConvertFbxMatrix(child_global_trans);
 
 			//test
 			YMatrix parent_matrix = converter_.ConvertFbxMatrix(parent_global_trans);
@@ -131,24 +130,19 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 			YMatrix child_matrix = converter_.ConvertFbxMatrix(child_global_trans);
 
 			FbxAMatrix child_matrix_fbx = parent_global_trans * local_trans;
-			YMatrix child_matrix_test = local_to_parent* parent_matrix;
+			YMatrix child_matrix_test = local_to_parent * parent_matrix;
 			YMatrix local_to_parent_test = parent_matrix.Inverse() * child_matrix;
 		}
 		else
 		{
 			FbxAMatrix global_trans = node->EvaluateGlobalTransform();
-			FbxQuaternion qua = global_trans.GetQ();
-			FbxVector4 scale = global_trans.GetS();
-			FbxVector4 t = global_trans.GetT();
 
-			skeleton->bones_[bone_id].bone_bind_local_tranform_ = YTransform(converter_.ConvertPos(t), converter_.ConvertFbxQutaToQuat(qua), converter_.ConvertScale(scale));
+			//skeleton->bones_[bone_id].bone_bind_local_tranform_ = YTransform(converter_.ConvertPos(t), converter_.ConvertFbxQutaToQuat(qua), converter_.ConvertScale(scale));
+			skeleton->bones_[bone_id].bone_bind_local_tranform_ = converter_.ConverterFbxTransform(global_trans);
 			skeleton->bones_[bone_id].bone_bind_local_matrix_ = converter_.ConvertFbxMatrix(global_trans);
-			skeleton->bones_[bone_id].rotator_ = YRotator(converter_.ConvertFbxQutaToQuat(qua));
 
-			FbxQuaternion qua_g = global_trans.GetQ();
-			FbxVector4 scale_g = global_trans.GetS();
-			FbxVector4 t_g = global_trans.GetT();
-			skeleton->bones_[bone_id].bind_global_transform_ = YTransform(converter_.ConvertPos(t_g), converter_.ConvertFbxQutaToQuat(qua_g), converter_.ConvertScale(scale_g));
+			//skeleton->bones_[bone_id].bind_global_transform_ = YTransform(converter_.ConvertPos(t_g), converter_.ConvertFbxQutaToQuat(qua_g), converter_.ConvertScale(scale_g));
+			skeleton->bones_[bone_id].bone_bind_local_tranform_ = converter_.ConverterFbxTransform(global_trans);
 			skeleton->bones_[bone_id].bind_global_matrix_ = converter_.ConvertFbxMatrix(global_trans);
 		}
 	}
@@ -195,17 +189,78 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	for (int node_index = 0; node_index < node_count; ++node_index)
 	{
 		FbxNode* node = fbx_scene_->GetNode(node_index);
-		if (node->GetNodeAttribute() &&(node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton || node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eNull))
+		//if (node->GetNodeAttribute() && (node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton || node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eMarker))
+		if(IsABone(node))
 		{
 			skeleton_nodes_in_scene.insert(node);
 		}
 	}
 	std::set<FbxNode*> skeleton_nodes;
 	std::set_intersection(bone_attach_to_skin.begin(), bone_attach_to_skin.end(), skeleton_nodes_in_scene.begin(), skeleton_nodes_in_scene.end(), std::inserter(skeleton_nodes, skeleton_nodes.begin()));
+	std::unordered_map<int, FbxNode*> bone_id_to_fbx_node;
+	std::unique_ptr<YSkeleton> skeleton = BuildSkeleton(skeleton_nodes,bone_id_to_fbx_node);
+	std::unique_ptr<AnimationData> animation_data = ImportAnimationData(skeleton.get(),bone_id_to_fbx_node);
 
-	std::unique_ptr<YSkeleton> skeleton = BuildSkeleton(skeleton_nodes);
 
 	std::unique_ptr<YSkeletonMesh> skeleton_mesh = std::make_unique<YSkeletonMesh>();
 	skeleton_mesh->skeleton_ = std::move(skeleton);
+	skeleton_mesh->animation_data_ = std::move(animation_data);
 	return skeleton_mesh;
+}
+
+
+std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skeleton, std::unordered_map<int, FbxNode*>& bone_id_to_fbxnode)
+{
+
+	std::unique_ptr<AnimationData> animation_data = std::make_unique<AnimationData>();
+	int32 ResampleRate = 30.0f;
+	int32 AnimStackCount = fbx_scene_->GetSrcObjectCount<FbxAnimStack>();
+	if (AnimStackCount == 0)
+	{
+		return nullptr;
+	}
+
+	float time = -1;
+	int frame_rate = FbxTime::GetFrameRate(fbx_scene_->GetGlobalSettings().GetTimeMode());
+	int AnimStackIndex = 0;
+	//for (int32 AnimStackIndex = 0; AnimStackIndex < AnimStackCount; AnimStackIndex++)
+	FbxAnimStack* CurAnimStack = fbx_scene_->GetSrcObject<FbxAnimStack>(AnimStackIndex);
+	FbxTimeSpan AnimTimeSpan = CurAnimStack->GetLocalTimeSpan();
+	if (AnimTimeSpan.GetDirection() == FBXSDK_TIME_FORWARD)
+	{
+		time = YMath::Max((float)(AnimTimeSpan.GetDuration().GetMilliSeconds() / 1000.0f * scene_info_->frame_rate), time);
+	}
+	animation_data->name_ = CurAnimStack->GetName();
+
+	const int32 NumSamplingKeys = YMath::FloorToInt(AnimTimeSpan.GetDuration().GetSecondDouble() * ResampleRate);
+	animation_data->time_ = NumSamplingKeys * (1.0/(float)frame_rate);
+	const FbxTime TimeIncrement = AnimTimeSpan.GetDuration() / YMath::Max(NumSamplingKeys, 1);
+	for (YBone& bone : skeleton->bones_)
+	{
+		AnimationSequenceTrack& animation_sequence_track = animation_data->sequence_track[bone.bone_name_];
+		animation_sequence_track.pos_keys_.reserve(NumSamplingKeys);
+		animation_sequence_track.rot_keys_.reserve(NumSamplingKeys);
+		animation_sequence_track.scale_keys_.reserve(NumSamplingKeys);
+		for (FbxTime CurTime = AnimTimeSpan.GetStart(); CurTime <= AnimTimeSpan.GetStop(); CurTime += TimeIncrement)
+		{
+			FbxNode* current_node = bone_id_to_fbxnode[bone.bone_id_];
+			FbxAMatrix cur_global_trans = current_node->EvaluateGlobalTransform(CurTime);
+			YTransform cur_local_transform;
+			if (bone.parent_id_ == -1)
+			{
+				cur_local_transform = converter_.ConverterFbxTransform(cur_global_trans);
+			}
+			else
+			{
+				FbxNode* parent_node = bone_id_to_fbxnode[bone.parent_id_];
+				FbxAMatrix parent_cur_global_trans = parent_node->EvaluateGlobalTransform(CurTime);
+				FbxAMatrix local_trans = (parent_cur_global_trans.Inverse()) * cur_global_trans;
+				cur_local_transform = converter_.ConverterFbxTransform(local_trans);
+			}
+			animation_sequence_track.pos_keys_.push_back(cur_local_transform.translation);
+			animation_sequence_track.rot_keys_.push_back(cur_local_transform.rotator);
+			animation_sequence_track.scale_keys_.push_back(cur_local_transform.scale);
+		}
+	}
+	return animation_data;
 }

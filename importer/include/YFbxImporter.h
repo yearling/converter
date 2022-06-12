@@ -85,7 +85,8 @@ protected:
 	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
 	bool IsOddNegativeScale(FbxAMatrix& total_matrix);
 	std::unique_ptr<YSkeletonMesh> ImportSkeletonMesh(FbxNode* root_node, const std::string& mesh_name);
-	std::unique_ptr<YSkeleton> BuildSkeleton(std::set<FbxNode*>& nodes);
+	std::unique_ptr<YSkeleton> BuildSkeleton(std::set<FbxNode*>& nodes,std::unordered_map<int,FbxNode*>& out_map);
+	std::unique_ptr<AnimationData> ImportAnimationData(YSkeleton* skeleton,  std::unordered_map<int, FbxNode*>& bone_id_to_fbxnode);
 private:
 	bool InitSDK();
 	FbxManager* fbx_manager_ = nullptr;
