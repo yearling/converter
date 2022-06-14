@@ -5,6 +5,33 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <array>
+
+struct VertexWedge
+{
+	int control_point_id;
+	YVector position;
+	YVector normal;
+	std::vector<YVector2> uvs_;
+	std::array<float, 8> weights_;
+	std::array<int, 8> bone_index_;
+};
+struct SkinMesh
+{
+	std::vector<YVector> control_points_;
+	std::vector<YVector> position_;
+	std::vector<YVector> normal_;
+	std::vector<std::vector<YVector2>> uvs_;
+	std::vector<std::array<float, 8>> weights_;
+	std::vector<std::array<int, 8>> bone_index_;
+
+	//tmp
+	std::vector<VertexWedge> wedges_;
+};
+struct YSkinData
+{
+	std::vector<SkinMesh> meshes_;
+};
 
 struct AnimationSequenceTrack
 {
@@ -13,6 +40,7 @@ struct AnimationSequenceTrack
 	std::vector<YVector> scale_keys_;
 	std::string track_name_;
 };
+
 class AnimationData
 {
 public:
@@ -26,21 +54,22 @@ class YBone
 public:
 	YBone();
 
-	YTransform bone_bind_local_tranform_;
-	YMatrix  bone_bind_local_matrix_;
 	std::string bone_name_;
 	int bone_id_;
 	std::vector<int> children_;
 	int parent_id_;
-	YRotator rotator_;
 
-	YTransform bone_local_transform_;
-	YMatrix bone_local_matrix_;
-	YTransform bone_global_transform_;
-	YMatrix bone_global_matrix_;
+	YTransform bind_local_tranform_;
+	YMatrix  bind_local_matrix_;
+	YTransform local_transform_;
+	YMatrix local_matrix_;
+	YTransform global_transform_;
+	YMatrix global_matrix_;
 
-	YTransform bind_global_transform_;
-	YMatrix bind_global_matrix_;
+	YTransform inv_bind_global_transform_;
+	//FbxAMatrix fbx_inv_bind_matrix_;
+	YMatrix inv_bind_global_matrix_;
+	bool fist_init;
 };
 class YSkeleton
 {
@@ -60,5 +89,6 @@ public:
 	void Render();
 	std::unique_ptr<YSkeleton> skeleton_;
 	std::unique_ptr<AnimationData> animation_data_;
+	std::unique_ptr<YSkinData> skin_data_;
 	float play_time;
 };

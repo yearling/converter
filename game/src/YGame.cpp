@@ -134,13 +134,17 @@ bool GameApplication::Initial()
 
 	std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
 	//const std::string file_path = "E:/topo_split/head.fbx";
-	const std::string file_path = "E:/fbx/female_Rig_DH_01.fbx";
+	//const std::string file_path = "E:/fbx/female_Rig_DH_01.fbx";
+	//const std::string file_path = "E:/fbx/tube_with_animaiton.fbx";
+	//const std::string file_path = "E:/fbx/cube_animation.fbx";
+	//const std::string file_path = "E:/fbx/deer.fbx";
+	const std::string file_path = "E:/fbx/aoteman_attack01.fbx";
 	if (static_mesh_importer->ImportFile(file_path))
 	{
 		FbxImportParam importer_param;
 		importer_param.model_name = "head";
 		importer_param.import_as_skelton = true;
-		importer_param.transform_vertex_to_absolute = false;
+		importer_param.transform_vertex_to_absolute = true;
 		ConvertedResult result;
 		if (static_mesh_importer->ParseFile(importer_param, result))
 		{
