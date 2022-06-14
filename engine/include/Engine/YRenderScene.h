@@ -16,6 +16,7 @@ public:
 //protected:
 	std::vector<PrimitiveElementProxy> primitive_elements_;
 	std::vector<DirectLightElementProxy> dir_light_elements_;
+	std::vector<SkeletonMeshProxy> skeleton_mesh_elements_;
 	std::unique_ptr<CameraElementProxy> camera_element;
 	YViewPort view_port_;
 	double deta_time = 0.0;
@@ -35,6 +36,7 @@ public:
 	void RegisterEvents();
 	void OnViewPortChange(int width, int height);
 	SPerspectiveCameraComponent* GetPerspectiveCameraComponent() { return perspective_camera_components_; }
+	std::vector<YSkeletonMesh*> skeleton_meshes_;
 protected:
 	
 };

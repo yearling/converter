@@ -188,6 +188,10 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	skeleton_mesh->animation_data_ = std::move(animation_data);
 	std::unique_ptr<YSkinData> skin_data = ImportSkinData(skeleton_mesh->skeleton_.get());
 	skeleton_mesh->skin_data_ = std::move(skin_data);
+	if (!skeleton_mesh->AllocGpuResource())
+	{
+		ERROR_INFO("SkeletonMesh alloc resource failsed!!");
+	}
 
 	return skeleton_mesh;
 }
@@ -275,78 +279,15 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 			int vertex_count = mesh->GetControlPointsCount();
 			bool odd_negative_scale = IsOddNegativeScale(total_matrix);
 			skin_mesh.control_points_.reserve(vertex_count);
-			for (int vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
-			{
-				int real_vertex_index = vertex_index;
-				FbxVector4 fbx_position = mesh->GetControlPoints()[vertex_index];
-				fbx_position = total_matrix.MultT(fbx_position);
-				const YVector vertex_position = converter_.ConvertPos(fbx_position);
-				skin_mesh.control_points_.push_back(vertex_position);
-			}
-			
-			std::vector<YVector> P;
-			int triangle_control_index = 0;
-			for (int polygon_index = 0; polygon_index < polygon_count; ++polygon_index)
-			{
-				int polygon_vertex_count = mesh->GetPolygonSize(polygon_index);
-				skin_mesh.wedges_.reserve(polygon_vertex_count * polygon_count);
-				//Verify if the polygon is degenerate, in this case do not add them
+			skin_mesh.weights_.resize(vertex_count);
+			skin_mesh.bone_index_.resize(vertex_count);
+			/*	for (int vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
 				{
-					float comparision_threshold = (float)import_param_->remove_degenerate_triangles ? SMALL_NUMBER : 0.f;
-					P.clear();
-					P.resize(polygon_vertex_count);
-					for (int corner_index = 0; corner_index < polygon_vertex_count; ++corner_index)
-					{
-						const int control_point_index = mesh->GetPolygonVertex(polygon_index, corner_index);
-						const int vertex_id = control_point_index;
-						P[corner_index] = skin_mesh.control_points_[vertex_id];
-					}
-					const YVector normal = (P[1] - P[2]) ^ (P[0] - P[2]).GetSafeNormal(comparision_threshold);
-					if (normal.IsNearlyZero(comparision_threshold) || normal.ContainsNaN())
-					{
-						WARNING_INFO("degenrate triangle");
-						continue;
-					}
-					
-					for (int corner_index = 0; corner_index < polygon_vertex_count; ++corner_index,++triangle_control_index)
-					{
-						VertexWedge wedge;
-						const int control_point_index = mesh->GetPolygonVertex(polygon_index, corner_index);
-						wedge.control_point_id = control_point_index;
-						wedge.position = skin_mesh.control_points_[control_point_index];
-
-						//uv
-						wedge.uvs_.resize(8);
-						for (int uv_layer_index = 0; uv_layer_index < fbx_uvs.unique_count; ++uv_layer_index)
-						{
-							YVector2 final_uv_vector(0.0, 0.0);
-							if (fbx_uvs.layer_element_uv[uv_layer_index] != nullptr)
-							{
-								int uv_map_index = fbx_uvs.uv_mapping_mode[uv_layer_index] == FbxLayerElement::eByControlPoint ? control_point_index : triangle_control_index;
-								int uv_index = fbx_uvs.uv_reference_mode[uv_layer_index] == FbxLayerElement::eDirect ? uv_map_index : fbx_uvs.layer_element_uv[uv_layer_index]->GetIndexArray().GetAt(uv_map_index);
-								FbxVector2 uv_vector = fbx_uvs.layer_element_uv[uv_layer_index]->GetDirectArray().GetAt(uv_index);
-								int uv_counts = fbx_uvs.layer_element_uv[uv_layer_index]->GetDirectArray().GetCount();
-								final_uv_vector.x = static_cast<float>(uv_vector[0]);
-								final_uv_vector.y = 1.f - static_cast<float>(uv_vector[1]);   //flip the Y of UVs for DirectX
-							}
-							wedge.uvs_[uv_layer_index] = final_uv_vector;
-						}
-
-						if (normal_layer)
-						{
-							//normals may have different reference and mapping mode than tangents and binormals
-							int normal_map_index = (normal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : triangle_control_index;
-							int normal_value_index = (normal_reference_mode == FbxLayerElement::eDirect) ? normal_map_index : normal_layer->GetIndexArray().GetAt(normal_map_index);
-
-							FbxVector4 temp_value = normal_layer->GetDirectArray().GetAt(normal_value_index);
-							temp_value = total_matrix_for_normal.MultT(temp_value);
-							YVector tangent_z = converter_.ConvertDir(temp_value);
-							wedge.normal = tangent_z;
-						}
-						skin_mesh.wedges_.push_back(wedge);
-					}
-				}
-			}
+					FbxVector4 fbx_position = mesh->GetControlPoints()[vertex_index];
+					fbx_position = total_matrix.MultT(fbx_position);
+					const YVector vertex_position = converter_.ConvertPos(fbx_position);
+					skin_mesh.control_points_.push_back(vertex_position);
+				}*/
 
 			if (mesh->GetDeformerCount(FbxDeformer::EDeformerType::eSkin) > 0)
 			{
@@ -400,6 +341,97 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 							YMatrix test_matrix = converter_.ConvertFbxMatrix(inv_bone_bind);
 							assert(test_matrix.Equals(bone.inv_bind_global_matrix_));
 						}
+
+						int control_point_count = cluster->GetControlPointIndicesCount();
+						//double* weight = cluster->GetControlPointWeights();
+						for (int i = 0; i < control_point_count; ++i)
+						{
+
+							int control_point_index = cluster->GetControlPointIndices()[i];
+							if (control_point_index > control_point_count) 
+							{
+								continue;
+							}
+							double contorl_point_weight = cluster->GetControlPointWeights()[i];
+							skin_mesh.weights_[control_point_index].push_back(contorl_point_weight);
+							skin_mesh.bone_index_[control_point_index].push_back(bone.bone_id_);
+						}
+					}
+				}
+
+				for (int vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
+				{
+					FbxVector4 fbx_position = mesh->GetControlPoints()[vertex_index];
+					fbx_position = total_matrix.MultT(fbx_position);
+					FbxVector4 fbx_model_position = test_mesh_to_model.MultT(fbx_position);
+					const YVector vertex_position = converter_.ConvertPos(fbx_model_position);
+					skin_mesh.control_points_.push_back(vertex_position);
+				}
+					
+			}
+
+			std::vector<YVector> P;
+			int triangle_control_index = 0;
+			for (int polygon_index = 0; polygon_index < polygon_count; ++polygon_index)
+			{
+				int polygon_vertex_count = mesh->GetPolygonSize(polygon_index);
+				skin_mesh.wedges_.reserve(polygon_vertex_count * polygon_count);
+				//Verify if the polygon is degenerate, in this case do not add them
+				{
+					float comparision_threshold = (float)import_param_->remove_degenerate_triangles ? SMALL_NUMBER : 0.f;
+					P.clear();
+					P.resize(polygon_vertex_count);
+					for (int corner_index = 0; corner_index < polygon_vertex_count; ++corner_index)
+					{
+						const int control_point_index = mesh->GetPolygonVertex(polygon_index, corner_index);
+						const int vertex_id = control_point_index;
+						P[corner_index] = skin_mesh.control_points_[vertex_id];
+					}
+					const YVector normal = (P[1] - P[2]) ^ (P[0] - P[2]).GetSafeNormal(comparision_threshold);
+					if (normal.IsNearlyZero(comparision_threshold) || normal.ContainsNaN())
+					{
+						WARNING_INFO("degenrate triangle");
+						continue;
+					}
+
+					for (int corner_index = 0; corner_index < polygon_vertex_count; ++corner_index, ++triangle_control_index)
+					{
+						VertexWedge wedge;
+						const int control_point_index = mesh->GetPolygonVertex(polygon_index, corner_index);
+						wedge.control_point_id = control_point_index;
+						wedge.position = skin_mesh.control_points_[control_point_index];
+						wedge.weights_ = skin_mesh.weights_[control_point_index];
+						wedge.bone_index_ = skin_mesh.bone_index_[control_point_index];
+
+						//uv
+						wedge.uvs_.resize(8);
+						for (int uv_layer_index = 0; uv_layer_index < fbx_uvs.unique_count; ++uv_layer_index)
+						{
+							YVector2 final_uv_vector(0.0, 0.0);
+							if (fbx_uvs.layer_element_uv[uv_layer_index] != nullptr)
+							{
+								int uv_map_index = fbx_uvs.uv_mapping_mode[uv_layer_index] == FbxLayerElement::eByControlPoint ? control_point_index : triangle_control_index;
+								int uv_index = fbx_uvs.uv_reference_mode[uv_layer_index] == FbxLayerElement::eDirect ? uv_map_index : fbx_uvs.layer_element_uv[uv_layer_index]->GetIndexArray().GetAt(uv_map_index);
+								FbxVector2 uv_vector = fbx_uvs.layer_element_uv[uv_layer_index]->GetDirectArray().GetAt(uv_index);
+								int uv_counts = fbx_uvs.layer_element_uv[uv_layer_index]->GetDirectArray().GetCount();
+								final_uv_vector.x = static_cast<float>(uv_vector[0]);
+								final_uv_vector.y = 1.f - static_cast<float>(uv_vector[1]);   //flip the Y of UVs for DirectX
+							}
+							wedge.uvs_[uv_layer_index] = final_uv_vector;
+						}
+
+						if (normal_layer)
+						{
+							//normals may have different reference and mapping mode than tangents and binormals
+							int normal_map_index = (normal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : triangle_control_index;
+							int normal_value_index = (normal_reference_mode == FbxLayerElement::eDirect) ? normal_map_index : normal_layer->GetIndexArray().GetAt(normal_map_index);
+
+							FbxVector4 temp_value = normal_layer->GetDirectArray().GetAt(normal_value_index);
+							temp_value = total_matrix_for_normal.MultT(temp_value);
+							YVector tangent_z = converter_.ConvertDir(temp_value);
+							wedge.normal = tangent_z.GetSafeNormal();
+						}
+						skin_mesh.wedges_.push_back(wedge);
 					}
 				}
 			}

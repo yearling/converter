@@ -136,9 +136,9 @@ bool GameApplication::Initial()
 	//const std::string file_path = "E:/topo_split/head.fbx";
 	//const std::string file_path = "E:/fbx/female_Rig_DH_01.fbx";
 	//const std::string file_path = "E:/fbx/tube_with_animaiton.fbx";
-	//const std::string file_path = "E:/fbx/cube_animation.fbx";
+	const std::string file_path = "E:/fbx/cube_animation.fbx";
 	//const std::string file_path = "E:/fbx/deer.fbx";
-	const std::string file_path = "E:/fbx/aoteman_attack01.fbx";
+	//const std::string file_path = "E:/fbx/aoteman_attack01.fbx";
 	if (static_mesh_importer->ImportFile(file_path))
 	{
 		FbxImportParam importer_param;
@@ -155,6 +155,7 @@ bool GameApplication::Initial()
 			//}
 			YEngine* engine = YEngine::GetEngine();
 			engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
+			SWorld::GetWorld()->GetMainScene()->skeleton_meshes_.push_back(engine->skeleton_mesh_.get());
 		}
 		else
 		{

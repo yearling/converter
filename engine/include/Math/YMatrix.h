@@ -45,6 +45,45 @@ public:
 	};
 	static const YMatrix Identity;
 
+	inline bool YMatrix::operator==(const YMatrix& Other) const
+	{
+		for (int32 X = 0; X < 4; X++)
+		{
+			for (int32 Y = 0; Y < 4; Y++)
+			{
+				if (m[X][Y] != Other.m[X][Y])
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	// Error-tolerant comparison.
+	inline bool YMatrix::Equals(const YMatrix& Other, float Tolerance=KINDA_SMALL_NUMBER) const
+	{
+		for (int32 X = 0; X < 4; X++)
+		{
+			for (int32 Y = 0; Y < 4; Y++)
+			{
+				if (YMath::Abs(m[X][Y] - Other.m[X][Y]) > Tolerance)
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	inline bool YMatrix::operator!=(const YMatrix& Other) const
+	{
+		return !(*this == Other);
+	}
+
+
 };
 
 namespace std

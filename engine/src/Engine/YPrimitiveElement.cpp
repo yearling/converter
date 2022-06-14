@@ -9,3 +9,8 @@ DirectLightElementProxy::DirectLightElementProxy()
 {
 
 }
+
+SkeletonMeshProxy::SkeletonMeshProxy()
+{
+
+}

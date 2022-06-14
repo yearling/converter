@@ -6,24 +6,26 @@
 #include <unordered_map>
 #include <memory>
 #include <array>
-
+#include "RHI/DirectX11/D3D11VertexFactory.h"
+#include "Engine/YCamera.h"
 struct VertexWedge
 {
 	int control_point_id;
 	YVector position;
 	YVector normal;
 	std::vector<YVector2> uvs_;
-	std::array<float, 8> weights_;
-	std::array<int, 8> bone_index_;
+	std::vector<float> weights_;
+	std::vector<int> bone_index_;
 };
 struct SkinMesh
 {
 	std::vector<YVector> control_points_;
+	std::vector<std::vector<float>> weights_;
+	std::vector<std::vector<int>> bone_index_;
+
 	std::vector<YVector> position_;
 	std::vector<YVector> normal_;
 	std::vector<std::vector<YVector2>> uvs_;
-	std::vector<std::array<float, 8>> weights_;
-	std::vector<std::array<int, 8>> bone_index_;
 
 	//tmp
 	std::vector<VertexWedge> wedges_;
@@ -67,7 +69,6 @@ public:
 	YMatrix global_matrix_;
 
 	YTransform inv_bind_global_transform_;
-	//FbxAMatrix fbx_inv_bind_matrix_;
 	YMatrix inv_bind_global_matrix_;
 	bool fist_init;
 };
@@ -91,4 +92,22 @@ public:
 	std::unique_ptr<AnimationData> animation_data_;
 	std::unique_ptr<YSkinData> skin_data_;
 	float play_time;
+
+//render
+	bool AllocGpuResource();
+	void ReleaseGPUReosurce();
+	void Render(class RenderParam* render_param);
+	friend class YSKeletonMeshVertexFactory;
+	bool allocated_gpu_resource = false;
+	std::vector<TComPtr<ID3D11Buffer>> vertex_buffers_;
+	TComPtr<ID3D11Buffer> index_buffer_;
+	TComPtr<ID3D11BlendState> bs_;
+	TComPtr<ID3D11DepthStencilState> ds_;
+	TComPtr<ID3D11RasterizerState> rs_;
+	D3DTextureSampler* sampler_state_ = { nullptr };
+	std::vector<int> polygon_group_offsets;
+	std::unique_ptr<D3DVertexShader> vertex_shader_;
+	std::unique_ptr<D3DPixelShader> pixel_shader_;
+	std::unique_ptr<DXVertexFactory> vertex_factory_;
+	std::string model_name;
 };

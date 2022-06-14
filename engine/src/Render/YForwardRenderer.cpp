@@ -63,6 +63,11 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 		ele.mesh_->Render(&render_param);
 	}
 
+	for (SkeletonMeshProxy& ele : render_scene_->skeleton_mesh_elements_)
+	{
+		render_param.local_to_world_ = ele.local_to_world_;
+		ele.mesh_->Render(&render_param);
+	}
 
 	g_Canvas->Update();
 	g_Canvas->Render(&render_param);

@@ -34,6 +34,14 @@ std::unique_ptr<YRenderScene> YScene::GenerateOneFrame() const
 		one_frame->dir_light_elements_.push_back(dir_light_elem);
 	}
 
+	for (YSkeletonMesh* mesh : skeleton_meshes_)
+	{
+		SkeletonMeshProxy proxy;
+		proxy.local_to_world_ = YMatrix::Identity;
+		proxy.mesh_ = mesh;
+		one_frame->skeleton_mesh_elements_.push_back(proxy);
+	}
+
 	{
 		one_frame->camera_element = std::move(perspective_camera_components_->camera_->GetProxy());
 	}
