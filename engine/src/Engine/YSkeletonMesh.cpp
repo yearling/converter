@@ -119,6 +119,8 @@ void YSkeletonMesh::Update(double delta_time)
 		}
 	}
 	skeleton_->Update(delta_time);
+
+
 	for (int i = 0; i < skeleton_->bones_.size(); ++i) {
 	    YBone& bone = skeleton_->bones_[i];
 		YVector joint_center = bone.global_transform_.TransformPosition(YVector(0, 0, 0));
@@ -162,11 +164,64 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	}
 	pixel_shader_->Update();
 
+	// update pose
 	int triangle_count = 0;
+	std::vector<YVector> cached_position;
 	for (SkinMesh& mesh : skin_data_->meshes_)
 	{
-		triangle_count += mesh.wedges_ .size() / 3;
+		triangle_count += mesh.wedges_.size() / 3;
 	}
+
+	cached_position.resize(triangle_count*3);
+	
+	int wedge_index = 0;
+	for (SkinMesh& mesh : skin_data_->meshes_)
+	{
+		for (VertexWedge& wedge : mesh.wedges_)
+		{
+			if(wedge.bone_index_.empty())
+			{ 
+				cached_position[wedge_index] = wedge.position;
+			}
+			else
+			{
+				YMatrix blend_matrix;
+				memset(blend_matrix.m, 0, sizeof(float) * 16);
+				for (int bone_index = 0; bone_index < wedge.bone_index_.size(); ++bone_index)
+				{
+					YBone& bone = skeleton_->bones_[wedge.bone_index_[bone_index]];
+					YMatrix inv_bone_to_model_matrix = bone.inv_bind_global_matrix_;
+					YMatrix inv_bone_from_bind_to_current = inv_bone_to_model_matrix * bone.global_matrix_;
+					float weight = wedge.weights_[bone_index];
+					YMatrix weighted_matrix = inv_bone_from_bind_to_current * weight;
+					blend_matrix = blend_matrix + weighted_matrix;
+				}
+
+				YVector animated_vertex_point = blend_matrix.TransformPosition(wedge.position);
+				cached_position[wedge_index] = animated_vertex_point;
+			}
+			//cached_position[wedge_index] = wedge.position;
+			wedge_index++;
+		}
+	}
+	D3D11_MAPPED_SUBRESOURCE MappedSubresource;
+	if (dc->Map(vertex_buffers_[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
+	{
+		ERROR_INFO("update skin data error");
+	}
+	//MappedSubresource.pData = cached_position.data();
+	memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
+	dc->Unmap(vertex_buffers_[0], 0);
+
+
+
+
+
+
+
+
+
+	//
 	dc->DrawIndexed(triangle_count * 3, 0 , 0);
 	//for (auto& polygon_group : raw_meshes[0].polygon_groups)
 	//{
@@ -229,7 +284,7 @@ bool YSkeletonMesh::AllocGpuResource()
 
 	{
 		TComPtr<ID3D11Buffer> d3d_vb;
-		if (!g_device->CreateVertexBufferDynamic((unsigned int)normal_buffer.size() * sizeof(YVector), normal_buffer.data(), d3d_vb)) {
+		if (!g_device->CreateVertexBufferStatic((unsigned int)normal_buffer.size() * sizeof(YVector), normal_buffer.data(), d3d_vb)) {
 			ERROR_INFO("Create vertex buffer failed!!");
 			return false;
 		}
@@ -238,7 +293,7 @@ bool YSkeletonMesh::AllocGpuResource()
 
 	{
 		TComPtr<ID3D11Buffer> d3d_vb;
-		if (!g_device->CreateVertexBufferDynamic((unsigned int)uv_buffer.size() * sizeof(YVector2), uv_buffer.data(), d3d_vb)) {
+		if (!g_device->CreateVertexBufferStatic((unsigned int)uv_buffer.size() * sizeof(YVector2), uv_buffer.data(), d3d_vb)) {
 			ERROR_INFO("Create vertex buffer failed!!");
 			return false;
 		}
@@ -246,7 +301,7 @@ bool YSkeletonMesh::AllocGpuResource()
 	}
 
 	{
-		if (!g_device->CreateVertexBufferDynamic((unsigned int)index_buffer.size() * sizeof(int), index_buffer.data(), index_buffer_)) {
+		if (!g_device->CreateIndexBuffer((unsigned int)index_buffer.size() * sizeof(int), index_buffer.data(), index_buffer_)) {
 			ERROR_INFO("Create index buffer failed!!");
 			return false;
 		}

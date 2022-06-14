@@ -83,7 +83,32 @@ public:
 		return !(*this == Other);
 	}
 
+	inline YMatrix YMatrix::operator*(float f) const
+	{
+		YMatrix result;
+		for (int32 X = 0; X < 4; X++)
+		{
+			for (int32 Y = 0; Y < 4; Y++)
+			{
+				result.m[X][Y] = m[X][Y] * f;
+			}
+		}
+		return result;
+	}
 
+	inline YMatrix YMatrix::operator+(const YMatrix& rhs) const
+	{
+
+		YMatrix result;
+		for (int32 X = 0; X < 4; X++)
+		{
+			for (int32 Y = 0; Y < 4; Y++)
+			{
+				result.m[X][Y] = m[X][Y] + rhs.m[X][Y];
+			}
+		}
+		return result;
+	}
 };
 
 namespace std

@@ -294,6 +294,7 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 				FbxAMatrix test_mesh_to_model;
 				bool first_mesh_to_model = false;
 				int32 SkinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
+				int control_point_count = mesh->GetControlPointsCount();
 				for (int skin_index = 0; skin_index < SkinCount; ++skin_index)
 				{
 					FbxSkin* skin = FbxCast<FbxSkin>(mesh->GetDeformer(skin_index, FbxDeformer::eSkin));
@@ -342,9 +343,9 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 							assert(test_matrix.Equals(bone.inv_bind_global_matrix_));
 						}
 
-						int control_point_count = cluster->GetControlPointIndicesCount();
+						int cluster_control_point_count = cluster->GetControlPointIndicesCount();
 						//double* weight = cluster->GetControlPointWeights();
-						for (int i = 0; i < control_point_count; ++i)
+						for (int i = 0; i < cluster_control_point_count; ++i)
 						{
 
 							int control_point_index = cluster->GetControlPointIndices()[i];
@@ -363,8 +364,8 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 				{
 					FbxVector4 fbx_position = mesh->GetControlPoints()[vertex_index];
 					fbx_position = total_matrix.MultT(fbx_position);
-					FbxVector4 fbx_model_position = test_mesh_to_model.MultT(fbx_position);
-					const YVector vertex_position = converter_.ConvertPos(fbx_model_position);
+					//FbxVector4 fbx_model_position = test_mesh_to_model.MultT(fbx_position);
+					const YVector vertex_position = converter_.ConvertPos(fbx_position);
 					skin_mesh.control_points_.push_back(vertex_position);
 				}
 					

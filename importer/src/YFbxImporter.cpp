@@ -115,7 +115,7 @@ bool YFbxImporter::ParseFile(const FbxImportParam& import_param, ConvertedResult
 	ValidateAllMeshesAreReferenceByNodeAttribute();
 	FbxNode* root_node = fbx_scene_->GetRootNode();
 	if (import_param_->import_as_skelton) {
-		import_param_->transform_vertex_to_absolute = false;
+		//import_param_->transform_vertex_to_absolute = false;
 		ApplyTransformSettingsToFbxNode(root_node);
 		out_result.skeleton_mesh = ImportSkeletonMesh(root_node,import_param_->model_name);
 	}
