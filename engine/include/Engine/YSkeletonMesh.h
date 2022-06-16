@@ -48,6 +48,7 @@ struct SkinMesh
 	//tmp
 	std::vector<VertexWedge> wedges_;
 	BlendShape bs_;
+	std::string name_;
 };
 struct YSkinData
 {

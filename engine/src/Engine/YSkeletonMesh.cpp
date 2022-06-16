@@ -145,6 +145,7 @@ void YSkeletonMesh::Update(double delta_time)
 					}
 				}
 			}
+			mesh_index++;
 		}
 	}
 	skeleton_->Update(delta_time);

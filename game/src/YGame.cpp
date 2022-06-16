@@ -139,7 +139,7 @@ bool GameApplication::Initial()
 	//const std::string file_path = "E:/fbx/cube_animation.fbx";
 	//const std::string file_path = "E:/fbx/deer.fbx";
 	//const std::string file_path = "E:/fbx/aoteman_attack01.fbx";
-	const std::string file_path = "E:/fbx/bs/biaoqing_clean.fbx";
+	const std::string file_path = "E:/fbx/bs/biaoqing_00.fbx";
 	if (static_mesh_importer->ImportFile(file_path))
 	{
 		FbxImportParam importer_param;
