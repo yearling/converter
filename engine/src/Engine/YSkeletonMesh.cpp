@@ -145,6 +145,7 @@ void YSkeletonMesh::Update(double delta_time)
 					}
 				}
 			}
+			mesh_index++;
 		}
 	}
 	skeleton_->Update(delta_time);
@@ -207,14 +208,14 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	int mesh_index = 0;
 	for (SkinMesh& mesh : skin_data_->meshes_)
 	{
-			bool has_bs = !mesh.bs_.target_shapes_.empty();
+		bool has_bs = !mesh.bs_.target_shapes_.empty();
 		for (VertexWedge& wedge : mesh.wedges_)
 		{
 			YVector position = mesh.control_points_[wedge.control_point_id];
-			if (has_bs)
+		/*	if (has_bs)
 			{
 				position = mesh.bs_.cached_control_point[wedge.control_point_id];
-			}
+			}*/
 			if(wedge.bone_index_.empty())
 			{ 
 				cached_position[wedge_index] = position;

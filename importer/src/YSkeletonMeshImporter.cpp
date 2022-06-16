@@ -187,7 +187,7 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	std::unique_ptr<YSkeletonMesh> skeleton_mesh = std::make_unique<YSkeletonMesh>();
 	skeleton_mesh->skeleton_ = std::move(skeleton);
 	skeleton_mesh->animation_data_ = std::move(animation_data);
-	std::unordered_map<int, FbxMesh*> tmp_skin_mesh_to_fbx;
+	std::unordered_map<int, FbxNode*> tmp_skin_mesh_to_fbx;
 	std::unique_ptr<YSkinData> skin_data = ImportSkinData(skeleton_mesh->skeleton_.get(), tmp_skin_mesh_to_fbx);
 	skeleton_mesh->skin_data_ = std::move(skin_data);
 	ImportBlendShapeAnimation(skeleton_mesh->skin_data_.get(), skeleton_mesh->animation_data_.get(), tmp_skin_mesh_to_fbx);
@@ -199,7 +199,7 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	return skeleton_mesh;
 }
 
-std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, std::unordered_map<int, FbxMesh*>& skin_mesh_to_fbx_node)
+std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, std::unordered_map<int, FbxNode*>& skin_mesh_to_fbx_node)
 {
 	skin_mesh_to_fbx_node.clear();
 	std::unique_ptr<YSkinData> skin_data = std::make_unique<YSkinData>();
@@ -215,7 +215,7 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, std
 			FbxNode* geo_node = geometry->GetNode();
 			FbxMesh* mesh = FbxCast<FbxMesh>(geometry);
 
-			skin_mesh_to_fbx_node[skin_mesh_index] = mesh;
+			skin_mesh_to_fbx_node[skin_mesh_index] = mesh->GetNode();
 			//uv 
 			FbxUVs fbx_uvs(this, mesh);
 			if (!mesh->IsTriangleMesh())
@@ -544,7 +544,7 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 }
 
 
-bool YFbxImporter::ImportBlendShapeAnimation( YSkinData* skin_data, AnimationData* anim_data, const std::unordered_map<int, FbxMesh*>& skin_mesh_to_fbx_node)
+bool YFbxImporter::ImportBlendShapeAnimation( YSkinData* skin_data, AnimationData* anim_data, const std::unordered_map<int, FbxNode*>& skin_mesh_to_fbx_node)
 {
 	if (!( skin_data && anim_data))
 	{
@@ -574,7 +574,7 @@ bool YFbxImporter::ImportBlendShapeAnimation( YSkinData* skin_data, AnimationDat
 	for (SkinMesh& skin_mesh : skin_data->meshes_)
 	{
 		assert(skin_mesh_to_fbx_node.count(mesh_index));
-		FbxMesh* mesh = skin_mesh_to_fbx_node.at(mesh_index);
+		FbxMesh* mesh = skin_mesh_to_fbx_node.at(mesh_index)->GetMesh();
 		if (!skin_mesh.bs_.target_shapes_.empty())
 		{
 			BlendShapeSequneceTrack & bs_sequence_track = anim_data->bs_sequence_track[mesh_index];
