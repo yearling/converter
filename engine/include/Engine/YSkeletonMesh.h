@@ -17,6 +17,24 @@ struct VertexWedge
 	std::vector<float> weights_;
 	std::vector<int> bone_index_;
 };
+struct BlendShapeTarget
+{
+	std::string name_;
+	std::vector<YVector> control_points;
+};
+
+struct BlendShapeSequneceTrack
+{
+	std::unordered_map<std::string, std::vector<float>> value_curve_;
+	float time_;
+	std::string name_;
+};
+
+struct BlendShape
+{
+	std::unordered_map<std::string, BlendShapeTarget> target_shapes_;
+	std::vector<YVector> cached_control_point;
+};
 struct SkinMesh
 {
 	std::vector<YVector> control_points_;
@@ -29,6 +47,7 @@ struct SkinMesh
 
 	//tmp
 	std::vector<VertexWedge> wedges_;
+	BlendShape bs_;
 };
 struct YSkinData
 {
@@ -50,6 +69,7 @@ public:
 	float time_;
 	std::string name_;
 	std::unordered_map<std::string,AnimationSequenceTrack> sequence_track;
+	std::unordered_map<int, BlendShapeSequneceTrack> bs_sequence_track;
 };
 class YBone
 {
@@ -91,6 +111,8 @@ public:
 	std::unique_ptr<YSkeleton> skeleton_;
 	std::unique_ptr<AnimationData> animation_data_;
 	std::unique_ptr<YSkinData> skin_data_;
+	std::unique_ptr<BlendShape> bs_;
+	std::unique_ptr<BlendShapeSequneceTrack> bs_anim_;
 	float play_time;
 
 //render
@@ -101,7 +123,7 @@ public:
 	bool allocated_gpu_resource = false;
 	std::vector<TComPtr<ID3D11Buffer>> vertex_buffers_;
 	TComPtr<ID3D11Buffer> index_buffer_;
-	TComPtr<ID3D11BlendState> bs_;
+	TComPtr<ID3D11BlendState> blend_state_;
 	TComPtr<ID3D11DepthStencilState> ds_;
 	TComPtr<ID3D11RasterizerState> rs_;
 	D3DTextureSampler* sampler_state_ = { nullptr };
@@ -110,4 +132,5 @@ public:
 	std::unique_ptr<D3DPixelShader> pixel_shader_;
 	std::unique_ptr<DXVertexFactory> vertex_factory_;
 	std::string model_name;
+	std::vector<YVector> cached_position;
 };

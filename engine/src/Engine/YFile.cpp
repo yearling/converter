@@ -125,7 +125,14 @@ MemoryFile::MemoryFile()
 MemoryFile::MemoryFile(FileType type)
 	:type_(type)
 {
-
+	if (type_ == FT_Read)
+	{
+		is_reading_ = true;
+	}
+	else
+	{
+		is_reading_ = false;
+	}
 }
 
 void MemoryFile::ReserveSize(uint32_t reserve_file_size)

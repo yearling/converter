@@ -4,6 +4,7 @@
 #include "Engine/YSkeletonMesh.h"
 #include <deque>
 #include "fbxsdk/scene/geometry/fbxcluster.h"
+#include "fbxsdk/scene/geometry/fbxblendshape.h"
 
 struct ConverterBone :public YBone
 {
@@ -12,9 +13,9 @@ struct ConverterBone :public YBone
 
 };
 
-inline bool IsABone(FbxNode* node) 
+inline bool IsABone(FbxNode* node)
 {
-	if (node && node->GetNodeAttribute() && (node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton || 
+	if (node && node->GetNodeAttribute() && (node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton ||
 		node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eNull ||
 		node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eMesh))
 	{
@@ -171,7 +172,7 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	{
 		FbxNode* node = fbx_scene_->GetNode(node_index);
 		//if (node->GetNodeAttribute() && (node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton || node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eMarker))
-		if(IsABone(node))
+		if (IsABone(node))
 		{
 			skeleton_nodes_in_scene.insert(node);
 		}
@@ -179,36 +180,42 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	std::set<FbxNode*> skeleton_nodes;
 	std::set_intersection(bone_attach_to_skin.begin(), bone_attach_to_skin.end(), skeleton_nodes_in_scene.begin(), skeleton_nodes_in_scene.end(), std::inserter(skeleton_nodes, skeleton_nodes.begin()));
 	std::unordered_map<int, FbxNode*> bone_id_to_fbx_node;
-	std::unique_ptr<YSkeleton> skeleton = BuildSkeleton(skeleton_nodes,bone_id_to_fbx_node);
+	std::unique_ptr<YSkeleton> skeleton = BuildSkeleton(skeleton_nodes, bone_id_to_fbx_node);
 	skeleton->Update(0.0); // test
-	std::unique_ptr<AnimationData> animation_data = ImportAnimationData(skeleton.get(),bone_id_to_fbx_node);
+	std::unique_ptr<AnimationData> animation_data = ImportAnimationData(skeleton.get(), bone_id_to_fbx_node);
 
 	std::unique_ptr<YSkeletonMesh> skeleton_mesh = std::make_unique<YSkeletonMesh>();
 	skeleton_mesh->skeleton_ = std::move(skeleton);
 	skeleton_mesh->animation_data_ = std::move(animation_data);
-	std::unique_ptr<YSkinData> skin_data = ImportSkinData(skeleton_mesh->skeleton_.get());
+	std::unordered_map<int, FbxMesh*> tmp_skin_mesh_to_fbx;
+	std::unique_ptr<YSkinData> skin_data = ImportSkinData(skeleton_mesh->skeleton_.get(), tmp_skin_mesh_to_fbx);
 	skeleton_mesh->skin_data_ = std::move(skin_data);
+	ImportBlendShapeAnimation(skeleton_mesh->skin_data_.get(), skeleton_mesh->animation_data_.get(), tmp_skin_mesh_to_fbx);
 	if (!skeleton_mesh->AllocGpuResource())
 	{
-		ERROR_INFO("SkeletonMesh alloc resource failsed!!");
+		ERROR_INFO("SkeletonMesh alloc resource failed!!");
 	}
 
 	return skeleton_mesh;
 }
 
-std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
+std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, std::unordered_map<int, FbxMesh*>& skin_mesh_to_fbx_node)
 {
+	skin_mesh_to_fbx_node.clear();
 	std::unique_ptr<YSkinData> skin_data = std::make_unique<YSkinData>();
-	
+
 	for (int gemometry_index = 0; gemometry_index < fbx_scene_->GetGeometryCount(); ++gemometry_index)
 	{
+		int skin_mesh_index = skin_data->meshes_.size();
 		skin_data->meshes_.push_back(SkinMesh());
-		SkinMesh& skin_mesh = skin_data->meshes_.back();
+		SkinMesh& skin_mesh = skin_data->meshes_[skin_mesh_index];
 		FbxGeometry* geometry = fbx_scene_->GetGeometry(gemometry_index);
 		if (geometry->GetAttributeType() == FbxNodeAttribute::eMesh)
 		{
 			FbxNode* geo_node = geometry->GetNode();
 			FbxMesh* mesh = FbxCast<FbxMesh>(geometry);
+
+			skin_mesh_to_fbx_node[skin_mesh_index] = mesh;
 			//uv 
 			FbxUVs fbx_uvs(this, mesh);
 			if (!mesh->IsTriangleMesh())
@@ -274,7 +281,7 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 				ERROR_INFO("No polygon were found on mesh ", mesh->GetName());
 				return false;
 			}
-			
+
 			//get control points
 			int vertex_count = mesh->GetControlPointsCount();
 			bool odd_negative_scale = IsOddNegativeScale(total_matrix);
@@ -328,7 +335,7 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 							assert(test_mesh_to_model == mesh_to_model);
 						}
 						cluster->GetTransformLinkMatrix(bone_to_model);
-						FbxAMatrix inv_bone_bind = bone_to_model.Inverse();
+						FbxAMatrix inv_bone_bind = bone_to_model.Inverse() * mesh_to_model;
 						if (!bone.fist_init)
 						{
 							//bone.fbx_inv_bind_matrix_ = inv_bone_bind;
@@ -349,7 +356,7 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 						{
 
 							int control_point_index = cluster->GetControlPointIndices()[i];
-							if (control_point_index > control_point_count) 
+							if (control_point_index > control_point_count)
 							{
 								continue;
 							}
@@ -368,7 +375,45 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton)
 					const YVector vertex_position = converter_.ConvertPos(fbx_position);
 					skin_mesh.control_points_.push_back(vertex_position);
 				}
-					
+
+				if (mesh->GetShapeCount() > 0)
+				{
+					BlendShape& bs = skin_mesh.bs_;
+					int blend_shape_deformer_count = mesh->GetDeformerCount(FbxDeformer::eBlendShape);
+					for (int i_blend_shape_deformer = 0; i_blend_shape_deformer < blend_shape_deformer_count; ++i_blend_shape_deformer)
+					{
+						FbxBlendShape* blend_shpae_fbx = (FbxBlendShape*)mesh->GetDeformer(i_blend_shape_deformer, FbxDeformer::eBlendShape);
+
+						int blend_shape_channel_count = blend_shpae_fbx->GetBlendShapeChannelCount();
+						for (int i_blend_shape_channel = 0; i_blend_shape_channel < blend_shape_channel_count; ++i_blend_shape_channel)
+						{
+							BlendShapeTarget blend_shape_target;
+							FbxBlendShapeChannel* channel = blend_shpae_fbx->GetBlendShapeChannel(i_blend_shape_channel);
+							blend_shape_target.name_ = channel->GetName();
+							if (channel)
+							{
+								int lShapeCount = channel->GetTargetShapeCount();
+								double* lFullWeights = channel->GetTargetShapeFullWeights();
+								assert(lShapeCount == 1);
+								assert(lFullWeights[0] == 100.0f);
+								FbxShape* shape = channel->GetTargetShape(0);
+								int control_point_count = shape->GetControlPointsCount();
+								FbxVector4* control_points = shape->GetControlPoints();
+								blend_shape_target.control_points.reserve(control_point_count);
+								for (int i_control_point = 0; i_control_point < control_point_count; ++i_control_point)
+								{
+									FbxVector4 bs_control_point = control_points[i_control_point];
+									bs_control_point = total_matrix.MultT(bs_control_point);
+									//FbxVector4 fbx_model_position = test_mesh_to_model.MultT(fbx_position);
+									const YVector vertex_position = converter_.ConvertPos(bs_control_point);
+									blend_shape_target.control_points.push_back(vertex_position);
+								}
+								bs.target_shapes_[blend_shape_target.name_] = blend_shape_target;
+							}
+						}
+					}
+				}
+
 			}
 
 			std::vector<YVector> P;
@@ -466,7 +511,7 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 	animation_data->name_ = CurAnimStack->GetName();
 
 	const int32 NumSamplingKeys = YMath::FloorToInt(AnimTimeSpan.GetDuration().GetSecondDouble() * ResampleRate);
-	animation_data->time_ = NumSamplingKeys * (1.0/(float)frame_rate);
+	animation_data->time_ = NumSamplingKeys * (1.0 / (float)frame_rate);
 	const FbxTime TimeIncrement = AnimTimeSpan.GetDuration() / YMath::Max(NumSamplingKeys, 1);
 	for (YBone& bone : skeleton->bones_)
 	{
@@ -496,4 +541,74 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 		}
 	}
 	return animation_data;
+}
+
+
+bool YFbxImporter::ImportBlendShapeAnimation( YSkinData* skin_data, AnimationData* anim_data, const std::unordered_map<int, FbxMesh*>& skin_mesh_to_fbx_node)
+{
+	if (!( skin_data && anim_data))
+	{
+		return false;
+	}
+
+
+	std::unique_ptr<BlendShapeSequneceTrack> bs_sequence_track = std::make_unique<BlendShapeSequneceTrack>();
+
+	float time = -1;
+	int frame_rate = FbxTime::GetFrameRate(fbx_scene_->GetGlobalSettings().GetTimeMode());
+	int AnimStackIndex = 0;
+	int32 ResampleRate = 30.0f;
+	//for (int32 AnimStackIndex = 0; AnimStackIndex < AnimStackCount; AnimStackIndex++)
+	FbxAnimStack* CurAnimStack = fbx_scene_->GetSrcObject<FbxAnimStack>(AnimStackIndex);
+	FbxTimeSpan AnimTimeSpan = CurAnimStack->GetLocalTimeSpan();
+	FbxAnimLayer* current_animation_layer = CurAnimStack->GetMember<FbxAnimLayer>();
+	if (AnimTimeSpan.GetDirection() == FBXSDK_TIME_FORWARD)
+	{
+		time = YMath::Max((float)(AnimTimeSpan.GetDuration().GetMilliSeconds() / 1000.0f * scene_info_->frame_rate), time);
+	}
+
+	const int32 NumSamplingKeys = YMath::FloorToInt(AnimTimeSpan.GetDuration().GetSecondDouble() * ResampleRate);
+	const FbxTime TimeIncrement = AnimTimeSpan.GetDuration() / YMath::Max(NumSamplingKeys, 1);
+	
+	int mesh_index = 0;
+	for (SkinMesh& skin_mesh : skin_data->meshes_)
+	{
+		assert(skin_mesh_to_fbx_node.count(mesh_index));
+		FbxMesh* mesh = skin_mesh_to_fbx_node.at(mesh_index);
+		if (!skin_mesh.bs_.target_shapes_.empty())
+		{
+			BlendShapeSequneceTrack & bs_sequence_track = anim_data->bs_sequence_track[mesh_index];
+			for (FbxTime CurTime = AnimTimeSpan.GetStart(); CurTime <= AnimTimeSpan.GetStop(); CurTime += TimeIncrement)
+			{
+				int lBlendShapeDeformerCount = mesh->GetDeformerCount(FbxDeformer::eBlendShape);
+				for (int blend_shape_index = 0; blend_shape_index < lBlendShapeDeformerCount; ++blend_shape_index)
+				{
+					FbxBlendShape* lBlendShape = (FbxBlendShape*)mesh->GetDeformer(blend_shape_index, FbxDeformer::eBlendShape);
+
+					int lBlendShapeChannelCount = lBlendShape->GetBlendShapeChannelCount();
+					for (int channel_index = 0; channel_index < lBlendShapeChannelCount; ++channel_index)
+					{
+						FbxBlendShapeChannel* lChannel = lBlendShape->GetBlendShapeChannel(channel_index);
+						if (lChannel)
+						{
+							// Get the percentage of influence on this channel.
+							FbxAnimCurve* curve = mesh->GetShapeChannel(blend_shape_index, channel_index, current_animation_layer);
+							std::string channel_name = lChannel->GetName();
+							if (!curve)
+							{
+								bs_sequence_track.value_curve_[channel_name].push_back(0.0);
+							}
+							else
+							{
+								double lWeight = curve->Evaluate(CurTime);
+								bs_sequence_track.value_curve_[channel_name].push_back(lWeight);
+							}
+						}
+					}
+				}
+			}
+		}
+		mesh_index++;
+	}
+	return true;
 }

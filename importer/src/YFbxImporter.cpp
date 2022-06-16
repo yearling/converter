@@ -535,6 +535,7 @@ bool YFbxImporter::IsOddNegativeScale(FbxAMatrix& total_matrix)
 
 
 
+
 bool YFbxImporter::InitSDK() {
 	// create sdk manager
 	fbx_manager_ = FbxManager::Create();

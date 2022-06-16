@@ -117,6 +117,35 @@ void YSkeletonMesh::Update(double delta_time)
 			bone.local_transform_ = local_trans;
 			bone.local_matrix_ = local_trans.ToMatrix();
 		}
+
+		int mesh_index = 0;
+		for (SkinMesh& mesh : skin_data_->meshes_)
+		{
+			bool has_bs = !mesh.bs_.target_shapes_.empty();
+
+			if (has_bs)
+			{
+				if (animation_data_->bs_sequence_track.count(mesh_index))
+				{
+					const BlendShapeSequneceTrack& bs_sequence_track = animation_data_->bs_sequence_track.at(mesh_index);
+					mesh.bs_.cached_control_point = mesh.control_points_;
+					
+					for (auto& key_value : mesh.bs_.target_shapes_)
+					{
+						const std::vector<float>& curve = bs_sequence_track.value_curve_.at(key_value.first);
+						int key_size = curve.size();
+						int current_key = current_frame % key_size;
+						float weight = curve[current_key] / 100.0f;
+						for (int contorl_point_index = 0; contorl_point_index < mesh.control_points_.size(); contorl_point_index++)
+						{
+							YVector& des_pos = mesh.bs_.cached_control_point[contorl_point_index];
+							YVector& dif_pos = weight* (key_value.second.control_points[contorl_point_index]- mesh.control_points_[contorl_point_index]);
+							des_pos = des_pos + dif_pos;
+						}
+					}
+				}
+			}
+		}
 	}
 	skeleton_->Update(delta_time);
 
@@ -146,7 +175,7 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	ID3D11Device* device = g_device->GetDevice();
 	ID3D11DeviceContext* dc = g_device->GetDC();
 	float BlendColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	dc->OMSetBlendState(bs_, BlendColor, 0xffffffff);
+	dc->OMSetBlendState(blend_state_, BlendColor, 0xffffffff);
 	dc->RSSetState(rs_);
 	dc->OMSetDepthStencilState(ds_, 0);
 	dc->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -166,7 +195,7 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 
 	// update pose
 	int triangle_count = 0;
-	std::vector<YVector> cached_position;
+	
 	for (SkinMesh& mesh : skin_data_->meshes_)
 	{
 		triangle_count += mesh.wedges_.size() / 3;
@@ -175,13 +204,20 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	cached_position.resize(triangle_count*3);
 	
 	int wedge_index = 0;
+	int mesh_index = 0;
 	for (SkinMesh& mesh : skin_data_->meshes_)
 	{
+			bool has_bs = !mesh.bs_.target_shapes_.empty();
 		for (VertexWedge& wedge : mesh.wedges_)
 		{
+			YVector position = mesh.control_points_[wedge.control_point_id];
+			if (has_bs)
+			{
+				position = mesh.bs_.cached_control_point[wedge.control_point_id];
+			}
 			if(wedge.bone_index_.empty())
 			{ 
-				cached_position[wedge_index] = wedge.position;
+				cached_position[wedge_index] = position;
 			}
 			else
 			{
@@ -197,12 +233,14 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 					blend_matrix = blend_matrix + weighted_matrix;
 				}
 
-				YVector animated_vertex_point = blend_matrix.TransformPosition(wedge.position);
+				YVector animated_vertex_point = blend_matrix.TransformPosition(position);
 				cached_position[wedge_index] = animated_vertex_point;
 			}
 			//cached_position[wedge_index] = wedge.position;
+			//cached_position[wedge_index] = wedge.position;
 			wedge_index++;
 		}
+		mesh_index++;
 	}
 	D3D11_MAPPED_SUBRESOURCE MappedSubresource;
 	if (dc->Map(vertex_buffers_[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
@@ -343,7 +381,7 @@ bool YSkeletonMesh::AllocGpuResource()
 		}
 	}
 	if (!bs_) {
-		g_device->CreateBlendState(bs_, true);
+		g_device->CreateBlendState(blend_state_, true);
 	}
 
 	if (!rs_) {

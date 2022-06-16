@@ -315,10 +315,10 @@ bool YEngine::PreInit()
 	{
 		GUseThreadedRendering = true;
 	}
-	RHIInit(WITH_EDITOR);
+	//RHIInit(WITH_EDITOR);
 
 	//	GetRendererModule()
-	PostInitRHI();
+	//PostInitRHI();
 	//PostInitRHI();
 	if (GUseThreadedRendering)
 	{
@@ -335,7 +335,7 @@ bool YEngine::PreInit()
 				//GUseRHIThread_InternalUseOnly = false;
 			//}
 		}
-		StartRenderingThread();
+		//StartRenderingThread();
 	}
 	return true;
 }
@@ -478,10 +478,11 @@ void YEngine::Update()
 	//TGraphTask<RenderThreadTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([=]() { LOG_INFO("render frame ",frame_index); });
 	//TGraphTask<RenderThreadTaskLambdaBug>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([frame_index](uint64_t s) { LOG_INFO("render frame ",frame_index, "pass: ",s); }, frame_index);
 	FPlatformMisc::MemoryBarrier();
-	RHITick(delta_time);
+	//RHITick(delta_time);
 	auto local_frame_index = frame_index;
 	//render_fence[current_fence_index] = TGraphTask<RenderThreadTaskNumber>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady(frame_index);
-	/*	render_fence[current_fence_index] = */TGraphTask<RenderThreadTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([this, delta_time, game_time, local_frame_index]() {
+	/*	render_fence[current_fence_index] = */ 
+	//TGraphTask<RenderThreadTask>::CreateTask(NULL, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([this, delta_time, game_time, local_frame_index]() {
 		//LOG_INFO("render thread ", local_frame_index);
 		std::unique_ptr<YRenderScene> render_scene = SWorld::GetWorld()->GenerateRenderScene();
 		render_scene->deta_time = delta_time;
@@ -494,21 +495,21 @@ void YEngine::Update()
 		ID3D11Resource* rt_color = dynamic_cast<YForwardRenderer*>(this->GetRender())->GetRTs()->GetColorBuffer();
 		g_device->GetDC()->CopyResource(main_rt_color, rt_color);
 		g_device->Present();
-		});
+	//	});
 
 	//auto infinit_task = TGraphTask<FNullGraphTask>::CreateTask().ConstructAndHold(ENamedThreads::ActualRenderingThread);
 	//TGraphTask<RenderThreadTask>::CreateTask(nullptr, ENamedThreads::GameThread).ConstructAndDispatchWhenReady([infinit_task]() {
 	//	FTaskGraphInterface::Get().WaitUntilTaskCompletes(infinit_task->GetCompletionEvent());
 	//	});
-	FPendingCleanupObjects* PreviousPendingCleanupObjects = PendingCleanupObjects;
-	PendingCleanupObjects = GetPendingCleanupObjects();
+	//FPendingCleanupObjects* PreviousPendingCleanupObjects = PendingCleanupObjects;
+	//PendingCleanupObjects = GetPendingCleanupObjects();
 
 	//Frame fence
 	{
-		static FFrameEndSync frame_end_sync;
-		frame_end_sync.Sync(false);
+    //		static FFrameEndSync frame_end_sync;
+ //		frame_end_sync.Sync(false);
 	}
-	delete PreviousPendingCleanupObjects;
+	//delete PreviousPendingCleanupObjects;
 	frame_index++;
 }
 

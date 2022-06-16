@@ -406,11 +406,11 @@ public:
 		GRenderThreadId = FPlatformTLS::GetCurrentThreadId();
 
 		// Acquire rendering context ownership on the current thread, unless using an RHI thread, which will be the real owner
-		if (!IsRunningRHIInSeparateThread())
+	/*	if (!IsRunningRHIInSeparateThread())
 		{
 			bAcquiredThreadOwnership = true;
 			RHIAcquireThreadOwnership();
-		}
+		}*/
 
 		return true;
 	}

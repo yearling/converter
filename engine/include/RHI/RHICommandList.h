@@ -3805,7 +3805,7 @@ public:
 		//QUICK_SCOPE_CYCLE_COUNTER(STAT_RHIMETHOD_FlushResources_Flush);
 		ImmediateFlush(EImmediateFlushType::FlushRHIThread);
 
-		return GDynamicRHI->RHIFlushResources();
+		//return GDynamicRHI->RHIFlushResources();
 	}
 
 	inline uint32_t GetGPUFrameCycles()
