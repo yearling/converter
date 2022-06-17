@@ -199,7 +199,10 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	std::set_intersection(bone_attach_to_skin.begin(), bone_attach_to_skin.end(), skeleton_nodes_in_scene.begin(), skeleton_nodes_in_scene.end(), std::inserter(skeleton_nodes, skeleton_nodes.begin()));
 	std::unordered_map<int, FbxNode*> bone_id_to_fbx_node;
 	std::unique_ptr<YSkeleton> skeleton = BuildSkeleton(skeleton_nodes, bone_id_to_fbx_node);
-	skeleton->Update(0.0); // test
+	if (skeleton)
+	{
+		skeleton->Update(0.0); // test
+	}
 	std::unique_ptr<AnimationData> animation_data = ImportAnimationData(skeleton.get(), bone_id_to_fbx_node);
 
 	std::unique_ptr<YSkeletonMesh> skeleton_mesh = std::make_unique<YSkeletonMesh>();
@@ -379,7 +382,7 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton,cons
 						}
 					}
 				}
-
+			}
 				for (int vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
 				{
 					FbxVector4 fbx_position = mesh->GetControlPoints()[vertex_index];
@@ -427,7 +430,6 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton,cons
 					}
 				}
 
-			}
 
 			std::vector<YVector> P;
 			int triangle_control_index = 0;
@@ -525,6 +527,10 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 	const int32 NumSamplingKeys = YMath::FloorToInt(AnimTimeSpan.GetDuration().GetSecondDouble() * ResampleRate);
 	animation_data->time_ = NumSamplingKeys * (1.0 / (float)frame_rate);
 	const FbxTime TimeIncrement = AnimTimeSpan.GetDuration() / YMath::Max(NumSamplingKeys, 1);
+	if (!skeleton) 
+	{
+		return animation_data;
+	}
 	for (YBone& bone : skeleton->bones_)
 	{
 		AnimationSequenceTrack& animation_sequence_track = animation_data->sequence_track[bone.bone_name_];

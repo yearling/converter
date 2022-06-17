@@ -5,6 +5,7 @@
 #include "Render/YRenderInterface.h"
 #include "Engine/YRenderScene.h"
 #include "Engine/YPrimitiveElement.h"
+#include "Math/YTransform.h"
 class YSkeltonMeshVertexFactory :public DXVertexFactory
 {
 public:
@@ -104,18 +105,31 @@ void YSkeletonMesh::Update(double delta_time)
 			play_time = 0.0;
 		}
 		int current_frame = int(play_time * 30.0f);
-
-		for (YBone& bone : skeleton_->bones_)
+		if (skeleton_)
 		{
-			AnimationSequenceTrack& track = animation_data_->sequence_track[bone.bone_name_];
-			int key_size = track.pos_keys_.size();
-			current_frame = current_frame % key_size;
-			YVector pos = track.pos_keys_[current_frame];
-			YQuat rot = track.rot_keys_[current_frame];
-			YVector scale = track.scale_keys_[current_frame];
-			YTransform local_trans = YTransform(pos, rot, scale);
-			bone.local_transform_ = local_trans;
-			bone.local_matrix_ = local_trans.ToMatrix();
+			for (YBone& bone : skeleton_->bones_)
+			{
+				AnimationSequenceTrack& track = animation_data_->sequence_track[bone.bone_name_];
+				int key_size = track.pos_keys_.size();
+				current_frame = current_frame % key_size;
+				YVector pos = track.pos_keys_[current_frame];
+				YQuat rot = track.rot_keys_[current_frame];
+				YVector scale = track.scale_keys_[current_frame];
+				YTransform local_trans = YTransform(pos, rot, scale);
+				bone.local_transform_ = local_trans;
+				bone.local_matrix_ = local_trans.ToMatrix();
+			}
+
+			skeleton_->Update(delta_time);
+			for (int i = 0; i < skeleton_->bones_.size(); ++i) {
+				YBone& bone = skeleton_->bones_[i];
+				YVector joint_center = bone.global_transform_.TransformPosition(YVector(0, 0, 0));
+				g_Canvas->DrawCube(joint_center, YVector4(1.0f, 0.0f, 0.0f, 1.0f), 0.1f);
+				if (bone.parent_id_ != -1) {
+					YVector parent_joint_center = skeleton_->bones_[bone.parent_id_].global_transform_.TransformPosition(YVector(0, 0, 0));
+					g_Canvas->DrawLine(parent_joint_center, joint_center, YVector4(0.0f, 1.0f, 0.0f, 1.0f));
+				}
+			}
 		}
 
 		int mesh_index = 0;
@@ -125,6 +139,7 @@ void YSkeletonMesh::Update(double delta_time)
 
 			if (has_bs)
 			{
+				mesh.bs_.cached_control_point = mesh.control_points_;
 				if (animation_data_->bs_sequence_track.count(mesh_index))
 				{
 					const BlendShapeSequneceTrack& bs_sequence_track = animation_data_->bs_sequence_track.at(mesh_index);
@@ -148,18 +163,21 @@ void YSkeletonMesh::Update(double delta_time)
 			mesh_index++;
 		}
 	}
-	skeleton_->Update(delta_time);
+	else
+	{
+		
+		for (SkinMesh& mesh : skin_data_->meshes_)
+		{
+			bool has_bs = !mesh.bs_.target_shapes_.empty();
 
-
-	for (int i = 0; i < skeleton_->bones_.size(); ++i) {
-	    YBone& bone = skeleton_->bones_[i];
-		YVector joint_center = bone.global_transform_.TransformPosition(YVector(0, 0, 0));
-		g_Canvas->DrawCube(joint_center, YVector4(1.0f, 0.0f, 0.0f, 1.0f), 0.1f);
-		if (bone.parent_id_ != -1) {
-			YVector parent_joint_center = skeleton_->bones_[bone.parent_id_].global_transform_.TransformPosition(YVector(0, 0, 0));
-			g_Canvas->DrawLine(parent_joint_center, joint_center, YVector4(0.0f, 1.0f, 0.0f, 1.0f));
+			if (has_bs)
+			{
+				mesh.bs_.cached_control_point = mesh.control_points_;
+			}
 		}
 	}
+
+
 }
 
 void YSkeletonMesh::Render()
@@ -186,7 +204,10 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	dc->IASetIndexBuffer(index_buffer_, DXGI_FORMAT_R32_UINT, 0);
 	vertex_shader_->BindResource("g_projection", render_param->camera_proxy->projection_matrix_);
 	vertex_shader_->BindResource("g_view", render_param->camera_proxy->view_matrix_);
-	vertex_shader_->BindResource("g_world", render_param->local_to_world_);
+	YMatrix local_to_world = render_param->local_to_world_;
+	YMatrix down_offset = YTransform(YVector(0, 0, -12), YQuat(0, 0, 0, 1), YVector(0.1, 0.1, 0.1)).ToMatrix();
+	local_to_world = down_offset * local_to_world;
+	vertex_shader_->BindResource("g_world", local_to_world);
 	vertex_shader_->Update();
 	if (render_param->dir_lights_proxy->size()) {
 		YVector dir_light = -(*render_param->dir_lights_proxy)[0].light_dir;
@@ -252,15 +273,6 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
 	dc->Unmap(vertex_buffers_[0], 0);
 
-
-
-
-
-
-
-
-
-	//
 	dc->DrawIndexed(triangle_count * 3, 0 , 0);
 	//for (auto& polygon_group : raw_meshes[0].polygon_groups)
 	//{
