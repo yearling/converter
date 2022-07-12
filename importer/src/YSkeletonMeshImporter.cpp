@@ -29,7 +29,7 @@ void YFbxImporter::RecursiveFindMesh(FbxNode* node, std::vector<FbxNode*>& mesh_
 		RecursiveFindMesh(node->GetChild(i_child), mesh_nodes);
 	}
 }
-inline bool IsABone(FbxNode* node)
+inline bool IsBone(FbxNode* node)
 {
 	if (node && node->GetNodeAttribute() && (node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton ||
 		node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eNull ||
@@ -39,31 +39,75 @@ inline bool IsABone(FbxNode* node)
 	}
 	return false;
 }
-std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes, std::unordered_map<int, FbxNode*>& out_map)
+
+std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::unordered_map<int, FbxNode*>& out_map)
 {
+	//import skeleton
+	// 找到skeleton对应cluster引用的bone
+	std::set<FbxNode*> bones_attach_to_skin;
+	std::set<FbxNode*> skeleton_nodes_in_scene;
+	int node_count = fbx_scene_->GetNodeCount();
+	for (int node_index = 0; node_index < node_count; ++node_index)
+	{
+		FbxNode* node = fbx_scene_->GetNode(node_index);
+		if (IsBone(node))
+		{
+			skeleton_nodes_in_scene.insert(node);
+		}
+
+		FbxGeometry* geometry = node->GetGeometry();
+		if (!geometry)
+		{
+			continue;
+		}
+		if (geometry->GetAttributeType() == FbxNodeAttribute::eMesh)
+		{
+			FbxMesh* mesh = FbxCast<FbxMesh>(geometry);
+			//lod todo 
+			if (mesh->GetDeformerCount(FbxDeformer::EDeformerType::eSkin) > 0)
+			{
+				FbxSkin* skin = FbxCast<FbxSkin>(mesh->GetDeformer(0, FbxDeformer::eSkin));
+				int cluster_count = skin->GetClusterCount();
+				FbxNode* link = nullptr;
+				for (int cluster_index = 0; cluster_index < cluster_count; ++cluster_index)
+				{
+					FbxCluster* cluster = skin->GetCluster(cluster_index);
+					link = cluster->GetLink();
+					bones_attach_to_skin.insert(link);
+					while (link && IsBone(link))
+					{
+						bones_attach_to_skin.insert(link);
+						link = link->GetParent();
+					}
+				}
+			}
+		}
+	}
+	std::set<FbxNode*> skeleton_nodes;
+	std::set_intersection(bones_attach_to_skin.begin(), bones_attach_to_skin.end(), skeleton_nodes_in_scene.begin(), skeleton_nodes_in_scene.end(), std::inserter(skeleton_nodes, skeleton_nodes.begin()));
 
 	std::unique_ptr<YSkeleton> skeleton = std::make_unique<YSkeleton>();
-
 	//find root_node
-	auto find_root_node = [](FbxNode* node) {
+	auto find_root_node_func = [](FbxNode* node) {
 		FbxNode* root_node = node;
-		while (root_node->GetParent() && IsABone(root_node->GetParent()))
+		FbxNode* parent_node = root_node->GetParent();
+		while (parent_node && IsBone(parent_node))
 		{
-			root_node = root_node->GetParent();
+			root_node = parent_node;
+			parent_node = root_node->GetParent();
 		}
 		return root_node;
 	};
 
-	std::set<FbxNode*> skeleton_root_node;
-	for (auto fbx_node : nodes)
+	std::set<FbxNode*> skeleton_root_nodes;
+	for (auto fbx_node : skeleton_nodes)
 	{
-
-		skeleton_root_node.insert(find_root_node(fbx_node));
+		skeleton_root_nodes.insert(find_root_node_func(fbx_node));
 	}
 
-	if (skeleton_root_node.size() != 1) {
+	if (skeleton_root_nodes.size() != 1) {
 		ERROR_INFO("skeleton has multi root nodes, there are");
-		for (FbxNode* node : skeleton_root_node)
+		for (FbxNode* node : skeleton_root_nodes)
 		{
 			ERROR_INFO("	,node name is ", node->GetName());
 		}
@@ -72,30 +116,31 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 
 	// build connection
 	std::unordered_map<FbxNode*, std::unique_ptr<ConverterBone>> bone_cache;
-	for (FbxNode* fbx_node : nodes)
+	for (FbxNode* fbx_node : skeleton_nodes)
 	{
 		std::unique_ptr<ConverterBone> bone = std::make_unique<ConverterBone>();
 		bone->bone_name_ = fbx_node->GetName();
 		bone_cache[fbx_node] = std::move(bone);
 	}
 
-	for (FbxNode* fbx_node : nodes)
+	// 建立父子关系 
+	for (FbxNode* fbx_node : skeleton_nodes)
 	{
 		std::unique_ptr<ConverterBone>& bone = bone_cache[fbx_node];
 		FbxNode* parent = fbx_node->GetParent();
 
-		if (parent && IsABone(parent)) {
+		if (parent && IsBone(parent)) {
 			std::unique_ptr<ConverterBone>& parent_bone = bone_cache[parent];
 			parent_bone->children_fbx_.insert(fbx_node);
 			bone->parent = parent;
 		}
 	}
 
-	FbxNode* root_node = *(skeleton_root_node.begin());
+	FbxNode* skeleton_root_node = *(skeleton_root_nodes.begin());
 
 	std::deque<FbxNode*> node_queue;
-	node_queue.push_back(root_node);
-	skeleton->bones_.reserve(nodes.size());
+	node_queue.push_back(skeleton_root_node);
+	skeleton->bones_.reserve(skeleton_nodes.size());
 	while (!node_queue.empty())
 	{
 		FbxNode* node = node_queue.front();
@@ -122,7 +167,7 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 		}
 		out_map[bone_id] = node;
 		FbxNode* parent = node->GetParent();
-		if (parent && IsABone(parent))
+		if (parent && IsBone(parent))
 		{
 			int parent_id = skeleton->bone_names_to_id_[parent->GetName()];
 			YBone& parent_bone = skeleton->bones_[parent_id];
@@ -144,61 +189,17 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(std::set<FbxNode*>& nodes
 		skeleton->bones_[bone_id].local_transform_ = skeleton->bones_[bone_id].bind_local_tranform_;
 		skeleton->bones_[bone_id].local_matrix_ = skeleton->bones_[bone_id].bind_local_matrix_;
 	}
-	skeleton->root_bone_id_ = skeleton->bone_names_to_id_[root_node->GetName()];
+	skeleton->root_bone_id_ = skeleton->bone_names_to_id_[skeleton_root_node->GetName()];
 	return skeleton;
 }
 
 
+
+
 std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_node, const std::string& mesh_name)
 {
-	//import skeleton
-	// 找到skeleton对应cluster引用的bone
-	std::set<FbxNode*> bone_attach_to_skin;
-	for (int gemometry_index = 0; gemometry_index < fbx_scene_->GetGeometryCount(); ++gemometry_index)
-	{
-		FbxGeometry* geometry = fbx_scene_->GetGeometry(gemometry_index);
-		if (geometry->GetAttributeType() == FbxNodeAttribute::eMesh)
-		{
-			FbxNode* geo_node = geometry->GetNode();
-			FbxMesh* mesh = FbxCast<FbxMesh>(geometry);
-			//lod todo 
-			if (mesh->GetDeformerCount(FbxDeformer::EDeformerType::eSkin) > 0)
-			{
-				FbxSkin* skin = FbxCast<FbxSkin>(mesh->GetDeformer(0, FbxDeformer::eSkin));
-				int cluster_count = skin->GetClusterCount();
-				FbxNode* link = nullptr;
-				for (int cluster_index = 0; cluster_index < cluster_count; ++cluster_index)
-				{
-					FbxCluster* cluster = skin->GetCluster(cluster_index);
-					link = cluster->GetLink();
-					bone_attach_to_skin.insert(link);
-					while (link && IsABone(link))
-					{
-						bone_attach_to_skin.insert(link);
-						link = link->GetParent();
-					}
-				}
-			}
-		}
-	}
-
-	int node_count = fbx_scene_->GetNodeCount();
-	std::set<FbxNode*> skeleton_nodes_in_scene;
-	for (int node_index = 0; node_index < node_count; ++node_index)
-	{
-		FbxNode* node = fbx_scene_->GetNode(node_index);
-		//if (node->GetNodeAttribute() && (node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton || node->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eMarker))
-		if (IsABone(node))
-		{
-			skeleton_nodes_in_scene.insert(node);
-		}
-	}
-	std::vector<FbxNode*> mesh_contain_skeleton_and_bs;
-	RecursiveFindMesh(root_node, mesh_contain_skeleton_and_bs);
-	std::set<FbxNode*> skeleton_nodes;
-	std::set_intersection(bone_attach_to_skin.begin(), bone_attach_to_skin.end(), skeleton_nodes_in_scene.begin(), skeleton_nodes_in_scene.end(), std::inserter(skeleton_nodes, skeleton_nodes.begin()));
 	std::unordered_map<int, FbxNode*> bone_id_to_fbx_node;
-	std::unique_ptr<YSkeleton> skeleton = BuildSkeleton(skeleton_nodes, bone_id_to_fbx_node);
+	std::unique_ptr<YSkeleton> skeleton = BuildSkeleton2(root_node, bone_id_to_fbx_node);
 	if (skeleton)
 	{
 		skeleton->Update(0.0); // test
@@ -209,6 +210,8 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	skeleton_mesh->skeleton_ = std::move(skeleton);
 	skeleton_mesh->animation_data_ = std::move(animation_data);
 	std::unordered_map<int, FbxMesh*> tmp_skin_mesh_to_fbx;
+	std::vector<FbxNode*> mesh_contain_skeleton_and_bs;
+	RecursiveFindMesh(root_node, mesh_contain_skeleton_and_bs);
 	std::unique_ptr<YSkinData> skin_data = ImportSkinData(skeleton_mesh->skeleton_.get(),mesh_contain_skeleton_and_bs);
 	skeleton_mesh->skin_data_ = std::move(skin_data);
 	ImportBlendShapeAnimation(skeleton_mesh->skin_data_.get(), skeleton_mesh->animation_data_.get(), mesh_contain_skeleton_and_bs);
