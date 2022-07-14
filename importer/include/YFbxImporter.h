@@ -84,6 +84,8 @@ protected:
 	YFbxMaterial* FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_material);
 	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
 	bool IsOddNegativeScale(FbxAMatrix& total_matrix);
+	FbxNode* GetRootSketeton(FbxNode* link);
+	void RecursiveBuildSkeleton(FbxNode* link, std::set<FbxNode*>& out_bones);
 	std::unique_ptr<YSkeletonMesh> ImportSkeletonMesh(FbxNode* root_node, const std::string& mesh_name);
 	std::unique_ptr<YSkeleton> BuildSkeleton(FbxNode* root_node,std::unordered_map<int,FbxNode*>& out_map);
 	bool RetrievePoseFromBindPose(const std::vector<FbxNode*>& mesh_nodes, std::vector<FbxPose*>& pose_array);

@@ -41,6 +41,57 @@ inline bool IsBone(FbxNode* node)
 	}
 	return false;
 }
+FbxNode* YFbxImporter::GetRootSketeton(FbxNode* link)
+{
+	FbxNode* root_bone = link;
+
+	// get Unreal skeleton root
+	// mesh and dummy are used as bone if they are in the skeleton hierarchy
+	while (root_bone && root_bone->GetParent())
+	{
+		
+		FbxNodeAttribute* Attr = root_bone->GetParent()->GetNodeAttribute();
+		if (Attr &&
+			(Attr->GetAttributeType() == FbxNodeAttribute::eMesh ||
+				(Attr->GetAttributeType() == FbxNodeAttribute::eNull) ||
+				Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton) &&
+			root_bone->GetParent() != fbx_scene_->GetRootNode())
+		{
+			// in some case, skeletal mesh can be ancestor of bones
+			// this avoids this situation
+			if (Attr->GetAttributeType() == FbxNodeAttribute::eMesh)
+			{
+				FbxMesh* Mesh = (FbxMesh*)Attr;
+				if (Mesh->GetDeformerCount(FbxDeformer::eSkin) > 0)
+				{
+					break;
+				}
+			}
+
+			root_bone = root_bone->GetParent();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return root_bone;
+}
+
+
+void YFbxImporter::RecursiveBuildSkeleton(FbxNode* link, std::set<FbxNode*>& out_bones)
+{
+	if (IsBone(link))
+	{
+		out_bones.insert(link);
+		for (int child_index = 0; child_index < link->GetChildCount(); ++child_index)
+		{
+			RecursiveBuildSkeleton(link->GetChild(child_index), out_bones);
+		}
+	}
+}
+
 
 std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::unordered_map<int, FbxNode*>& out_map)
 {
@@ -52,7 +103,7 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 	{
 		WARNING_INFO("Getting valid bind pose failed. Try to recreate bind pose");
 		const int pose_count = fbx_scene_->GetPoseCount();
-		for (int pose_index = 0; pose_index < pose_count; ++pose_index)
+		for (int pose_index = pose_count-1; pose_index >=0; --pose_index)
 		{
 			FbxPose* current_pose = fbx_scene_->GetPose(pose_index);
 			if (current_pose && current_pose->IsBindPose())
@@ -76,11 +127,12 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 		used_time0_as_bind_pose = true;
 	}
 
-	//import skeleton
+	// import skeleton
 	// 找到skeleton对应cluster引用的bone
 	std::set<FbxNode*> bones_attach_to_skin;
 	std::set<FbxNode*> skeleton_nodes_in_scene;
 	std::set<FbxCluster*> clusters;
+	std::set<FbxNode*> skeleton_root_nodes;
 	int node_count = fbx_scene_->GetNodeCount();
 	for (int node_index = 0; node_index < node_count; ++node_index)
 	{
@@ -108,6 +160,7 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 				{
 					FbxCluster* cluster = skin->GetCluster(cluster_index);
 					link = cluster->GetLink();
+					skeleton_root_nodes.insert(GetRootSketeton(link));
 					clusters.insert(cluster);
 					bones_attach_to_skin.insert(link);
 					while (link && IsBone(link))
@@ -119,33 +172,16 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 			}
 		}
 	}
+
+	
 	std::set<FbxNode*> skeleton_nodes;
-	std::set_intersection(bones_attach_to_skin.begin(), bones_attach_to_skin.end(), skeleton_nodes_in_scene.begin(), skeleton_nodes_in_scene.end(), std::inserter(skeleton_nodes, skeleton_nodes.begin()));
-	std::set<FbxNode*> diff_nodes;
-	std::set_symmetric_difference(bones_attach_to_skin.begin(), bones_attach_to_skin.end(), skeleton_nodes_in_scene.begin(), skeleton_nodes_in_scene.end(), std::inserter(diff_nodes, diff_nodes.begin()));
-	for (FbxNode* diff_node : diff_nodes)
+	for (FbxNode* root_node : skeleton_root_nodes)
 	{
-		LOG_INFO("diff: ", diff_node->GetName());
+		RecursiveBuildSkeleton(root_node, skeleton_nodes);
 	}
+
 	std::unique_ptr<YSkeleton> skeleton = std::make_unique<YSkeleton>();
 	//find root_node
-	auto find_root_node_func = [](FbxNode* node) {
-		FbxNode* root_node = node;
-		FbxNode* parent_node = root_node->GetParent();
-		while (parent_node && IsBone(parent_node))
-		{
-			root_node = parent_node;
-			parent_node = root_node->GetParent();
-		}
-		return root_node;
-	};
-
-	std::set<FbxNode*> skeleton_root_nodes;
-	for (auto fbx_node : skeleton_nodes)
-	{
-		skeleton_root_nodes.insert(find_root_node_func(fbx_node));
-	}
-
 	if (skeleton_root_nodes.size() != 1) {
 		ERROR_INFO("skeleton has multi root nodes, there are");
 		for (FbxNode* node : skeleton_root_nodes)
