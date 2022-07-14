@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include "Crc.h"
 
+#if defined(_MSC_VER) 
+#define _snprintf snprintf
+#endif
+
 template< typename... Args >
 std::string StringFormat(const char* format, Args... args) {
 	int length = std::snprintf(nullptr, 0, format, args...);
