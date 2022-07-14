@@ -49,7 +49,7 @@ FbxNode* YFbxImporter::GetRootSketeton(FbxNode* link)
 	// mesh and dummy are used as bone if they are in the skeleton hierarchy
 	while (root_bone && root_bone->GetParent())
 	{
-		
+
 		FbxNodeAttribute* Attr = root_bone->GetParent()->GetNodeAttribute();
 		if (Attr &&
 			(Attr->GetAttributeType() == FbxNodeAttribute::eMesh ||
@@ -80,11 +80,11 @@ FbxNode* YFbxImporter::GetRootSketeton(FbxNode* link)
 }
 
 
-void YFbxImporter::RecursiveBuildSkeleton(FbxNode* link, std::set<FbxNode*>& out_bones)
+void YFbxImporter::RecursiveBuildSkeleton(FbxNode* link, std::vector<FbxNode*>& out_bones)
 {
 	if (IsBone(link))
 	{
-		out_bones.insert(link);
+		out_bones.push_back(link);
 		for (int child_index = 0; child_index < link->GetChildCount(); ++child_index)
 		{
 			RecursiveBuildSkeleton(link->GetChild(child_index), out_bones);
@@ -103,7 +103,7 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 	{
 		WARNING_INFO("Getting valid bind pose failed. Try to recreate bind pose");
 		const int pose_count = fbx_scene_->GetPoseCount();
-		for (int pose_index = pose_count-1; pose_index >=0; --pose_index)
+		for (int pose_index = pose_count - 1; pose_index >= 0; --pose_index)
 		{
 			FbxPose* current_pose = fbx_scene_->GetPose(pose_index);
 			if (current_pose && current_pose->IsBindPose())
@@ -129,19 +129,12 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 
 	// import skeleton
 	// 找到skeleton对应cluster引用的bone
-	std::set<FbxNode*> bones_attach_to_skin;
-	std::set<FbxNode*> skeleton_nodes_in_scene;
 	std::set<FbxCluster*> clusters;
 	std::set<FbxNode*> skeleton_root_nodes;
-	int node_count = fbx_scene_->GetNodeCount();
+	const int node_count = fbx_scene_->GetNodeCount();
 	for (int node_index = 0; node_index < node_count; ++node_index)
 	{
 		FbxNode* node = fbx_scene_->GetNode(node_index);
-		if (IsBone(node))
-		{
-			skeleton_nodes_in_scene.insert(node);
-		}
-
 		FbxGeometry* geometry = node->GetGeometry();
 		if (!geometry)
 		{
@@ -162,10 +155,8 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 					link = cluster->GetLink();
 					skeleton_root_nodes.insert(GetRootSketeton(link));
 					clusters.insert(cluster);
-					bones_attach_to_skin.insert(link);
 					while (link && IsBone(link))
 					{
-						bones_attach_to_skin.insert(link);
 						link = link->GetParent();
 					}
 				}
@@ -173,15 +164,6 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 		}
 	}
 
-	
-	std::set<FbxNode*> skeleton_nodes;
-	for (FbxNode* root_node : skeleton_root_nodes)
-	{
-		RecursiveBuildSkeleton(root_node, skeleton_nodes);
-	}
-
-	std::unique_ptr<YSkeleton> skeleton = std::make_unique<YSkeleton>();
-	//find root_node
 	if (skeleton_root_nodes.size() != 1) {
 		ERROR_INFO("skeleton has multi root nodes, there are");
 		for (FbxNode* node : skeleton_root_nodes)
@@ -191,78 +173,63 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 		return nullptr;
 	}
 
-	// build connection
-	std::unordered_map<FbxNode*, std::unique_ptr<ConverterBone>> bone_cache;
-	for (FbxNode* fbx_node : skeleton_nodes)
+	std::vector<FbxNode*> skeleton_nodes;
+	for (FbxNode* root_node : skeleton_root_nodes)
 	{
-		std::unique_ptr<ConverterBone> bone = std::make_unique<ConverterBone>();
-		bone->bone_name_ = fbx_node->GetName();
-		bone->self_node = fbx_node;
-		bone_cache[fbx_node] = std::move(bone);
+		RecursiveBuildSkeleton(root_node, skeleton_nodes);
 	}
 
-	// 建立父子关系 
-	for (FbxNode* fbx_node : skeleton_nodes)
-	{
-		std::unique_ptr<ConverterBone>& bone = bone_cache[fbx_node];
-		FbxNode* parent = fbx_node->GetParent();
-
-		if (parent && IsBone(parent)) {
-			std::unique_ptr<ConverterBone>& parent_bone = bone_cache[parent];
-			parent_bone->children_fbx_.insert(fbx_node);
-			bone->parent = parent;
-		}
-	}
-
-	FbxNode* skeleton_root_node = *(skeleton_root_nodes.begin());
-
-	std::deque<FbxNode*> node_queue;
-	node_queue.push_back(skeleton_root_node);
+	std::unique_ptr<YSkeleton> skeleton = std::make_unique<YSkeleton>();
 	skeleton->bones_.reserve(skeleton_nodes.size());
-	
-	std::vector<ConverterBone*> sorted_bones;
-	sorted_bones.reserve(skeleton_nodes.size());
-	assert(bone_cache.size() == skeleton_nodes.size());
-	
-	while (!node_queue.empty())
+	const int bone_count = skeleton_nodes.size();
+	for (int bone_id = 0; bone_id < skeleton_nodes.size(); ++bone_id)
 	{
-		FbxNode* node = node_queue.front();
-		node_queue.pop_front();
-		std::unique_ptr<ConverterBone>& bone = bone_cache[node];
-		int bone_id = sorted_bones.size();
-		bone->bone_id_ = bone_id;
-		sorted_bones.push_back(bone.get());
+		FbxNode* link = skeleton_nodes[bone_id];
+		skeleton->bones_.push_back(YBone());
 
-		for (FbxNode* child_node : bone->children_fbx_)
+		YBone& bone = skeleton->bones_[bone_id];
+		bone.bone_id_ = bone_id;
+		bone.bone_name_ = link->GetName();
+
+		for (int find_id = 0; find_id < skeleton->bones_.size() - 1; ++find_id)
 		{
-			node_queue.push_back(child_node);
-		}
-		out_map[bone_id] = node;
-		FbxNode* parent = node->GetParent();
-		if (parent && IsBone(parent))
-		{
-			int parent_id = bone_cache.at(parent)->bone_id_;
-			assert(parent_id != INDEX_NONE);
-			bone->parent_id_ = parent_id;
-			ConverterBone* parent_bone = sorted_bones[bone->parent_id_];
-			parent_bone->children_.push_back(bone_id);
+			if (skeleton->bones_[find_id].bone_name_ == bone.bone_name_)
+			{
+				ERROR_INFO(StringFormat("%s has same name bone", bone.bone_name_.c_str()));
+				return nullptr;
+			}
+			if (bone_id != 0)
+			{
+				if (skeleton_nodes[find_id] == link->GetParent())
+				{
+					bone.parent_id_ = find_id;
+					skeleton->bones_[find_id].children_.push_back(bone_id);
+				}
+			}
+			else
+			{
+				bone.parent_id_ = INDEX_NONE;
+			}
 		}
 	}
-	int root_index = INDEX_NONE;
-	bool global_link_found_flag= false;
+
+	bool global_link_found_flag = false;
 	std::vector<FbxAMatrix> raw_bone_global_matrix;
-	raw_bone_global_matrix.resize(sorted_bones.size(), FbxAMatrix());
+	raw_bone_global_matrix.resize(bone_count, FbxAMatrix());
 	bool any_bone_not_in_bind_pose = false;
 	std::string bone_without_bind_pose;
-	for (int bone_index = 0; bone_index < bone_cache.size(); ++bone_index)
+	for (int bone_index = 0; bone_index < bone_count; ++bone_index)
 	{
 		global_link_found_flag = false;
-		ConverterBone* bone = sorted_bones[bone_index];
+		//ConverterBone* bone = sorted_bones[bone_index];
+		FbxNode* link = skeleton_nodes[bone_index];
+		YBone& bone = skeleton->bones_[bone_index];
+		out_map[bone_index] = link;
 		if (pose_array.size() > 0)
 		{
-			for(int pose_index=0;pose_index< pose_array.size();++pose_index)
+			for (int pose_index = 0; pose_index < pose_array.size(); ++pose_index)
 			{
-				int pose_link_index = pose_array[pose_index]->Find(bone->self_node);
+				int pose_link_index = pose_array[pose_index]->Find(link);
 				if (pose_link_index >= 0)
 				{
 					FbxMatrix none_affine_matrix = pose_array[pose_index]->GetMatrix(pose_link_index);
@@ -278,13 +245,13 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 			if (!used_time0_as_bind_pose)
 			{
 				any_bone_not_in_bind_pose = true;
-				bone_without_bind_pose += bone->bone_name_;
+				bone_without_bind_pose += bone.bone_name_;
 				bone_without_bind_pose += ",    ";
 			}
 
 			for (FbxCluster* cluster : clusters)
 			{
-				if (bone->self_node == cluster->GetLink())
+				if (link == cluster->GetLink())
 				{
 					cluster->GetTransformLinkMatrix(raw_bone_global_matrix[bone_index]);
 					global_link_found_flag = true;
@@ -294,28 +261,21 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 		}
 		if (!global_link_found_flag)
 		{
-			raw_bone_global_matrix[bone_index] = bone->self_node->EvaluateGlobalTransform();
+			raw_bone_global_matrix[bone_index] = link->EvaluateGlobalTransform();
 		}
 
 		if (used_time0_as_bind_pose)
 		{
-			raw_bone_global_matrix[bone_index] = fbx_scene_->GetAnimationEvaluator()->GetNodeGlobalTransform(bone->self_node, 0);
+			raw_bone_global_matrix[bone_index] = fbx_scene_->GetAnimationEvaluator()->GetNodeGlobalTransform(link, 0);
 		}
 	}
 	if (any_bone_not_in_bind_pose)
 	{
 		WARNING_INFO(StringFormat("FbxSkeletaLMeshimport_BonesAreMissingFromBindPose,The following bones are missing from the bind pose : \n %s \nThis can happen for bones that are not vert weighted.If they are not in the correct orientation after importing, \nplease set the \"Use T0 as ref pose\" option or add them to the bind pose and reimport the skeletal mesh.", bone_without_bind_pose.c_str()));
 	}
-	for (int bone_index = 0; bone_index < bone_cache.size(); ++bone_index)
+	for (int bone_index = 0; bone_index < bone_count; ++bone_index)
 	{
-		ConverterBone* convert_bone = sorted_bones[bone_index];
-		assert(bone_index == skeleton->bones_.size());
-		skeleton->bones_.push_back(YBone());
-		YBone& final_bone  = skeleton->bones_.back();
-		final_bone.bone_id_ = convert_bone->bone_id_;
-		final_bone.parent_id_ = convert_bone->parent_id_;
-		final_bone.bone_name_ = convert_bone->bone_name_;
-		final_bone.children_ = convert_bone->children_;
+		YBone& final_bone = skeleton->bones_[bone_index];
 		skeleton->bone_names_to_id_[final_bone.bone_name_] = final_bone.bone_id_;
 		if (bone_index)
 		{
@@ -332,9 +292,9 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 			final_bone.bind_local_matrix_ = converter_.ConvertFbxMatrix(local_trans);
 		}
 		final_bone.local_transform_ = final_bone.bind_local_tranform_;
-		final_bone.local_matrix_ = final_bone.bind_local_matrix_; 
+		final_bone.local_matrix_ = final_bone.bind_local_matrix_;
 	}
-	skeleton->root_bone_id_ = skeleton->bone_names_to_id_.at(skeleton_root_node->GetName());
+	skeleton->root_bone_id_ = 0;
 	return skeleton;
 }
 
@@ -365,7 +325,7 @@ bool YFbxImporter::RetrievePoseFromBindPose(const std::vector<FbxNode*>& mesh_no
 				{
 					pose_array.push_back(current_pose);
 					LOG_INFO(StringFormat("Valid bind pose for Pose %s -- %s", pose_name.c_str(), mesh_name.c_str()));
-					break;
+					continue;
 				}
 				else
 				{
@@ -387,7 +347,7 @@ bool YFbxImporter::RetrievePoseFromBindPose(const std::vector<FbxNode*>& mesh_no
 					{
 						pose_array.push_back(current_pose);
 						LOG_INFO(StringFormat("Valid bind pose for Pose %s -- %s", pose_name.c_str(), mesh_name.c_str()));
-						break;
+						continue;
 					}
 					else
 					{
@@ -410,7 +370,7 @@ bool YFbxImporter::RetrievePoseFromBindPose(const std::vector<FbxNode*>& mesh_no
 						{
 							pose_array.push_back(current_pose);
 							LOG_INFO(StringFormat("Valid bind pose for Pose %s -- %s", pose_name.c_str(), mesh_name.c_str()));
-							break;
+							continue;
 						}
 						else
 						{
