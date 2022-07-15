@@ -59,9 +59,13 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 				FbxAMatrix local_trans = (parent_cur_global_trans.Inverse()) * cur_global_trans;
 				cur_local_transform = converter_.ConverterFbxTransform(local_trans);
 			}
-			animation_sequence_track.pos_keys_.push_back(cur_local_transform.translation);
-			animation_sequence_track.rot_keys_.push_back(cur_local_transform.rotator);
-			animation_sequence_track.scale_keys_.push_back(cur_local_transform.scale);
+			YTransform relative_trans = cur_local_transform* bone.bind_local_tranform_.InverseFast();
+			//animation_sequence_track.pos_keys_.push_back(cur_local_transform.translation);
+			//animation_sequence_track.rot_keys_.push_back(cur_local_transform.rotator);
+			//animation_sequence_track.scale_keys_.push_back(cur_local_transform.scale);
+			animation_sequence_track.pos_keys_.push_back(relative_trans.translation);
+			animation_sequence_track.rot_keys_.push_back(relative_trans.rotator);
+			animation_sequence_track.scale_keys_.push_back(relative_trans.scale);
 		}
 	}
 	return animation_data;

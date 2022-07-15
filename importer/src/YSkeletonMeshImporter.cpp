@@ -131,14 +131,7 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, con
 		skin_mesh.control_points_.reserve(vertex_count);
 		skin_mesh.weights_.resize(vertex_count);
 		skin_mesh.bone_index_.resize(vertex_count);
-		/*	for (int vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
-			{
-				FbxVector4 fbx_position = mesh->GetControlPoints()[vertex_index];
-				fbx_position = total_matrix.MultT(fbx_position);
-				const YVector vertex_position = converter_.ConvertPos(fbx_position);
-				skin_mesh.control_points_.push_back(vertex_position);
-			}*/
-
+	
 		if (mesh->GetDeformerCount(FbxDeformer::EDeformerType::eSkin) > 0)
 		{
 			FbxAMatrix test_mesh_to_model;
