@@ -34,6 +34,7 @@ public:
 	YQuat operator-() const;
 	YQuat Inverse() const;
 	bool Equals(const YQuat& other, float tolerance = SMALL_NUMBER) const;
+	bool EqualAngle(const YQuat& other, float tolerance = SMALL_NUMBER) const;
 };
 
 YVector operator*(const YVector& v, const YQuat& qua);

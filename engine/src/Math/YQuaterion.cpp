@@ -254,6 +254,11 @@ bool YQuat::Equals(const YQuat& other, float tolerance /*= SMALL_NUMBER*/) const
 		YMath::Abs(w - other.w) <= tolerance;
 }
 
+bool YQuat::EqualAngle(const YQuat& other, float tolerance /*= SMALL_NUMBER*/) const
+{
+	return Equals(other, tolerance) || Equals(YQuat(-other.x,-other.y,-other.z,-other.w), tolerance);
+}
+
 YVector YQuat::RotateVector(const YVector& V) const
 {
 	// http://people.csail.mit.edu/bkph/articles/Quaternions.pdf

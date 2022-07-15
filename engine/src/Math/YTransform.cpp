@@ -90,7 +90,7 @@ bool YTransform::NearEqual(const YTransform& other, float ErrorTolerance /*= SMA
 {
 	bool trans_equal = translation.Equals(other.translation,ErrorTolerance);
 	bool scale_equal = scale.Equals(other.scale, ErrorTolerance);
-	bool qua_equal = rotator.Equals(other.rotator, ErrorTolerance);
+	bool qua_equal = rotator.EqualAngle(other.rotator, ErrorTolerance);
 	return trans_equal && scale_equal && qua_equal;
 }
 

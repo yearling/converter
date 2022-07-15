@@ -30,10 +30,6 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 {
 	std::unordered_map<int, FbxNode*> bone_id_to_fbx_node;
 	std::unique_ptr<YSkeleton> skeleton = BuildSkeleton(root_node, bone_id_to_fbx_node);
-	if (skeleton)
-	{
-		skeleton->Update(0.0); // test
-	}
 	std::unique_ptr<AnimationData> animation_data = ImportAnimationData(skeleton.get(), bone_id_to_fbx_node);
 
 	std::unique_ptr<YSkeletonMesh> skeleton_mesh = std::make_unique<YSkeletonMesh>();
@@ -47,7 +43,7 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	ImportBlendShapeAnimation(skeleton_mesh->skin_data_.get(), skeleton_mesh->animation_data_.get(), mesh_contain_skeleton_and_bs);
 	if (!skeleton_mesh->AllocGpuResource())
 	{
-		//ERROR_INFO("SkeletonMesh alloc resource failed!!");
+		ERROR_INFO("SkeletonMesh alloc resource failed!!");
 	}
 
 	return skeleton_mesh;
@@ -55,11 +51,10 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 
 std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs)
 {
-	//LOG_INFO("ImportSkinData");
+	LOG_INFO("ImportSkinData");
 	std::unique_ptr<YSkinData> skin_data = std::make_unique<YSkinData>();
 	for (int gemometry_index = 0; gemometry_index < mesh_contain_skeleton_and_bs.size(); ++gemometry_index)
 	{
-
 		int skin_mesh_index = skin_data->meshes_.size();
 		skin_data->meshes_.push_back(SkinMesh());
 		SkinMesh& skin_mesh = skin_data->meshes_[skin_mesh_index];
@@ -70,18 +65,16 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, con
 		FbxUVs fbx_uvs(this, mesh);
 		if (!mesh->IsTriangleMesh())
 		{
-			//WARNING_INFO("Triangulation static mesh", geo_node->GetName());
-
+			WARNING_INFO("Triangulation static mesh", geo_node->GetName());
 			const bool bReplace = true;
 			FbxNodeAttribute* ConvertedNode = fbx_geometry_converter_->Triangulate(mesh, bReplace);
-
 			if (ConvertedNode != NULL && ConvertedNode->GetAttributeType() == FbxNodeAttribute::eMesh)
 			{
 				mesh = (fbxsdk::FbxMesh*)ConvertedNode;
 			}
 			else
 			{
-				//ERROR_INFO("Unable to triangulate mesh ", geo_node->GetName());
+				ERROR_INFO("Unable to triangulate mesh ", geo_node->GetName());
 				return false;
 			}
 		}
@@ -186,7 +179,7 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, con
 					}
 					cluster->GetTransformLinkMatrix(bone_to_model);
 					YTransform test_bone_to_model = converter_.ConverterFbxTransform(bone_to_model);
-					if (!test_bone_to_model.NearEqual(bone.global_transform_))
+					if (!test_bone_to_model.NearEqual(bone.global_transform_,0.0002))
 					{
 						ERROR_INFO(bone.bone_name_, "'s global_transform does not equal cluster->GetTransformLinkMatrix");
 					}
@@ -197,7 +190,6 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, con
 					int cluster_control_point_count = cluster->GetControlPointIndicesCount();
 					for (int i = 0; i < cluster_control_point_count; ++i)
 					{
-
 						int control_point_index = cluster->GetControlPointIndices()[i];
 						if (control_point_index > control_point_count)
 						{
@@ -226,17 +218,15 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, con
 			{
 				FbxBlendShape* blend_shpae_fbx = (FbxBlendShape*)mesh->GetDeformer(i_blend_shape_deformer, FbxDeformer::eBlendShape);
 				std::string bs_name = blend_shpae_fbx->GetName();
-				//LOG_INFO("convert bs: ", bs, " blend shape");
 				int blend_shape_channel_count = blend_shpae_fbx->GetBlendShapeChannelCount();
 				for (int i_blend_shape_channel = 0; i_blend_shape_channel < blend_shape_channel_count; ++i_blend_shape_channel)
 				{
 					BlendShapeTarget blend_shape_target;
 					FbxBlendShapeChannel* channel = blend_shpae_fbx->GetBlendShapeChannel(i_blend_shape_channel);
 					std::string channel_name = channel->GetName();
-					LOG_INFO("convert bs: ", bs, " blend shape, ",channel_name);
+					LOG_INFO(" blend shape: ",channel_name);
 
 					blend_shape_target.name_ = channel->GetName();
-					LOG_INFO("convert bs: ", bs, " blend shape, ", channel_name," target name: ", blend_shape_target.name_);
 					if (channel)
 					{
 						int lShapeCount = channel->GetTargetShapeCount();
@@ -251,7 +241,6 @@ std::unique_ptr<YSkinData> YFbxImporter::ImportSkinData(YSkeleton* skeleton, con
 						{
 							FbxVector4 bs_control_point = control_points[i_control_point];
 							bs_control_point = total_matrix.MultT(bs_control_point);
-							//FbxVector4 fbx_model_position = test_mesh_to_model.MultT(fbx_position);
 							const YVector vertex_position = converter_.ConvertPos(bs_control_point);
 							blend_shape_target.control_points.push_back(vertex_position);
 						}
