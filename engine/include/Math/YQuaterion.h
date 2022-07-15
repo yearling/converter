@@ -32,6 +32,7 @@ public:
 	YQuat operator*(const YQuat& q) const;
 	YVector operator*(const YVector& v) const;
 	YQuat operator-() const;
+	YQuat Inverse() const;
 };
 
 YVector operator*(const YVector& v, const YQuat& qua);

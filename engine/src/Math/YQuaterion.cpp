@@ -241,6 +241,11 @@ YQuat YQuat::operator-() const
 	return YQuat(-x, -y, -z, w);
 }
 
+YQuat YQuat::Inverse() const
+{
+	return YQuat(-x, -y, -z, w);
+}
+
 YVector YQuat::RotateVector(const YVector& V) const
 {
 	// http://people.csail.mit.edu/bkph/articles/Quaternions.pdf

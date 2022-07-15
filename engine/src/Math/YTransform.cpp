@@ -50,6 +50,42 @@ YVector YTransform::TransformPosition(const YVector& v) const
 	return ToMatrix().TransformPosition(v);
 }
 
+YTransform YTransform::Inverse() const
+{
+	if (YMath::Abs(scale.x) > 0.0 || YMath::Abs(scale.y) > 0.0 || YMath::Abs(scale.z) > 0.0)
+	{
+		return InverseFast();
+	}
+	else
+	{
+		return YTransform::identity;
+	}
+}
+
+YTransform YTransform::InverseFast() const
+{
+	// Inverse QST (A) = QST (~A)
+		// Since A*~A = Identity, 
+		// A(P) = Q(A)*S(A)*P*-Q(A) + T(A)
+		// ~A(A(P)) = Q(~A)*S(~A)*(Q(A)*S(A)*P*-Q(A) + T(A))*-Q(~A) + T(~A) = Identity
+		// Q(~A)*Q(A)*S(~A)*S(A)*P*-Q(A)*-Q(~A) + Q(~A)*S(~A)*T(A)*-Q(~A) + T(~A) = Identity
+		// [Q(~A)*Q(A)]*[S(~A)*S(A)]*P*-[Q(~A)*Q(A)] + [Q(~A)*S(~A)*T(A)*-Q(~A) + T(~A)] = I
+
+		// Identity Q = (0, 0, 0, 1) = Q(~A)*Q(A)
+		// Identity Scale = 1 = S(~A)*S(A)
+		// Identity Translation = (0, 0, 0) = [Q(~A)*S(~A)*T(A)*-Q(~A) + T(~A)]
+
+		//	Q(~A) = Q(~A)
+		//	S(~A) = 1.f/S(A)
+		//	T(~A) = - (Q(~A)*S(~A)*T(A)*Q(A))	
+	const YVector inv_scale = YVector(1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z);
+	assert(rotator.IsNormalized());
+	const YQuat inv_rotation = -rotator;
+	const YVector scaled_translation = inv_scale * translation;
+	const YVector t2 = inv_rotation.RotateVector(scaled_translation);
+	return YTransform(-t2, inv_rotation, inv_scale);
+}
+
 void YTransform::Multiply(YTransform* OutTransform, const YTransform* A, const YTransform* B)
 {
 	//	When Q = quaternion, S = single scalar scale, and T = translation

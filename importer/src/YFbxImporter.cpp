@@ -94,7 +94,7 @@ bool YFbxImporter::ImportFile(const std::string& file_path)
 	}
 	else
 	{
-		LOG_INFO("file open succes!!");
+		LOG_INFO(file_path," open succes!!");
 	}
 	RenameNodeName();
 	RenameMaterialName();

@@ -18,6 +18,8 @@ public:
 	static const YTransform identity;
 	YMatrix ToMatrix()const;
 	YVector TransformPosition(const YVector& v) const;
+	YTransform Inverse() const;
+	YTransform InverseFast() const;
 };
 
 

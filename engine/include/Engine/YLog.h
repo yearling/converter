@@ -8,6 +8,9 @@
 #include <cassert>
 #include <functional>
 #include <platform/YPlatformCriticalSection.h>
+#include <chrono>
+#include <ctime> 
+#include <iomanip>
 enum LogType {
 	EVerbos = 0,
 	EWarning = 1,
@@ -38,7 +41,11 @@ void MyTraceImplTmp(LogType log_type, int line, const char* fileName, Args&& ...
 		log_name = "[error]";
 		break;
 	}
-	stream << log_name;
+	auto time = std::time(nullptr);
+	auto now = std::chrono::system_clock::now();
+
+	auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+	stream << std::put_time(std::gmtime(&time), "%T")<<'.' << std::setfill('0') << std::setw(3) << ms.count()<<": " << log_name;
 	switch (log_type)
 	{
 	case LogType::EVerbos:
