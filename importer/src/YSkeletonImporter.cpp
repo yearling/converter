@@ -298,6 +298,7 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 		}
 	}
 	skeleton->root_bone_id_ = 0;
+	skeleton->Update(0.0);
 	return skeleton;
 }
 

@@ -51,7 +51,6 @@ YBone::YBone()
 	bind_local_matrix_ = bind_local_tranform_.ToMatrix();
 	bone_id_ = -1;
 	parent_id_ = -1;
-	fist_init = false;
 }
 
 YSkeleton::YSkeleton()

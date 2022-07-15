@@ -246,6 +246,14 @@ YQuat YQuat::Inverse() const
 	return YQuat(-x, -y, -z, w);
 }
 
+bool YQuat::Equals(const YQuat& other, float tolerance /*= SMALL_NUMBER*/) const
+{
+	return YMath::Abs(x - other.x) <= tolerance &&
+		YMath::Abs(y - other.y) <= tolerance &&
+		YMath::Abs(z - other.z) <= tolerance &&
+		YMath::Abs(w - other.w) <= tolerance;
+}
+
 YVector YQuat::RotateVector(const YVector& V) const
 {
 	// http://people.csail.mit.edu/bkph/articles/Quaternions.pdf

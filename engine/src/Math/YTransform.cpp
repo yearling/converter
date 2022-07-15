@@ -86,6 +86,14 @@ YTransform YTransform::InverseFast() const
 	return YTransform(-t2, inv_rotation, inv_scale);
 }
 
+bool YTransform::NearEqual(const YTransform& other, float ErrorTolerance /*= SMALL_NUMBER*/)
+{
+	bool trans_equal = translation.Equals(other.translation,ErrorTolerance);
+	bool scale_equal = scale.Equals(other.scale, ErrorTolerance);
+	bool qua_equal = rotator.Equals(other.rotator, ErrorTolerance);
+	return trans_equal && scale_equal && qua_equal;
+}
+
 void YTransform::Multiply(YTransform* OutTransform, const YTransform* A, const YTransform* B)
 {
 	//	When Q = quaternion, S = single scalar scale, and T = translation

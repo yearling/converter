@@ -89,9 +89,7 @@ public:
 	YTransform global_transform_;
 	YMatrix global_matrix_;
 
-	YTransform inv_bind_global_transform_;
 	YMatrix inv_bind_global_matrix_;
-	bool fist_init;
 };
 class YSkeleton
 {
