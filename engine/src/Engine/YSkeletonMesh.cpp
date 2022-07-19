@@ -36,9 +36,11 @@ public:
 		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector), false, false, true);
 		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector), false, false, true);
 		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), false, false, true);
+		//VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Float32, 3, 4, 0, -1, sizeof(YVector4), false, false, true);
 		vertex_descriptions_.push_back(postion_desc);
 		vertex_descriptions_.push_back(normal_desc);
 		vertex_descriptions_.push_back(uv_desc);
+		//vertex_descriptions_.push_back(color_desc);
 	}
 protected:
 	YSkeletonMesh* mesh_ = nullptr;
@@ -130,7 +132,7 @@ void YSkeletonMesh::Update(double delta_time)
 				}
 			}
 		}
-
+		return;
 		int mesh_index = 0;
 		for (SkinMesh& mesh : skin_data_->meshes_)
 		{
@@ -150,10 +152,12 @@ void YSkeletonMesh::Update(double delta_time)
 						int key_size = curve.size();
 						int current_key = current_frame % key_size;
 						float weight = curve[current_key] / 100.0f;
+					
 						for (int contorl_point_index = 0; contorl_point_index < mesh.control_points_.size(); contorl_point_index++)
 						{
 							YVector& des_pos = mesh.bs_.cached_control_point[contorl_point_index];
-							YVector& dif_pos = weight* (key_value.second.control_points[contorl_point_index]- mesh.control_points_[contorl_point_index]);
+
+							YVector dif_pos = weight* (key_value.second.control_points[contorl_point_index]- mesh.control_points_[contorl_point_index]);
 							des_pos = des_pos + dif_pos;
 						}
 					}
@@ -226,51 +230,50 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	
 	int wedge_index = 0;
 	int mesh_index = 0;
-	for (SkinMesh& mesh : skin_data_->meshes_)
-	{
-			bool has_bs = !mesh.bs_.target_shapes_.empty();
-		for (VertexWedge& wedge : mesh.wedges_)
-		{
-			YVector position = mesh.control_points_[wedge.control_point_id];
-			if (has_bs)
-			{
-				position = mesh.bs_.cached_control_point[wedge.control_point_id];
-			}
-			if(wedge.bone_index_.empty())
-			{ 
-				cached_position[wedge_index] = position;
-			}
-			else
-			{
-				YMatrix blend_matrix;
-				memset(blend_matrix.m, 0, sizeof(float) * 16);
-				for (int bone_index = 0; bone_index < wedge.bone_index_.size(); ++bone_index)
-				{
-					YBone& bone = skeleton_->bones_[wedge.bone_index_[bone_index]];
-					YMatrix inv_bone_to_model_matrix = bone.inv_bind_global_matrix_;
-					YMatrix inv_bone_from_bind_to_current = inv_bone_to_model_matrix * bone.global_matrix_;
-					float weight = wedge.weights_[bone_index];
-					YMatrix weighted_matrix = inv_bone_from_bind_to_current * weight;
-					blend_matrix = blend_matrix + weighted_matrix;
-				}
+	//for (SkinMesh& mesh : skin_data_->meshes_)
+	//{
+	//		bool has_bs = !mesh.bs_.target_shapes_.empty();
+	//	for (VertexWedge& wedge : mesh.wedges_)
+	//	{
+	//		YVector position = mesh.control_points_[wedge.control_point_id];
+	//		if (has_bs)
+	//		{
+	//			position = mesh.bs_.cached_control_point[wedge.control_point_id];
+	//		}
+	//		if(wedge.bone_index_.empty())
+	//		{ 
+	//			cached_position[wedge_index] = position;
+	//		}
+	//		else
+	//		{
+	//			YMatrix blend_matrix;
+	//			memset(blend_matrix.m, 0, sizeof(float) * 16);
+	//			for (int bone_index = 0; bone_index < wedge.bone_index_.size(); ++bone_index)
+	//			{
+	//				YBone& bone = skeleton_->bones_[wedge.bone_index_[bone_index]];
+	//				YMatrix inv_bone_to_model_matrix = bone.inv_bind_global_matrix_;
+	//				YMatrix inv_bone_from_bind_to_current = inv_bone_to_model_matrix * bone.global_matrix_;
+	//				float weight = wedge.weights_[bone_index];
+	//				YMatrix weighted_matrix = inv_bone_from_bind_to_current * weight;
+	//				blend_matrix = blend_matrix + weighted_matrix;
+	//			}
 
-				YVector animated_vertex_point = blend_matrix.TransformPosition(position);
-				cached_position[wedge_index] = animated_vertex_point;
-			}
-			//cached_position[wedge_index] = wedge.position;
-			//cached_position[wedge_index] = wedge.position;
-			wedge_index++;
-		}
-		mesh_index++;
-	}
-	D3D11_MAPPED_SUBRESOURCE MappedSubresource;
-	if (dc->Map(vertex_buffers_[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
-	{
-		ERROR_INFO("update skin data error");
-	}
-	//MappedSubresource.pData = cached_position.data();
-	memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
-	dc->Unmap(vertex_buffers_[0], 0);
+	//			YVector animated_vertex_point = blend_matrix.TransformPosition(position);
+	//			cached_position[wedge_index] = animated_vertex_point;
+	//		}
+	//		//cached_position[wedge_index] = wedge.position;
+	//		//cached_position[wedge_index] = wedge.position;
+	//		wedge_index++;
+	//	}
+	//	mesh_index++;
+	//}
+	//D3D11_MAPPED_SUBRESOURCE MappedSubresource;
+	//if (dc->Map(vertex_buffers_[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
+	//{
+	//	ERROR_INFO("update skin data error");
+	//}
+	//memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
+	//dc->Unmap(vertex_buffers_[0], 0);
 
 	dc->DrawIndexed(triangle_count * 3, 0 , 0);
 	//for (auto& polygon_group : raw_meshes[0].polygon_groups)
@@ -299,30 +302,38 @@ bool YSkeletonMesh::AllocGpuResource()
 	int polygon_group_index_offset = 0;
 	polygon_group_offsets.clear();
 
-	std::vector<YVector> position_buffer;
-	std::vector<YVector> normal_buffer;
+	std::vector<YVector>& position_buffer= render_data_->position;
+	std::vector<YVector>& normal_buffer = render_data_->normal;
+	std::vector<YVector4>& color_buffer = render_data_->color;
 	std::vector<YVector2> uv_buffer;
-	std::vector<int> index_buffer;
+	std::vector<int> index_buffer = render_data_->indices;
 	int triagle_count = 0;
-	for (SkinMesh& mesh : skin_data_->meshes_)
+	for (int triangle_per_mesh : render_data_->triangle_counts)
 	{
-		triagle_count += mesh.wedges_.size() / 3;
+		triagle_count += triangle_per_mesh;
 	}
-	position_buffer.reserve(triagle_count * 3);
-	normal_buffer.reserve(triagle_count * 3);
-	uv_buffer.reserve(triagle_count * 2);
-	index_buffer.reserve(triagle_count * 3);
-	int index_value = 0;
-	for (SkinMesh& mesh : skin_data_->meshes_)
+	uv_buffer.reserve(render_data_->uv.size());
+	for (std::array<YVector2, 2>&uvs : render_data_->uv)
 	{
-		for (VertexWedge wedge : mesh.wedges_)
-		{
-			position_buffer.push_back(wedge.position);
-			normal_buffer.push_back(wedge.normal);
-			uv_buffer.push_back(wedge.uvs_[0]);
-			index_buffer.push_back(index_value++);
-		}
+		uv_buffer.push_back(uvs[0]);
 	}
+
+	//position_buffer.reserve(triagle_count * 3);
+	//normal_buffer.reserve(triagle_count * 3);
+	//uv_buffer.reserve(triagle_count * 2);
+	//index_buffer.reserve(triagle_count * 3);
+	//int index_value = 0;
+	//for (SkinMesh& mesh : skin_data_->meshes_)
+	//{
+	//	for (VertexWedge wedge : mesh.wedges_)
+	//	{
+	//		position_buffer.push_back(wedge.position);
+	//		normal_buffer.push_back(wedge.normal);
+	//		uv_buffer.push_back(wedge.uvs_[0]);
+	//		index_buffer.push_back(index_value++);
+	//	}
+	//}
+	
 	{
 		TComPtr<ID3D11Buffer> d3d_vb;
 		if (!g_device->CreateVertexBufferDynamic((unsigned int)position_buffer.size() * sizeof(YVector), position_buffer.data(), d3d_vb)) {
@@ -351,6 +362,15 @@ bool YSkeletonMesh::AllocGpuResource()
 	}
 
 	{
+	/*	TComPtr<ID3D11Buffer> d3d_vb;
+		if (!g_device->CreateVertexBufferStatic((unsigned int)color_buffer.size() * sizeof(YVector4), color_buffer.data(), d3d_vb)) {
+			ERROR_INFO("Create vertex buffer failed!!");
+			return false;
+		}
+		vertex_buffers_.push_back(d3d_vb);*/
+	}
+
+	{
 		if (!g_device->CreateIndexBuffer((unsigned int)index_buffer.size() * sizeof(int), index_buffer.data(), index_buffer_)) {
 			ERROR_INFO("Create index buffer failed!!");
 			return false;
@@ -360,7 +380,7 @@ bool YSkeletonMesh::AllocGpuResource()
 	// vs
 	{
 		vertex_shader_ = std::make_unique<D3DVertexShader>();
-		const std::string shader_path = "Shader/StaticMesh.hlsl";
+		const std::string shader_path = "Shader/CPUSKin.hlsl";
 		YFile vertex_shader_source(shader_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_TXT));
 		std::unique_ptr<MemoryFile> mem_file = vertex_shader_source.ReadFile();
 		if (!mem_file)
@@ -377,7 +397,7 @@ bool YSkeletonMesh::AllocGpuResource()
 	//ps
 	{
 		pixel_shader_ = std::make_unique<D3DPixelShader>();
-		const std::string shader_path = "Shader/StaticMesh.hlsl";
+		const std::string shader_path = "Shader/CPUSKin.hlsl";
 
 		YFile vertex_shader_source(shader_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_TXT));
 		std::unique_ptr<MemoryFile> mem_file = vertex_shader_source.ReadFile();
@@ -392,7 +412,7 @@ bool YSkeletonMesh::AllocGpuResource()
 			return false;
 		}
 	}
-	if (!bs_) {
+	if (!blend_state_) {
 		g_device->CreateBlendState(blend_state_, true);
 	}
 
@@ -416,7 +436,6 @@ void YSkeletonMesh::ReleaseGPUReosurce()
 {
 	vertex_buffers_.clear();
 	index_buffer_ = nullptr;
-	bs_ = nullptr;
 	rs_ = nullptr;
 	ds_ = nullptr;
 	sampler_state_ = nullptr;

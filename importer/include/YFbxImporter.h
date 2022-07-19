@@ -24,6 +24,7 @@ struct FbxImportParam
 	bool transform_vertex_to_absolute = true; // true:for static mesh , false for skeleton mesh
 	bool bake_pivot_in_vertex = true; // bake pivot in vetex only in  static mesh, we choose transform_vertex_to_absolute is false, and want vertex bake in pivot space
 	bool remove_degenerate_triangles = true;
+	int max_bone_per_section = 16;
 };
 
 struct FbxMeshInfo
@@ -69,6 +70,11 @@ public:
 	const FbxImportSceneInfo* GetImportedSceneInfo() const;
 	bool ParseFile(const FbxImportParam& import_param, ConvertedResult& out_result);
 protected:
+	std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string&  mesh_name,int lod_index = 0);
+	std::unique_ptr<YSkeletonMesh> ImportSkeletonMesh(FbxNode* root_node, const std::string& mesh_name);
+	std::unique_ptr<YSkeleton> BuildSkeleton(FbxNode* root_node,std::unordered_map<int,FbxNode*>& out_map);
+	std::unique_ptr<AnimationData> ImportAnimationData(YSkeleton* skeleton,  std::unordered_map<int, FbxNode*>& bone_id_to_fbxnode);
+protected:
 	void RenameNodeName();
 	void RenameMaterialName();
 	void ParseSceneInfo();
@@ -77,7 +83,6 @@ protected:
 	void ApplyTransformSettingsToFbxNode(FbxNode* node);
 	void BuildFbxMatrixForImportTransform(FbxAMatrix & out_matrix);
 	void GetMeshArray(FbxNode* root,std::vector<FbxNode*>& fbx_mesh_nodes);
-	std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string&  mesh_name,int lod_index = 0);
 	void CheckSmoothingInfo(FbxMesh* fbx_mesh);
 	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<YFbxMaterial*>& existing_materials);
 	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<YFbxMaterial*>& out_materials, std::vector<std::string>& us_sets);
@@ -85,16 +90,17 @@ protected:
 	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
 	bool IsOddNegativeScale(FbxAMatrix& total_matrix);
 
-	std::unique_ptr<YSkeleton> BuildSkeleton(FbxNode* root_node,std::unordered_map<int,FbxNode*>& out_map);
+protected:
+	//skeleton mesh:bone
 	FbxNode* GetRootSketeton(FbxNode* link);
 	bool RetrievePoseFromBindPose(const std::vector<FbxNode*>& mesh_nodes, std::vector<FbxPose*>& pose_array);
 	void RecursiveBuildSkeleton(FbxNode* link, std::vector<FbxNode*>& out_bones);
 
-	std::unique_ptr<YSkeletonMesh> ImportSkeletonMesh(FbxNode* root_node, const std::string& mesh_name);
-	std::unique_ptr<AnimationData> ImportAnimationData(YSkeleton* skeleton,  std::unordered_map<int, FbxNode*>& bone_id_to_fbxnode);
-	std::unique_ptr<YSkinData> ImportSkinData(YSkeleton* skeleton, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs);
-	bool ImportBlendShapeAnimation(YSkinData* skin_data, AnimationData* anim_data, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs);
+protected:
+	std::unique_ptr<YSkinDataImported> ImportSkinData(YSkeleton* skeleton, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs);
+	bool ImportBlendShapeAnimation(YSkinDataImported* skin_data, AnimationData* anim_data, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs);
 	void RecursiveFindMesh(FbxNode* node, std::vector<FbxNode*>& mesh_nodes);
+	void PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh);
 private:
 	bool InitSDK();
 	FbxManager* fbx_manager_ = nullptr;
@@ -111,3 +117,4 @@ private:
 	FbxDataConverter converter_;
 	FImportedMaterialData imported_material_data;
 };
+

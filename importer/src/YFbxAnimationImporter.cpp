@@ -60,9 +60,6 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 				cur_local_transform = converter_.ConverterFbxTransform(local_trans);
 			}
 			YTransform relative_trans = cur_local_transform* bone.bind_local_tranform_.InverseFast();
-			//animation_sequence_track.pos_keys_.push_back(cur_local_transform.translation);
-			//animation_sequence_track.rot_keys_.push_back(cur_local_transform.rotator);
-			//animation_sequence_track.scale_keys_.push_back(cur_local_transform.scale);
 			animation_sequence_track.pos_keys_.push_back(relative_trans.translation);
 			animation_sequence_track.rot_keys_.push_back(relative_trans.rotator);
 			animation_sequence_track.scale_keys_.push_back(relative_trans.scale);
@@ -72,7 +69,7 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 }
 
 
-bool YFbxImporter::ImportBlendShapeAnimation(YSkinData* skin_data, AnimationData* anim_data, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs)
+bool YFbxImporter::ImportBlendShapeAnimation(YSkinDataImported* skin_data, AnimationData* anim_data, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs)
 {
 	if (!(skin_data && anim_data))
 	{

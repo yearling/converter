@@ -8,14 +8,37 @@
 #include <array>
 #include "RHI/DirectX11/D3D11VertexFactory.h"
 #include "Engine/YCamera.h"
+
+struct BoneWeightAndID {
+	BoneWeightAndID() :weight(0.0), id(-1) {}
+	BoneWeightAndID(float in_weight, int in_id) :weight(in_weight), id(in_id) {}
+	float weight;
+	int id;
+};
+
 struct VertexWedge
 {
 	int control_point_id;
 	YVector position;
 	YVector normal;
 	std::vector<YVector2> uvs_;
-	std::vector<float> weights_;
-	std::vector<int> bone_index_;
+	std::vector<BoneWeightAndID> weights_and_ids;
+	YVector4 color;
+};
+
+struct RenderData
+{
+	std::vector<YVector> position;
+	std::vector<YVector> normal;
+	std::vector<std::array<YVector2, 2>> uv;
+	std::vector<std::array<float, 8>> weights;
+	std::vector < std::array<int,8>> bone_id;
+	std::vector<int> indices;
+	std::vector<YVector4> color;
+
+	std::vector<int> sections;
+	std::vector<int> triangle_counts;
+	std::vector<std::vector<int>> bone_mapping;
 };
 struct BlendShapeTarget
 {
@@ -35,12 +58,12 @@ struct BlendShape
 	std::unordered_map<std::string, BlendShapeTarget> target_shapes_;
 	std::vector<YVector> cached_control_point;
 };
+
+
 struct SkinMesh
 {
 	std::vector<YVector> control_points_;
-	std::vector<std::vector<float>> weights_;
-	std::vector<std::vector<int>> bone_index_;
-
+	std::vector<std::vector<BoneWeightAndID>> bone_weights_and_id_;
 	std::vector<YVector> position_;
 	std::vector<YVector> normal_;
 	std::vector<std::vector<YVector2>> uvs_;
@@ -49,8 +72,11 @@ struct SkinMesh
 	std::vector<VertexWedge> wedges_;
 	BlendShape bs_;
 	std::string name_;
+
+	// RenderData
+
 };
-struct YSkinData
+struct YSkinDataImported
 {
 	std::vector<SkinMesh> meshes_;
 };
@@ -109,8 +135,7 @@ public:
 	void Render();
 	std::unique_ptr<YSkeleton> skeleton_;
 	std::unique_ptr<AnimationData> animation_data_;
-	std::unique_ptr<YSkinData> skin_data_;
-	std::unique_ptr<BlendShape> bs_;
+	std::unique_ptr<YSkinDataImported> skin_data_;
 	std::unique_ptr<BlendShapeSequneceTrack> bs_anim_;
 	float play_time;
 
@@ -132,4 +157,5 @@ public:
 	std::unique_ptr<DXVertexFactory> vertex_factory_;
 	std::string model_name;
 	std::vector<YVector> cached_position;
+	std::unique_ptr<RenderData> render_data_;
 };
