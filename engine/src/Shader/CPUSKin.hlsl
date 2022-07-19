@@ -13,6 +13,7 @@ struct VS_INPUT
 	float3    vPosition		: position;
 	float3    vNormal       : normal;
 	float2    vTexCoord     : uv;
+	float4    vColor 		: color;
 	// half3     TangentX		: ATTRIBUTE1;
 	// half4     TangentZ		: ATTRIBUTE2;
     // half2     TexCoords[2]  : ATTRIBUTE3;
@@ -32,7 +33,8 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	matrix wvp = mul (g_world,vp);
 	Output.vPosition = mul(float4(Input.vPosition,1.0), wvp);
 	Output.vTexcoord = Input.vTexCoord;
-	Output.vColor = float4(1.0,1.0,1.0,1.0);
+	// Output.vColor = float4(1.0,1.0,1.0,1.0);
+	Output.vColor = Input.vColor;
 	Output.vNormal = Input.vNormal;
 	// matrix matWVP = mul(g_world, g_VP);
 
@@ -84,7 +86,8 @@ float4 PSMain(VS_OUTPUT Input) :SV_Target
 	dir_light = normalize(dir_light);
 	float ndl = dot(light_dir,normalize(Input.vNormal));
 	ndl = clamp(ndl,0,1.0);
-	float3 srgb = LinearToSrgbBranching(float3(ndl,ndl,ndl));
+	float3 ndl_v = float3(ndl,ndl,ndl)* Input.vColor.xyz;
+	float3 srgb = LinearToSrgbBranching(ndl_v);
 	if(show_normal>0.0)
 	{
 		float3 normal_color = CoverNormalToColor(Input.vNormal);

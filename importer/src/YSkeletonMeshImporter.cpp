@@ -489,15 +489,29 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
 	}
 	// 
 	int section_count = section_start.size();
-	float section_color_channel = 1.0 / (float)section_count;
-
+	float section_color_channel = 1.0 / (float)section_count*3.0;
+	int section_per_color = YMath::Max(section_count / 3,1);
 	int current_section_index = 0;
 	index = 0;
 	for (const SplitMeshByBoneContainer& split_mesh_by_bone_container : skin_split_bone_mesh_containers)
 	{
 		for (const SplitMeshByBone& slit_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
 		{
-			YVector4 current_color = YVector4(section_color_channel * current_section_index, 0.0, 0.0, 1.0);
+			int color_index = current_section_index / section_per_color;
+			int color_index_off = current_section_index % section_per_color;
+			YVector4 current_color = YVector4(1.0, 0.0, 0.0, 1.0);
+			if (color_index == 0)
+			{
+				current_color = YVector4(section_color_channel * current_section_index, 0.0, 0.0, 1.0);
+			}
+			else if (color_index == 1)
+			{
+				current_color = YVector4(0.0,section_color_channel * current_section_index, 0.0, 1.0);
+			}
+			else if (color_index == 2)
+			{
+				current_color = YVector4(0.0, 0.0, section_color_channel * current_section_index, 1.0);
+			}
 			int triange_conunt_section = slit_mesh_by_bone.wedges.size() / 3;
 			for (int i = 0; i < triange_conunt_section * 3; ++i)
 			{

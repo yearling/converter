@@ -36,11 +36,11 @@ public:
 		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector), false, false, true);
 		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector), false, false, true);
 		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), false, false, true);
-		//VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Float32, 3, 4, 0, -1, sizeof(YVector4), false, false, true);
+		VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Float32, 3, 4, 0, -1, sizeof(YVector4), false, false, true);
 		vertex_descriptions_.push_back(postion_desc);
 		vertex_descriptions_.push_back(normal_desc);
 		vertex_descriptions_.push_back(uv_desc);
-		//vertex_descriptions_.push_back(color_desc);
+		vertex_descriptions_.push_back(color_desc);
 	}
 protected:
 	YSkeletonMesh* mesh_ = nullptr;
@@ -362,12 +362,12 @@ bool YSkeletonMesh::AllocGpuResource()
 	}
 
 	{
-	/*	TComPtr<ID3D11Buffer> d3d_vb;
+		TComPtr<ID3D11Buffer> d3d_vb;
 		if (!g_device->CreateVertexBufferStatic((unsigned int)color_buffer.size() * sizeof(YVector4), color_buffer.data(), d3d_vb)) {
 			ERROR_INFO("Create vertex buffer failed!!");
 			return false;
 		}
-		vertex_buffers_.push_back(d3d_vb);*/
+		vertex_buffers_.push_back(d3d_vb);
 	}
 
 	{
