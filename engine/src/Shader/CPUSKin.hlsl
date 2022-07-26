@@ -86,8 +86,8 @@ float4 PSMain(VS_OUTPUT Input) :SV_Target
 	dir_light = normalize(dir_light);
 	float ndl = dot(light_dir,normalize(Input.vNormal));
 	ndl = clamp(ndl,0,1.0);
-	float3 ndl_v = float3(ndl,ndl,ndl)* Input.vColor.xyz;
-	float3 srgb = LinearToSrgbBranching(ndl_v);
+	//float3 ndl_v = float3(ndl,ndl,ndl)* Input.vColor.xyz;
+	float3 srgb = LinearToSrgbBranching(ndl);
 	if(show_normal>0.0)
 	{
 		float3 normal_color = CoverNormalToColor(Input.vNormal);

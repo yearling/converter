@@ -78,11 +78,13 @@ void YSkeleton::UpdateRecursive(double delta_time,int bone_id)
 		YBone& parent_bone = bones_[parent_bone_id];
 		cur_bone.global_transform_ = cur_bone.local_transform_ * parent_bone.global_transform_;
 		cur_bone.global_matrix_ = cur_bone.local_matrix_ * parent_bone.global_matrix_;
+		cur_bone.inv_bind_global_matrix_mul_global_matrix = cur_bone.inv_bind_global_matrix_ * cur_bone.global_matrix_;
 	}
 	else
 	{
 		cur_bone.global_transform_ = cur_bone.local_transform_;
 		cur_bone.global_matrix_ = cur_bone.local_matrix_;
+		cur_bone.inv_bind_global_matrix_mul_global_matrix = cur_bone.inv_bind_global_matrix_ * cur_bone.global_matrix_;
 	}
 
 	for (int child_bone_id : cur_bone.children_)
@@ -230,6 +232,7 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	
 	int wedge_index = 0;
 	int mesh_index = 0;
+	
 	//for (SkinMesh& mesh : skin_data_->meshes_)
 	//{
 	//		bool has_bs = !mesh.bs_.target_shapes_.empty();
@@ -274,8 +277,54 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	//}
 	//memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
 	//dc->Unmap(vertex_buffers_[0], 0);
+	
+	std::vector<YVector>& position_buffer = render_data_->position;
+	std::vector<YVector>& normal_buffer = render_data_->normal;
 
-	dc->DrawIndexed(triangle_count * 3, 0 , 0);
+	for (int section_index = 0; section_index < render_data_->sections.size(); ++section_index)
+	{
+		int section_begin = render_data_->sections[section_index];
+		int tringle_count = render_data_->triangle_counts[section_index];
+		int section_end = section_begin + tringle_count * 3;
+		const std::vector<int> bone_mapping = render_data_->bone_mapping[section_index];
+		for (int index_begin = section_begin; index_begin < section_end; ++index_begin)
+		{
+			int vertex_index = render_data_->indices[index_begin];
+			std::array<float, 8> weights = render_data_->weights[vertex_index];
+			std::array<int, 8> bone_ids = render_data_->bone_id[vertex_index];
+			YMatrix blend_matrix;
+			memset(blend_matrix.m, 0, sizeof(float) * 16);
+			for (int bone_index = 0; bone_index < 8; ++bone_index)
+			{
+				int bone_real_id = bone_mapping[bone_ids[bone_index]];
+				YBone& bone = skeleton_->bones_[bone_real_id];
+				YMatrix& inv_bone_from_bind_to_current = bone.inv_bind_global_matrix_mul_global_matrix;
+				float weight = weights[bone_index];
+				if (YMath::IsNearlyZero(weight))
+				{
+					continue;
+				}
+				YMatrix weighted_matrix = inv_bone_from_bind_to_current * weight;
+				blend_matrix = blend_matrix + weighted_matrix;
+			}
+			YVector animated_vertex_point = blend_matrix.TransformPosition(render_data_->position[vertex_index]);
+			cached_position[vertex_index] = animated_vertex_point;
+		}
+	}
+	D3D11_MAPPED_SUBRESOURCE MappedSubresource;
+	if (dc->Map(vertex_buffers_[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
+	{
+		ERROR_INFO("update skin data error");
+	}
+	memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
+	dc->Unmap(vertex_buffers_[0], 0);
+	dc->DrawIndexed(triangle_count * 3, 0, 0);
+	for (int section_index = 0; section_index < render_data_->sections.size(); ++section_index)
+	{
+		int section_begin = render_data_->sections[section_index];
+		int tringle_count = render_data_->triangle_counts[section_index];
+		dc->DrawIndexed(tringle_count * 3, section_begin, 0);
+	}
 	//for (auto& polygon_group : raw_meshes[0].polygon_groups)
 	//{
 		//int triangle_count = (int)polygon_group.polygons.size();

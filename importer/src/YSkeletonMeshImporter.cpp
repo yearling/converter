@@ -41,8 +41,13 @@ std::unique_ptr<YSkeletonMesh> YFbxImporter::ImportSkeletonMesh(FbxNode* root_no
 	RecursiveFindMesh(root_node, mesh_contain_skeleton_and_bs);
 	std::unique_ptr<YSkinDataImported> skin_data = ImportSkinData(skeleton_mesh->skeleton_.get(), mesh_contain_skeleton_and_bs);
 	skeleton_mesh->skin_data_ = std::move(skin_data);
-	ImportBlendShapeAnimation(skeleton_mesh->skin_data_.get(), skeleton_mesh->animation_data_.get(), mesh_contain_skeleton_and_bs);
-	PostProcessSkeletonMesh(skeleton_mesh.get());
+	if (import_param_->import_morph) {
+		ImportBlendShapeAnimation(skeleton_mesh->skin_data_.get(), skeleton_mesh->animation_data_.get(), mesh_contain_skeleton_and_bs);
+	}
+	if (!PostProcessSkeletonMesh(skeleton_mesh.get()))
+	{
+		return nullptr;
+	}
 	if (!skeleton_mesh->AllocGpuResource())
 	{
 		ERROR_INFO("SkeletonMesh alloc resource failed!!");
@@ -234,7 +239,7 @@ std::unique_ptr<YSkinDataImported> YFbxImporter::ImportSkinData(YSkeleton* skele
 			skin_mesh.control_points_.push_back(vertex_position);
 		}
 
-		if (mesh->GetShapeCount() > 0)
+		if (import_param_->import_morph && mesh->GetShapeCount() > 0)
 		{
 			BlendShape& bs = skin_mesh.bs_;
 			int blend_shape_deformer_count = mesh->GetDeformerCount(FbxDeformer::eBlendShape);
@@ -560,7 +565,7 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
 	render_data->bone_mapping = bone_mappings;
 	return render_data;
 }
-void YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
+bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
 {
 	assert(skeleton_mesh);
 	YSkinDataImported* skin_data = skeleton_mesh->skin_data_.get();
@@ -580,6 +585,19 @@ void YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
 		for (int triangle_index = 0; triangle_index * 3 < skin_mesh.wedges_.size(); ++triangle_index)
 		{
 			int wedge_index_base = triangle_index * 3;
+			std::unordered_set<int> tmp_add;
+			for (int i = 0; i < 3; ++i) {
+				VertexWedge& v0 = skin_mesh.wedges_[wedge_index_base + i];
+				for (const BoneWeightAndID& bone_weight_and_id : v0.weights_and_ids)
+				{
+					tmp_add.insert(bone_weight_and_id.id);
+				}
+			}
+			if (tmp_add.size() > import_param_->max_bone_per_section)
+			{
+				ERROR_INFO(StringFormat("a triangle contains %d bones, more than max bone per section %d, please increase max bone per section or fix fbx", tmp_add.size(),import_param_->max_bone_per_section));
+				return false;
+			}
 			split_mesh_by_bone_container.AddWedge(skin_mesh.wedges_[wedge_index_base + 0], skin_mesh.wedges_[wedge_index_base + 1], skin_mesh.wedges_[wedge_index_base + 2], 0, import_param_->max_bone_per_section);
 		}
 		for (SplitMeshByBone& split_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
@@ -588,6 +606,7 @@ void YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
 		}
 	}
 	skeleton_mesh->render_data_ =  GenerateRenderData(skin_split_bone_mesh_containers, import_param_->max_bone_per_section);
+	return true;
 }
 
 

@@ -116,6 +116,7 @@ public:
 	YMatrix global_matrix_;
 
 	YMatrix inv_bind_global_matrix_;
+	YMatrix inv_bind_global_matrix_mul_global_matrix;
 };
 class YSkeleton
 {
