@@ -96,7 +96,6 @@ protected:
 	YSkeletonMesh* mesh_ = nullptr;
 	static const int gpu_matrix_count = 64;
 };
-//const int YGPUSkeltonMeshVertexFactory::gpu_matrix_count = 64;
 
 YBone::YBone()
 {
@@ -261,8 +260,6 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	vertex_shader_->BindResource("g_projection", render_param->camera_proxy->projection_matrix_);
 	vertex_shader_->BindResource("g_view", render_param->camera_proxy->view_matrix_);
 	YMatrix local_to_world = render_param->local_to_world_;
-	YMatrix down_offset = YTransform(YVector(0, 0, -12), YQuat(0, 0, 0, 1), YVector(0.1, 0.1, 0.1)).ToMatrix();
-	local_to_world = down_offset * local_to_world;
 	vertex_shader_->BindResource("g_world", local_to_world);
 	vertex_shader_->BindSRV("",bone_matrix_buffer_srv_);
 	vertex_shader_->Update();
@@ -347,7 +344,7 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 			blend_matrix_current_section[i] = bone.inv_bind_global_matrix_mul_global_matrix;
 		}
 		{
-		
+
 			D3D11_MAPPED_SUBRESOURCE MappedSubresource;
 			if (dc->Map(bone_matrix_buffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
 			{
@@ -359,51 +356,7 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 		vertex_shader_->BindSRV("BoneMatrices", bone_matrix_buffer_srv_);
 		vertex_shader_->Update();
 		dc->DrawIndexed(tringle_count * 3, section_begin, 0);
-
-	/*	for (int index_begin = section_begin; index_begin < section_end; ++index_begin)
-		{
-			int vertex_index = render_data_->indices[index_begin];
-			std::array<float, 8> weights = render_data_->weights[vertex_index];
-			std::array<int, 8> bone_ids = render_data_->bone_id[vertex_index];
-			YMatrix blend_matrix;
-			memset(blend_matrix.m, 0, sizeof(float) * 16);
-			for (int bone_index = 0; bone_index < 8; ++bone_index)
-			{
-				int bone_real_id = bone_mapping[bone_ids[bone_index]];
-				YBone& bone = skeleton_->bones_[bone_real_id];
-				YMatrix& inv_bone_from_bind_to_current = bone.inv_bind_global_matrix_mul_global_matrix;
-				float weight = weights[bone_index];
-				if (YMath::IsNearlyZero(weight))
-				{
-					continue;
-				}
-				YMatrix weighted_matrix = inv_bone_from_bind_to_current * weight;
-				blend_matrix = blend_matrix + weighted_matrix;
-			}
-			YVector animated_vertex_point = blend_matrix.TransformPosition(render_data_->position[vertex_index]);
-			cached_position[vertex_index] = animated_vertex_point;
-		}*/
 	}
-	//D3D11_MAPPED_SUBRESOURCE MappedSubresource;
-	//if (dc->Map(vertex_buffers_[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
-	//{
-	//	ERROR_INFO("update skin data error");
-	//}
-	//memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
-	//dc->Unmap(vertex_buffers_[0], 0);
-	//dc->DrawIndexed(triangle_count * 3, 0, 0);
-	//for (int section_index = 0; section_index < render_data_->sections.size(); ++section_index)
-	//{
-	//	int section_begin = render_data_->sections[section_index];
-	//	int tringle_count = render_data_->triangle_counts[section_index];
-	//	dc->DrawIndexed(tringle_count * 3, section_begin, 0);
-	//}
-	//for (auto& polygon_group : raw_meshes[0].polygon_groups)
-	//{
-		//int triangle_count = (int)polygon_group.polygons.size();
-		//dc->DrawIndexed(triangle_count * 3, triangle_total, 0);
-		//triangle_total += triangle_count * 3;
-	//}
 }
 
 bool YSkeletonMesh::AllocGpuResource()
@@ -454,23 +407,6 @@ bool YSkeletonMesh::AllocGpuResource()
 		bone_id_buffer.insert(bone_id_buffer.end(), bone_id_vertex.begin(), bone_id_vertex.end());
 	}
 
-
-	//position_buffer.reserve(triagle_count * 3);
-	//normal_buffer.reserve(triagle_count * 3);
-	//uv_buffer.reserve(triagle_count * 2);
-	//index_buffer.reserve(triagle_count * 3);
-	//int index_value = 0;
-	//for (SkinMesh& mesh : skin_data_->meshes_)
-	//{
-	//	for (VertexWedge wedge : mesh.wedges_)
-	//	{
-	//		position_buffer.push_back(wedge.position);
-	//		normal_buffer.push_back(wedge.normal);
-	//		uv_buffer.push_back(wedge.uvs_[0]);
-	//		index_buffer.push_back(index_value++);
-	//	}
-	//}
-	
 	{
 		TComPtr<ID3D11Buffer> d3d_vb;
 		if (!g_device->CreateVertexBufferDynamic((unsigned int)position_buffer.size() * sizeof(YVector), position_buffer.data(), d3d_vb)) {
@@ -590,7 +526,6 @@ bool YSkeletonMesh::AllocGpuResource()
 
 	if (!ds_) {
 		g_device->CreateDepthStencileState(ds_, true);
-		//device_->CreateDepthStencileStateNoWriteNoTest(ds_);
 	}
 	if (!sampler_state_) {
 		sampler_state_ = g_device->GetSamplerState(SF_BiLinear, SA_Wrap);

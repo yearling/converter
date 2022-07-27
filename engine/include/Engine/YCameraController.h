@@ -33,8 +33,8 @@ protected:
 	void OnMouseMove(int x, int y);
 	void OnMouseWheel(int x, int y, float z);
 	float speed_base_ = 20.0;
-	float rotation_speed_pitch_ = 20.f;
-	float rotation_speed_yaw_ = 20.f;
+	float rotation_speed_pitch_ = 200.f;
+	float rotation_speed_yaw_ = 200.f;
 	bool right_button_pressed_ = false;
 	int last_x_ = 0;
 	int last_y_ = 0;
