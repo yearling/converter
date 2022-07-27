@@ -152,7 +152,9 @@ public:
 	TComPtr<ID3D11DepthStencilState> ds_;
 	TComPtr<ID3D11RasterizerState> rs_;
 	TComPtr<ID3D11Buffer> bone_matrix_buffer_;
+	TComPtr<ID3D11Buffer> bone_matrix_buffer_simple_;
 	TComPtr<ID3D11ShaderResourceView> bone_matrix_buffer_srv_;
+	TComPtr<ID3D11ShaderResourceView> bone_matrix_buffer_simple_srv_;
 	D3DTextureSampler* sampler_state_ = { nullptr };
 	std::vector<int> polygon_group_offsets;
 	std::unique_ptr<D3DVertexShader> vertex_shader_;

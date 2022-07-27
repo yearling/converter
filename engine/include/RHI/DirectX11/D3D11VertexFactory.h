@@ -35,7 +35,17 @@ enum DataType
 };
 struct VertexStreamDescription {
 	VertexStreamDescription();
-	VertexStreamDescription(VertexAttribute in_vertex_attribe, const std::string& in_name, DataType in_type, int in_cpu_data_index, int in_com_num, int in_buffer_size, int in_slot, int in_stride, bool in_normalized, bool in_release, bool in_dynamic);
+	VertexStreamDescription(VertexAttribute in_vertex_attribe,
+		                 const std::string& in_name, 
+		                 DataType in_type,  
+						int in_cpu_data_index,           
+                        int in_com_num, 
+                        int in_buffer_size, 
+                        int in_slot, 
+                        int in_stride, 
+                        bool in_normalized, 
+                        bool in_release, 
+                        bool in_dynamic);
 	VertexAttribute vertex_attribute;
 	std::string name;
 	DataType data_type;

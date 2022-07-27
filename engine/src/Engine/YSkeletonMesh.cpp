@@ -261,7 +261,7 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	vertex_shader_->BindResource("g_view", render_param->camera_proxy->view_matrix_);
 	YMatrix local_to_world = render_param->local_to_world_;
 	vertex_shader_->BindResource("g_world", local_to_world);
-	vertex_shader_->BindSRV("",bone_matrix_buffer_srv_);
+	//vertex_shader_->BindSRV("",bone_matrix_buffer_srv_);
 	vertex_shader_->Update();
 	if (render_param->dir_lights_proxy->size()) {
 		YVector dir_light = -(*render_param->dir_lights_proxy)[0].light_dir;
@@ -326,11 +326,14 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	//}
 	//memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
 	//dc->Unmap(vertex_buffers_[0], 0);
-	
+
+
 	std::vector<YVector>& position_buffer = render_data_->position;
 	std::vector<YVector>& normal_buffer = render_data_->normal;
 	std::vector<YMatrix> blend_matrix_current_section;
 	blend_matrix_current_section.resize(YGPUSkeltonMeshVertexFactory::GetGPUMatrixCount());
+    std::vector<YVector4> blend_matrix_current_section_simple;
+    blend_matrix_current_section_simple.resize(YGPUSkeltonMeshVertexFactory::GetGPUMatrixCount() * 3);
 	for (int section_index = 0; section_index < render_data_->sections.size(); ++section_index)
 	{
 		int section_begin = render_data_->sections[section_index];
@@ -342,9 +345,12 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 			int bone_real_id = bone_mapping[i];
 			YBone& bone = skeleton_->bones_[bone_real_id];
 			blend_matrix_current_section[i] = bone.inv_bind_global_matrix_mul_global_matrix;
+            YMatrix& simple_matrix = bone.inv_bind_global_matrix_mul_global_matrix;
+            blend_matrix_current_section_simple[i * 3 + 0] = YVector4(simple_matrix.m[0][0], simple_matrix.m[1][0], simple_matrix.m[2][0], simple_matrix.m[3][0]);
+            blend_matrix_current_section_simple[i * 3 + 1] = YVector4(simple_matrix.m[0][1], simple_matrix.m[1][1], simple_matrix.m[2][1], simple_matrix.m[3][1]);
+            blend_matrix_current_section_simple[i * 3 + 2] = YVector4(simple_matrix.m[0][2], simple_matrix.m[1][2], simple_matrix.m[2][2], simple_matrix.m[3][2]);
 		}
 		{
-
 			D3D11_MAPPED_SUBRESOURCE MappedSubresource;
 			if (dc->Map(bone_matrix_buffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
 			{
@@ -353,7 +359,20 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 			memcpy(MappedSubresource.pData, blend_matrix_current_section.data(), blend_matrix_current_section.size() * sizeof(YMatrix));
 			dc->Unmap(bone_matrix_buffer_, 0);
 		}
+
+        {
+
+            D3D11_MAPPED_SUBRESOURCE MappedSubresource;
+            if (dc->Map(bone_matrix_buffer_simple_, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
+            {
+                ERROR_INFO("update skin data error");
+            }
+            memcpy(MappedSubresource.pData, blend_matrix_current_section_simple.data(), blend_matrix_current_section_simple.size() * sizeof(YVector4));
+            dc->Unmap(bone_matrix_buffer_simple_, 0);
+        }
+
 		vertex_shader_->BindSRV("BoneMatrices", bone_matrix_buffer_srv_);
+		vertex_shader_->BindSRV("BoneMatricesSimple", bone_matrix_buffer_simple_srv_);
 		vertex_shader_->Update();
 		dc->DrawIndexed(tringle_count * 3, section_begin, 0);
 	}
@@ -457,11 +476,23 @@ bool YSkeletonMesh::AllocGpuResource()
 			return false;
 		}
 
+        if (!g_device->CreateBuffer(sizeof(YVector4)* 3 * YGPUSkeltonMeshVertexFactory::GetGPUMatrixCount(), nullptr, true, bone_matrix_buffer_simple_))
+        {
+            ERROR_INFO("Create bone matrix buffer failed!!");
+            return false;
+        }
+
 		if (!g_device->CreateSRVForBuffer(DXGI_FORMAT_R32G32B32A32_FLOAT, 4 * YGPUSkeltonMeshVertexFactory::GetGPUMatrixCount(), bone_matrix_buffer_, bone_matrix_buffer_srv_, ""))
 		{
 			ERROR_INFO("Create bone matrix buffer failed!!");
 			return false;
 		}
+
+        if (!g_device->CreateSRVForBuffer(DXGI_FORMAT_R32G32B32A32_FLOAT, 3 * YGPUSkeltonMeshVertexFactory::GetGPUMatrixCount(), bone_matrix_buffer_simple_, bone_matrix_buffer_simple_srv_, ""))
+        {
+            ERROR_INFO("Create bone matrix buffer failed!!");
+            return false;
+        }
 	}
 
 	{
