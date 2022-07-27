@@ -16,6 +16,8 @@ enum VertexAttribute
 	VA_TANGENT,
 	VA_BITANGENT,
 	VA_COLOR,
+	VA_BONEID,
+	VA_BONEWEIGHT,
 	VA_ATTRIBUTE0,
 	VA_ATTRIBUTE1,
 	VA_ATTRIBUTE2,
@@ -28,7 +30,8 @@ enum VertexAttribute
 enum DataType
 {
 	Float32,
-	Uint8
+	Uint8,
+	Uint32
 };
 struct VertexStreamDescription {
 	VertexStreamDescription();

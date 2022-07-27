@@ -234,14 +234,8 @@ bool ID3DShaderBind::BindResource(const std::string& ParaName, const YMatrix& Ma
 }
 
 bool ID3DShaderBind::BindSRV(const std::string& ParamName, const D3DShaderResourceView& InSRV) {
-	auto find_result = MapSRV.find(ParamName);
-	if (find_result != MapSRV.end()) {
-		find_result->second = InSRV;
-		return true;
-	}
-	else {
-		return false;
-	}
+	assert(0);
+	return false;
 }
 
 
@@ -579,7 +573,7 @@ bool D3DVertexShader::Update() {
 
 		for (auto& SRVItem : MapSRV) {
 			D3DShaderResourceView& SRVValue = SRVItem.second;
-			//device_context->VSSetShaderResources(SRVValue.BindPoint, SRVValue.BindCount, &SRVValue.SRV);
+			device_context->VSSetShaderResources(SRVValue.BindPoint, SRVValue.BindCount, &SRVValue.SRV);
 		}
 
 		for (auto& slot : sampler_slot) {
@@ -620,6 +614,20 @@ bool D3DVertexShader::BindSRV(int slot, D3DTexture* texture) {
 	ID3D11ShaderResourceView* loc_srv = texture_2d->srv_;
 	g_device->GetDC()->VSSetShaderResources(slot, 1, &loc_srv);
 	return true;
+}
+
+bool D3DVertexShader::BindSRV(const std::string& param_name, TComPtr<ID3D11ShaderResourceView> srv)
+{
+	if (MapSRV.count(param_name))
+	{
+		D3DShaderResourceView& srv_param = MapSRV[param_name];
+		assert(srv_param.BindCount != -1);
+		srv_param.SRV = srv;
+		ID3D11ShaderResourceView* srv_internal = srv;
+		g_device->GetDC()->VSSetShaderResources(srv_param.BindPoint, 1, &srv_internal);
+		return true;
+	}
+	return false;
 }
 
 #if 0
@@ -891,6 +899,11 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
 			return true;
 		}
 		if (reflected_desc.Format == DXGI_FORMAT_R32_UINT && vertex_stream_desc.data_type == DataType::Uint8 &&
+			vertex_stream_desc.com_num == 4 ) {
+			return true;
+		}
+
+		if (reflected_desc.Format == DXGI_FORMAT_R32G32B32A32_UINT && vertex_stream_desc.data_type == DataType::Uint32 &&
 			vertex_stream_desc.com_num == 4) {
 			return true;
 		}
@@ -1040,8 +1053,8 @@ bool D3DPixelShader::Update() {
 			d3d_dc->PSSetConstantBuffers(ConstantBuffer->BindSlotIndex, 1, &ConstantBuffer->D3DBuffer);
 		}
 		for (auto& SRVItem : MapSRV) {
-			//const D3DShaderResourceView& SRVValue = SRVItem.second;
-			//d3d_dc->PSSetShaderResources(SRVValue.BindPoint, SRVValue.BindCount, &SRVValue.SRV);
+			const D3DShaderResourceView& SRVValue = SRVItem.second;
+			d3d_dc->PSSetShaderResources(SRVValue.BindPoint, SRVValue.BindCount, &SRVValue.SRV);
 		}
 
 		for (auto& slot : sampler_slot) {
@@ -1079,6 +1092,20 @@ bool D3DPixelShader::BindSRV(int slot, D3DTexture* texture) {
 	ID3D11ShaderResourceView* loc_srv = texture_2d->srv_;
 	g_device->GetDC()->PSSetShaderResources(slot, 1, &loc_srv);
 	return true;
+}
+
+bool D3DPixelShader::BindSRV(const std::string& param_name, TComPtr<ID3D11ShaderResourceView> srv)
+{
+	if (MapSRV.count(param_name))
+	{
+		D3DShaderResourceView& srv_param = MapSRV[param_name];
+		assert(srv_param.BindCount != -1);
+		srv_param.SRV = srv;
+		ID3D11ShaderResourceView* srv_internal = srv;
+		g_device->GetDC()->PSSetShaderResources(srv_param.BindPoint, 1, &srv_internal);
+		return true;
+	}
+	return false;
 }
 
 TComPtr<ID3D11DeviceChild> D3DPixelShader::GetInternalResource() const { return TComPtr<ID3D11DeviceChild>(PixShader); }

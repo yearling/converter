@@ -49,6 +49,7 @@ public:
 	  //virtual bool BindResource(const std::string &ParaName, const FMatrix &Mat) = 0;
 	  //virtual bool BindResource(const std::string &ParaName, const FMatrix *Mat, int Num) = 0;
 	virtual bool BindSRV(const std::string& ParamName, const D3DShaderResourceView& SRV) = 0;
+	virtual bool BindSRV(const std::string& param_name, TComPtr<ID3D11ShaderResourceView> srv) = 0;
 	virtual bool Update() = 0;
 	virtual bool BindInputLayout(std::vector<D3D11_INPUT_ELEMENT_DESC> lInputLayoutDesc) = 0;
 	virtual bool ClearSlot() = 0;
@@ -181,6 +182,7 @@ public:
 	virtual bool BindInputLayout(std::vector<D3D11_INPUT_ELEMENT_DESC> InInputLayoutDesc) override;
 	virtual bool ClearSlot() override;
 	virtual bool BindSRV(int slot, D3DTexture* texture) override;
+	bool BindSRV(const std::string& param_name, TComPtr<ID3D11ShaderResourceView> srv) override;
 	//private:
 public:
 	//virtual bool PostReflection(TComPtr<ID3DBlob> &Blob, TComPtr<ID3D11ShaderReflection> &ShaderReflector) override;
@@ -201,8 +203,11 @@ public:
 	virtual bool Update() override;
 	virtual bool ClearSlot() override;
 	virtual bool BindSRV(int slot, D3DTexture* texture) override;
+	bool BindSRV(const std::string& param_name, TComPtr<ID3D11ShaderResourceView> srv) override;
 	//private:
 public:
 	virtual TComPtr<ID3D11DeviceChild> GetInternalResource() const;
 	TComPtr<ID3D11PixelShader> PixShader;
 };
+
+

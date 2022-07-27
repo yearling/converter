@@ -474,6 +474,25 @@ bool D3D11Device::CreateIndexBuffer(UINT ByteWidth, const void* pData, TComPtr<I
 	return true;
 }
 
+bool D3D11Device::CreateBuffer(UINT byte_width, const void* data, bool dynamic, TComPtr<ID3D11Buffer>& buffer)
+{
+	HRESULT hr = S_OK;
+	D3D11_BUFFER_DESC desc;
+	memset(&desc, 0, sizeof(desc));
+	desc.ByteWidth = byte_width;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	desc.Usage = dynamic? D3D11_USAGE_DYNAMIC:D3D11_USAGE_DEFAULT;
+	desc.CPUAccessFlags = dynamic? D3D11_CPU_ACCESS_WRITE:0;
+	desc.MiscFlags = 0;
+	D3D11_SUBRESOURCE_DATA sub;
+	memset(&sub, 0, sizeof(sub));
+	sub.pSysMem = data;
+	if (FAILED(hr = d3d_device_->CreateBuffer(&desc, data? &sub:nullptr, &buffer))) {
+		return false;
+	}
+	return true;
+}
+
 D3DTextureSampler* D3D11Device::GetSamplerState(SamplerFilterType filter_type, SamplerAddressMode address_mode) {
 	return sample_state_mamager_->GetTextureSampler(filter_type, address_mode, address_mode, address_mode);
 }

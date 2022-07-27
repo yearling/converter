@@ -47,6 +47,57 @@ protected:
 };
 
 
+class YGPUSkeltonMeshVertexFactory :public DXVertexFactory
+{
+public:
+	YGPUSkeltonMeshVertexFactory(YSkeletonMesh* mesh)
+		:mesh_(mesh)
+	{
+
+	}
+	void SetupStreams()override
+	{
+		if (vertex_input_layout_)
+		{
+			const TComPtr<ID3D11DeviceContext> dc = g_device->GetDC();
+			dc->IASetInputLayout(vertex_input_layout_);
+			for (VertexStreamDescription& desc : vertex_descriptions_) {
+				ID3D11Buffer* buffer = mesh_->vertex_buffers_[desc.cpu_data_index];
+				unsigned int stride = desc.stride;
+				unsigned int offset = 0;
+				if (desc.slot != -1) {
+					dc->IASetVertexBuffers(desc.slot, 1, &buffer, &stride, &offset);
+				}
+			}
+		}
+	}
+	void SetupVertexDescriptionPolicy()
+	{
+		vertex_descriptions_.clear();
+		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector), false, false, true);
+		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector), false, false, true);
+		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), false, false, true);
+		VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Float32, 3, 4, 0, -1, sizeof(YVector4), false, false, true);
+		VertexStreamDescription bone_weight_desc(VertexAttribute::VA_BONEWEIGHT, "weight", DataType::Float32, 4, 4, 0, -1, sizeof(YVector4)*2, false, false, true);
+		VertexStreamDescription bone_weight_desc2(VertexAttribute::VA_BONEWEIGHT, "weight_extra", DataType::Float32, 4, 4, 0, -1, sizeof(YVector4)*2, false, false, true);
+		VertexStreamDescription bone_id_desc(VertexAttribute::VA_BONEID, "boneid", DataType::Uint32, 5, 4, 0, -1, sizeof(YVector4)*2, false, false, true);
+		VertexStreamDescription bone_id_desc2(VertexAttribute::VA_BONEID, "boneid_extra", DataType::Uint32, 5, 4, 0, -1, sizeof(YVector4)*2, false, false, true);
+		vertex_descriptions_.push_back(postion_desc);
+		vertex_descriptions_.push_back(normal_desc);
+		vertex_descriptions_.push_back(uv_desc);
+		vertex_descriptions_.push_back(color_desc);
+		vertex_descriptions_.push_back(bone_weight_desc);
+		vertex_descriptions_.push_back(bone_weight_desc2);
+		vertex_descriptions_.push_back(bone_id_desc);
+		vertex_descriptions_.push_back(bone_id_desc2);
+	}
+	static int GetGPUMatrixCount() { return gpu_matrix_count; }
+protected:
+	YSkeletonMesh* mesh_ = nullptr;
+	static const int gpu_matrix_count = 64;
+};
+//const int YGPUSkeltonMeshVertexFactory::gpu_matrix_count = 64;
+
 YBone::YBone()
 {
 	bind_local_tranform_ = YTransform::identity;
@@ -213,6 +264,7 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	YMatrix down_offset = YTransform(YVector(0, 0, -12), YQuat(0, 0, 0, 1), YVector(0.1, 0.1, 0.1)).ToMatrix();
 	local_to_world = down_offset * local_to_world;
 	vertex_shader_->BindResource("g_world", local_to_world);
+	vertex_shader_->BindSRV("",bone_matrix_buffer_srv_);
 	vertex_shader_->Update();
 	if (render_param->dir_lights_proxy->size()) {
 		YVector dir_light = -(*render_param->dir_lights_proxy)[0].light_dir;
@@ -280,14 +332,35 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 	
 	std::vector<YVector>& position_buffer = render_data_->position;
 	std::vector<YVector>& normal_buffer = render_data_->normal;
-
+	std::vector<YMatrix> blend_matrix_current_section;
+	blend_matrix_current_section.resize(YGPUSkeltonMeshVertexFactory::GetGPUMatrixCount());
 	for (int section_index = 0; section_index < render_data_->sections.size(); ++section_index)
 	{
 		int section_begin = render_data_->sections[section_index];
 		int tringle_count = render_data_->triangle_counts[section_index];
 		int section_end = section_begin + tringle_count * 3;
 		const std::vector<int> bone_mapping = render_data_->bone_mapping[section_index];
-		for (int index_begin = section_begin; index_begin < section_end; ++index_begin)
+		for (int i = 0; i < bone_mapping.size(); ++i)
+		{
+			int bone_real_id = bone_mapping[i];
+			YBone& bone = skeleton_->bones_[bone_real_id];
+			blend_matrix_current_section[i] = bone.inv_bind_global_matrix_mul_global_matrix;
+		}
+		{
+		
+			D3D11_MAPPED_SUBRESOURCE MappedSubresource;
+			if (dc->Map(bone_matrix_buffer_, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
+			{
+				ERROR_INFO("update skin data error");
+			}
+			memcpy(MappedSubresource.pData, blend_matrix_current_section.data(), blend_matrix_current_section.size() * sizeof(YMatrix));
+			dc->Unmap(bone_matrix_buffer_, 0);
+		}
+		vertex_shader_->BindSRV("BoneMatrices", bone_matrix_buffer_srv_);
+		vertex_shader_->Update();
+		dc->DrawIndexed(tringle_count * 3, section_begin, 0);
+
+	/*	for (int index_begin = section_begin; index_begin < section_end; ++index_begin)
 		{
 			int vertex_index = render_data_->indices[index_begin];
 			std::array<float, 8> weights = render_data_->weights[vertex_index];
@@ -309,22 +382,22 @@ void YSkeletonMesh::Render( RenderParam* render_param)
 			}
 			YVector animated_vertex_point = blend_matrix.TransformPosition(render_data_->position[vertex_index]);
 			cached_position[vertex_index] = animated_vertex_point;
-		}
+		}*/
 	}
-	D3D11_MAPPED_SUBRESOURCE MappedSubresource;
-	if (dc->Map(vertex_buffers_[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
-	{
-		ERROR_INFO("update skin data error");
-	}
-	memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
-	dc->Unmap(vertex_buffers_[0], 0);
-	dc->DrawIndexed(triangle_count * 3, 0, 0);
-	for (int section_index = 0; section_index < render_data_->sections.size(); ++section_index)
-	{
-		int section_begin = render_data_->sections[section_index];
-		int tringle_count = render_data_->triangle_counts[section_index];
-		dc->DrawIndexed(tringle_count * 3, section_begin, 0);
-	}
+	//D3D11_MAPPED_SUBRESOURCE MappedSubresource;
+	//if (dc->Map(vertex_buffers_[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
+	//{
+	//	ERROR_INFO("update skin data error");
+	//}
+	//memcpy(MappedSubresource.pData, cached_position.data(), cached_position.size()*sizeof(YVector));
+	//dc->Unmap(vertex_buffers_[0], 0);
+	//dc->DrawIndexed(triangle_count * 3, 0, 0);
+	//for (int section_index = 0; section_index < render_data_->sections.size(); ++section_index)
+	//{
+	//	int section_begin = render_data_->sections[section_index];
+	//	int tringle_count = render_data_->triangle_counts[section_index];
+	//	dc->DrawIndexed(tringle_count * 3, section_begin, 0);
+	//}
 	//for (auto& polygon_group : raw_meshes[0].polygon_groups)
 	//{
 		//int triangle_count = (int)polygon_group.polygons.size();
@@ -347,6 +420,8 @@ bool YSkeletonMesh::AllocGpuResource()
 
 	std::unique_ptr< YSkeltonMeshVertexFactory > static_mesh_vertex_factory = std::make_unique<YSkeltonMeshVertexFactory>(this);
 	static_mesh_vertex_factory->SetupVertexDescriptionPolicy();
+	std::unique_ptr<YGPUSkeltonMeshVertexFactory> gpu_vertex_factory = std::make_unique<YGPUSkeltonMeshVertexFactory>(this);
+	gpu_vertex_factory->SetupVertexDescriptionPolicy();
 
 	int polygon_group_index_offset = 0;
 	polygon_group_offsets.clear();
@@ -356,6 +431,8 @@ bool YSkeletonMesh::AllocGpuResource()
 	std::vector<YVector4>& color_buffer = render_data_->color;
 	std::vector<YVector2> uv_buffer;
 	std::vector<int> index_buffer = render_data_->indices;
+	std::vector<int> bone_id_buffer;
+	std::vector<float> bone_weight_buffer;
 	int triagle_count = 0;
 	for (int triangle_per_mesh : render_data_->triangle_counts)
 	{
@@ -366,6 +443,17 @@ bool YSkeletonMesh::AllocGpuResource()
 	{
 		uv_buffer.push_back(uvs[0]);
 	}
+
+	for (std::array<float, 8>&weight_per_vertex : render_data_->weights)
+	{
+		bone_weight_buffer.insert(bone_weight_buffer.end(), weight_per_vertex.begin(), weight_per_vertex.end());
+	}
+
+	for (std::array<int, 8>&bone_id_vertex : render_data_->bone_id)
+	{
+		bone_id_buffer.insert(bone_id_buffer.end(), bone_id_vertex.begin(), bone_id_vertex.end());
+	}
+
 
 	//position_buffer.reserve(triagle_count * 3);
 	//normal_buffer.reserve(triagle_count * 3);
@@ -426,10 +514,41 @@ bool YSkeletonMesh::AllocGpuResource()
 		}
 	}
 
+	{
+		if (!g_device->CreateBuffer(sizeof(YMatrix) * YGPUSkeltonMeshVertexFactory::GetGPUMatrixCount(), nullptr, true, bone_matrix_buffer_))
+		{
+			ERROR_INFO("Create bone matrix buffer failed!!");
+			return false;
+		}
+
+		if (!g_device->CreateSRVForBuffer(DXGI_FORMAT_R32G32B32A32_FLOAT, 4 * YGPUSkeltonMeshVertexFactory::GetGPUMatrixCount(), bone_matrix_buffer_, bone_matrix_buffer_srv_, ""))
+		{
+			ERROR_INFO("Create bone matrix buffer failed!!");
+			return false;
+		}
+	}
+
+	{
+		TComPtr<ID3D11Buffer> d3d_vb;
+		if (!g_device->CreateVertexBufferStatic((unsigned int)bone_weight_buffer.size() * sizeof(float), bone_weight_buffer.data(), d3d_vb)) {
+			ERROR_INFO("Create vertex buffer failed!!");
+			return false;
+		}
+		vertex_buffers_.push_back(d3d_vb);
+	}
+
+	{
+		TComPtr<ID3D11Buffer> d3d_vb;
+		if (!g_device->CreateVertexBufferStatic((unsigned int)bone_id_buffer.size() * sizeof(int), bone_id_buffer.data(), d3d_vb)) {
+			ERROR_INFO("Create vertex buffer failed!!");
+			return false;
+		}
+		vertex_buffers_.push_back(d3d_vb);
+	}
 	// vs
 	{
 		vertex_shader_ = std::make_unique<D3DVertexShader>();
-		const std::string shader_path = "Shader/CPUSKin.hlsl";
+		const std::string shader_path = "Shader/GPUSKin.hlsl";
 		YFile vertex_shader_source(shader_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_TXT));
 		std::unique_ptr<MemoryFile> mem_file = vertex_shader_source.ReadFile();
 		if (!mem_file)
@@ -438,7 +557,7 @@ bool YSkeletonMesh::AllocGpuResource()
 			return false;
 		}
 		std::string str(mem_file->GetReadOnlyFileContent().begin(), mem_file->GetReadOnlyFileContent().end());
-		if (!vertex_shader_->CreateShaderFromSource(str, "VSMain", static_mesh_vertex_factory.get()))
+		if (!vertex_shader_->CreateShaderFromSource(str, "VSMain", gpu_vertex_factory.get()))
 		{
 			return false;
 		}
@@ -446,7 +565,7 @@ bool YSkeletonMesh::AllocGpuResource()
 	//ps
 	{
 		pixel_shader_ = std::make_unique<D3DPixelShader>();
-		const std::string shader_path = "Shader/CPUSKin.hlsl";
+		const std::string shader_path = "Shader/GPUSKin.hlsl";
 
 		YFile vertex_shader_source(shader_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_TXT));
 		std::unique_ptr<MemoryFile> mem_file = vertex_shader_source.ReadFile();
@@ -476,7 +595,7 @@ bool YSkeletonMesh::AllocGpuResource()
 	if (!sampler_state_) {
 		sampler_state_ = g_device->GetSamplerState(SF_BiLinear, SA_Wrap);
 	}
-	vertex_factory_ = std::move(static_mesh_vertex_factory);
+	vertex_factory_ = std::move(gpu_vertex_factory);
 	allocated_gpu_resource = true;
 	return true;
 }

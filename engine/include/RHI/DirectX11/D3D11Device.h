@@ -113,6 +113,7 @@ public:
 	// IB
 	bool CreateIndexBuffer(UINT ByteWidth, const void* pData, TComPtr<ID3D11Buffer>& buffer);
 
+	bool CreateBuffer(UINT byte_width, const void* data, bool dynamic, TComPtr<ID3D11Buffer>& buffer);
 	// Sampler
 	D3DTextureSampler* GetSamplerState(SamplerFilterType filter_type, SamplerAddressMode address_mode);
 	bool CreateSamplerLinearWrap(TComPtr<ID3D11SamplerState>& sample, const std::string& alias /*=""*/);
