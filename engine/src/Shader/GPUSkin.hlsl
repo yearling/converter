@@ -8,7 +8,6 @@ float3 light_dir;
 float show_normal;
 
 Buffer<float4> BoneMatrices;
-Buffer<float4> BoneMatricesSimple;
 
 
 struct VS_INPUT
@@ -29,20 +28,12 @@ struct VS_OUTPUT
     float4 vColor : COLOR0;
     float3 vNormal : NORMAL;
 };
-matrix GetBoneMatrix(int Index)
-{
-    float4 A = BoneMatrices[Index * 4];
-    float4 B = BoneMatrices[Index * 4 + 1];
-    float4 C = BoneMatrices[Index * 4 + 2];
-    float4 D = BoneMatrices[Index * 4 + 3];
-    return matrix(A, B, C, D);
-}
 
-float3x4 GetBoneMatrixSimple(int index)
+float3x4 GetBoneMatrix(int index)
 {
-    float4 A = BoneMatricesSimple[index * 3];
-    float4 B = BoneMatricesSimple[index * 3 + 1];
-    float4 C = BoneMatricesSimple[index * 3 + 2];
+    float4 A = BoneMatrices[index * 3];
+    float4 B = BoneMatrices[index * 3 + 1];
+    float4 C = BoneMatrices[index * 3 + 2];
     return float3x4(A, B, C);
 }
 
@@ -51,7 +42,8 @@ VS_OUTPUT VSMain(VS_INPUT Input)
     VS_OUTPUT Output;
     matrix vp = mul(g_view, g_projection);
     matrix wvp = mul(g_world, vp);
-    matrix blend_matrix = Input.vWeight.x * GetBoneMatrix(Input.vBoneId.x) +
+ 
+    float3x4 blend_matrix_simple = Input.vWeight.x * GetBoneMatrix(Input.vBoneId.x) +
                    Input.vWeight.y * GetBoneMatrix(Input.vBoneId.y) +
                    Input.vWeight.z * GetBoneMatrix(Input.vBoneId.z) +
                    Input.vWeight.w * GetBoneMatrix(Input.vBoneId.w) +
@@ -59,17 +51,6 @@ VS_OUTPUT VSMain(VS_INPUT Input)
                    Input.vWeigh_extra.y * GetBoneMatrix(Input.vBoneId_extra.y) +
                    Input.vWeigh_extra.z * GetBoneMatrix(Input.vBoneId_extra.z) +
                    Input.vWeigh_extra.w * GetBoneMatrix(Input.vBoneId_extra.w);
-    float4 position_after_blend = mul(float4(Input.vPosition, 1.0), blend_matrix);
-    //position_after_blend.w = 1.0;
-
-    float3x4 blend_matrix_simple = Input.vWeight.x * GetBoneMatrixSimple(Input.vBoneId.x) +
-                   Input.vWeight.y * GetBoneMatrixSimple(Input.vBoneId.y) +
-                   Input.vWeight.z * GetBoneMatrixSimple(Input.vBoneId.z) +
-                   Input.vWeight.w * GetBoneMatrixSimple(Input.vBoneId.w) +
-                   Input.vWeigh_extra.x * GetBoneMatrixSimple(Input.vBoneId_extra.x) +
-                   Input.vWeigh_extra.y * GetBoneMatrixSimple(Input.vBoneId_extra.y) +
-                   Input.vWeigh_extra.z * GetBoneMatrixSimple(Input.vBoneId_extra.z) +
-                   Input.vWeigh_extra.w * GetBoneMatrixSimple(Input.vBoneId_extra.w);
 
     float4 position_after_blend_simple = float4(mul(blend_matrix_simple, float4(Input.vPosition, 1.0)), 1.0);
     Output.vPosition = mul(position_after_blend_simple, wvp);
