@@ -72,7 +72,7 @@ VS_OUTPUT VSMain(VS_INPUT Input)
                    Input.vWeigh_extra.w * GetBoneMatrixSimple(Input.vBoneId_extra.w);
 
     float4 position_after_blend_simple = float4(mul(blend_matrix_simple, float4(Input.vPosition, 1.0)), 1.0);
-    Output.vPosition = mul(position_after_blend, wvp);
+    Output.vPosition = mul(position_after_blend_simple, wvp);
     Output.vTexcoord = Input.vTexCoord;
 	// Output.vColor = float4(1.0,1.0,1.0,1.0);
     Output.vColor = Input.vColor;

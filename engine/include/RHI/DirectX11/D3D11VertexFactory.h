@@ -17,7 +17,9 @@ enum VertexAttribute
 	VA_BITANGENT,
 	VA_COLOR,
 	VA_BONEID,
+	VA_BONEIDEXTRA,
 	VA_BONEWEIGHT,
+	VA_BONEWEIGHTEXTRA,
 	VA_ATTRIBUTE0,
 	VA_ATTRIBUTE1,
 	VA_ATTRIBUTE2,
@@ -43,6 +45,7 @@ struct VertexStreamDescription {
                         int in_buffer_size, 
                         int in_slot, 
                         int in_stride, 
+                        int offset,
                         bool in_normalized, 
                         bool in_release, 
                         bool in_dynamic);
@@ -54,6 +57,7 @@ struct VertexStreamDescription {
 	int buffer_size;
 	int slot;
 	int stride;
+    int offset;
 	bool normalized : 1;
 	bool release : 1;
 	bool dynamic : 1;

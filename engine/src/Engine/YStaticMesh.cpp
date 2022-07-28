@@ -38,9 +38,9 @@ public:
 	void SetupVertexDescriptionPolicy()
 	{
 		vertex_descriptions_.clear();
-		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector), false, false, false);
-		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector), false, false, false);
-		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), false, false, false);
+		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector),0, false, false, false);
+		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector), 0,false, false, false);
+		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), 0,false, false, false);
 		vertex_descriptions_.push_back(postion_desc);
 		vertex_descriptions_.push_back(normal_desc);
 		vertex_descriptions_.push_back(uv_desc);

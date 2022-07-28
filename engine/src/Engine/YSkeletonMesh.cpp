@@ -23,7 +23,7 @@ public:
 			for (VertexStreamDescription& desc : vertex_descriptions_) {
 				ID3D11Buffer* buffer = mesh_->vertex_buffers_[desc.cpu_data_index];
 				unsigned int stride = desc.stride;
-				unsigned int offset = 0;
+				unsigned int offset = desc.offset;
 				if (desc.slot != -1) {
 					dc->IASetVertexBuffers(desc.slot, 1, &buffer, &stride, &offset);
 				}
@@ -33,10 +33,10 @@ public:
 	void SetupVertexDescriptionPolicy()
 	{
 		vertex_descriptions_.clear();
-		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector), false, false, true);
-		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector), false, false, true);
-		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), false, false, true);
-		VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Float32, 3, 4, 0, -1, sizeof(YVector4), false, false, true);
+		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector),0, false, false, true);
+		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector), 0,false, false, true);
+		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), false,0, false, true);
+		VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Float32, 3, 4, 0, -1, sizeof(YVector4),0, false, false, true);
 		vertex_descriptions_.push_back(postion_desc);
 		vertex_descriptions_.push_back(normal_desc);
 		vertex_descriptions_.push_back(uv_desc);
@@ -74,14 +74,14 @@ public:
 	void SetupVertexDescriptionPolicy()
 	{
 		vertex_descriptions_.clear();
-		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector), false, false, true);
-		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector), false, false, true);
-		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), false, false, true);
-		VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Float32, 3, 4, 0, -1, sizeof(YVector4), false, false, true);
-		VertexStreamDescription bone_weight_desc(VertexAttribute::VA_BONEWEIGHT, "weight", DataType::Float32, 4, 4, 0, -1, sizeof(YVector4)*2, false, false, true);
-		VertexStreamDescription bone_weight_desc2(VertexAttribute::VA_BONEWEIGHT, "weight_extra", DataType::Float32, 4, 4, 0, -1, sizeof(YVector4)*2, false, false, true);
-		VertexStreamDescription bone_id_desc(VertexAttribute::VA_BONEID, "boneid", DataType::Uint32, 5, 4, 0, -1, sizeof(YVector4)*2, false, false, true);
-		VertexStreamDescription bone_id_desc2(VertexAttribute::VA_BONEID, "boneid_extra", DataType::Uint32, 5, 4, 0, -1, sizeof(YVector4)*2, false, false, true);
+		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector),0, false, false, true);
+		VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 3, 0, -1, sizeof(YVector),0, false, false, true);
+		VertexStreamDescription uv_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 2, 2, 0, -1, sizeof(YVector2), 0, false, false, true);
+		VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Float32, 3, 4, 0, -1, sizeof(YVector4),0, false, false, true);
+		VertexStreamDescription bone_weight_desc(VertexAttribute::VA_BONEWEIGHT, "weight", DataType::Float32, 4, 4, 0, -1, sizeof(YVector4)*2, 0, false, false, true);
+		VertexStreamDescription bone_weight_desc2(VertexAttribute::VA_BONEWEIGHTEXTRA, "weight_extra", DataType::Float32, 4, 4, 0, -1, sizeof(YVector4)*2,sizeof(YVector4), false, false, true);
+		VertexStreamDescription bone_id_desc(VertexAttribute::VA_BONEID, "boneid", DataType::Uint32, 5, 4, 0, -1, sizeof(YVector4)*2,0, false, false, true);
+		VertexStreamDescription bone_id_desc2(VertexAttribute::VA_BONEIDEXTRA, "boneid_extra", DataType::Uint32, 5, 4, 0, -1, sizeof(YVector4)*2, sizeof(YVector4), false, false, true);
 		vertex_descriptions_.push_back(postion_desc);
 		vertex_descriptions_.push_back(normal_desc);
 		vertex_descriptions_.push_back(uv_desc);

@@ -919,6 +919,7 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
 				if (tell_desc_the_same(vertex_stream_descs[j], reflected_input_layout_desc[i])) {
 					find_same_name = true;
 					vertex_stream_descs[j].slot = reflected_input_layout_desc[i].InputSlot;
+                    reflected_input_layout_desc[i].AlignedByteOffset = vertex_stream_descs[j].offset;
 					if (reflected_input_layout_desc[i].Format == DXGI_FORMAT_R32G32B32A32_FLOAT && vertex_stream_descs[j].data_type == DataType::Uint8)
 					{
 						reflected_input_layout_desc[i].Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -937,6 +938,7 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
 		ERROR_INFO("InputLayout is not compatible with shader reflection");
 		return false;
 	}
+
 	ID3D11Device* d3d_device = g_device->GetDevice();
 	TComPtr<ID3D11InputLayout> d3d_input_layout;
 	if (FAILED(d3d_device->CreateInputLayout(&reflected_input_layout_desc[0], shader_desc.InputParameters, blob->GetBufferPointer(),
