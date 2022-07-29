@@ -158,7 +158,7 @@ std::unique_ptr<YSkeleton> YFbxImporter::BuildSkeleton(FbxNode* root_node, std::
 
 	std::unique_ptr<YSkeleton> skeleton = std::make_unique<YSkeleton>();
 	skeleton->bones_.reserve(skeleton_nodes.size());
-	const int bone_count = skeleton_nodes.size();
+	const int bone_count =(int) skeleton_nodes.size();
 	for (int bone_id = 0; bone_id < skeleton_nodes.size(); ++bone_id)
 	{
 		FbxNode* link = skeleton_nodes[bone_id];

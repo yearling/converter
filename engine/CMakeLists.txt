@@ -1,7 +1,7 @@
-﻿# �汾Ҫ��
+﻿#  汾Ҫ  
 cmake_minimum_required(VERSION 3.12.1)
 
-#����visual studio��Ŀ¼�ṹ����
+#    visual studio  Ŀ¼ ṹ    
 macro(source_group_by_dir source_files)
     if(MSVC)
         set(sgbd_cur_dir ${CMAKE_CURRENT_SOURCE_DIR})
@@ -27,7 +27,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${THIRD_PARTY}/jsoncpp/i
 
 # 添加c++标准
 if(MSVC)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR /wd4244 /wd4002 /wd4267 /wd4996")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR /wd4244 /wd4002 /wd4267 /wd4996 ")
 else(MSVC)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 endif(MSVC)
@@ -45,6 +45,8 @@ if (BuildType STREQUAL "editor")
     # 添加编译宏
 add_compile_definitions(EDITOR)
 endif()
+
+add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 set(all_files ${HLSL_LIST} ${HEAD_LIST} ${SRC_LIST} )
 source_group_by_dir(all_files)
 

@@ -76,7 +76,7 @@ struct  FCrc
 		// make sure table is initialized
 		assert(CRCTable_DEPRECATED[1] != 0);
 
-		int32_t Length = strlen( Data );
+		int32_t Length =(int32_t) strlen( Data );
 		uint32_t CRC = 0xFFFFFFFF;
 		for( int32_t i=0; i<Length; i++ )
 		{

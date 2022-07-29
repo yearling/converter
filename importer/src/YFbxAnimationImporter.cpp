@@ -12,15 +12,15 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 {
 
 	std::unique_ptr<AnimationData> animation_data = std::make_unique<AnimationData>();
-	int32 ResampleRate = 30.0f;
-	int32 AnimStackCount = fbx_scene_->GetSrcObjectCount<FbxAnimStack>();
+	float ResampleRate = 30.0f;
+	int AnimStackCount = fbx_scene_->GetSrcObjectCount<FbxAnimStack>();
 	if (AnimStackCount == 0)
 	{
 		return nullptr;
 	}
 
 	float time = -1;
-	int frame_rate = FbxTime::GetFrameRate(fbx_scene_->GetGlobalSettings().GetTimeMode());
+	float frame_rate =(float) FbxTime::GetFrameRate(fbx_scene_->GetGlobalSettings().GetTimeMode());
 	int AnimStackIndex = 0;
 	FbxAnimStack* CurAnimStack = fbx_scene_->GetSrcObject<FbxAnimStack>(AnimStackIndex);
 	FbxTimeSpan AnimTimeSpan = CurAnimStack->GetLocalTimeSpan();
@@ -30,8 +30,8 @@ std::unique_ptr<AnimationData> YFbxImporter::ImportAnimationData(YSkeleton* skel
 	}
 	animation_data->name_ = CurAnimStack->GetName();
 
-	const int32 NumSamplingKeys = YMath::FloorToInt(AnimTimeSpan.GetDuration().GetSecondDouble() * ResampleRate);
-	animation_data->time_ = NumSamplingKeys * (1.0 / (float)frame_rate);
+	const int32 NumSamplingKeys = YMath::FloorToInt((float)AnimTimeSpan.GetDuration().GetSecondDouble() * ResampleRate);
+	animation_data->time_ = NumSamplingKeys * (1.0f / (float)frame_rate);
 	const FbxTime TimeIncrement = AnimTimeSpan.GetDuration() / YMath::Max(NumSamplingKeys, 1);
 	if (!skeleton)
 	{
@@ -80,9 +80,9 @@ bool YFbxImporter::ImportBlendShapeAnimation(YSkinDataImported* skin_data, Anima
 	std::unique_ptr<BlendShapeSequneceTrack> bs_sequence_track = std::make_unique<BlendShapeSequneceTrack>();
 
 	float time = -1;
-	int frame_rate = FbxTime::GetFrameRate(fbx_scene_->GetGlobalSettings().GetTimeMode());
+	float frame_rate = (float)FbxTime::GetFrameRate(fbx_scene_->GetGlobalSettings().GetTimeMode());
 	int AnimStackIndex = 0;
-	int32 ResampleRate = 30.0f;
+	float ResampleRate = 30.0f;
 	//for (int32 AnimStackIndex = 0; AnimStackIndex < AnimStackCount; AnimStackIndex++)
 	FbxAnimStack* CurAnimStack = fbx_scene_->GetSrcObject<FbxAnimStack>(AnimStackIndex);
 	FbxTimeSpan AnimTimeSpan = CurAnimStack->GetLocalTimeSpan();
@@ -92,7 +92,7 @@ bool YFbxImporter::ImportBlendShapeAnimation(YSkinDataImported* skin_data, Anima
 		time = YMath::Max((float)(AnimTimeSpan.GetDuration().GetMilliSeconds() / 1000.0f * scene_info_->frame_rate), time);
 	}
 
-	const int32 NumSamplingKeys = YMath::FloorToInt(AnimTimeSpan.GetDuration().GetSecondDouble() * ResampleRate);
+	const int32 NumSamplingKeys = YMath::FloorToInt((float)AnimTimeSpan.GetDuration().GetSecondDouble() * ResampleRate);
 	const FbxTime TimeIncrement = AnimTimeSpan.GetDuration() / YMath::Max(NumSamplingKeys, 1);
 
 	int mesh_index = 0;
@@ -125,7 +125,7 @@ bool YFbxImporter::ImportBlendShapeAnimation(YSkinDataImported* skin_data, Anima
 							}
 							else
 							{
-								double lWeight = curve->Evaluate(CurTime);
+								float lWeight = curve->Evaluate(CurTime);
 								bs_sequence_track.value_curve_[channel_name].push_back(lWeight);
 							}
 						}

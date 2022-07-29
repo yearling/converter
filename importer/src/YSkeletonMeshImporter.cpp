@@ -62,7 +62,7 @@ std::unique_ptr<YSkinDataImported> YFbxImporter::ImportSkinData(YSkeleton* skele
     std::unique_ptr<YSkinDataImported> skin_data = std::make_unique<YSkinDataImported>();
     for (int gemometry_index = 0; gemometry_index < mesh_contain_skeleton_and_bs.size(); ++gemometry_index)
     {
-        int skin_mesh_index = skin_data->meshes_.size();
+        int skin_mesh_index = (int)skin_data->meshes_.size();
         skin_data->meshes_.push_back(SkinMesh());
         SkinMesh& skin_mesh = skin_data->meshes_[skin_mesh_index];
         FbxNode* geo_node = mesh_contain_skeleton_and_bs[gemometry_index];
@@ -586,7 +586,8 @@ bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
         {
             int wedge_index_base = triangle_index * 3;
             std::unordered_set<int> tmp_add;
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < 3; ++i) 
+            {
                 VertexWedge& v0 = skin_mesh.wedges_[wedge_index_base + i];
                 for (const BoneWeightAndID& bone_weight_and_id : v0.weights_and_ids)
                 {
