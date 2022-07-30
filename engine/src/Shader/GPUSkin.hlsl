@@ -20,6 +20,7 @@ struct VS_INPUT
     float4 vWeigh_extra : weight_extra;
     uint4 vBoneId : boneid;
     uint4 vBoneId_extra : boneid_extra;
+    float3 vMorphOffset : morph_position_offset;
 };
 struct VS_OUTPUT
 {
@@ -52,7 +53,8 @@ VS_OUTPUT VSMain(VS_INPUT Input)
                    Input.vWeigh_extra.z * GetBoneMatrix(Input.vBoneId_extra.z) +
                    Input.vWeigh_extra.w * GetBoneMatrix(Input.vBoneId_extra.w);
 
-    float4 position_after_blend_simple = float4(mul(blend_matrix_simple, float4(Input.vPosition, 1.0)), 1.0);
+    float3 morphed_position = Input.vPosition + Input.vMorphOffset;
+    float4 position_after_blend_simple = float4(mul(blend_matrix_simple, float4(morphed_position, 1.0)), 1.0);
     Output.vPosition = mul(position_after_blend_simple, wvp);
     Output.vTexcoord = Input.vTexCoord;
 	// Output.vColor = float4(1.0,1.0,1.0,1.0);

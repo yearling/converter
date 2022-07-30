@@ -258,20 +258,30 @@ std::unique_ptr<YSkinDataImported> YFbxImporter::ImportSkinData(YSkeleton* skele
                     blend_shape_target.name_ = channel->GetName();
                     if (channel)
                     {
-                        int lShapeCount = channel->GetTargetShapeCount();
-                        double* lFullWeights = channel->GetTargetShapeFullWeights();
-                        assert(lShapeCount == 1);
-                        assert(lFullWeights[0] == 100.0f);
+                        int shape_count = channel->GetTargetShapeCount();
+                        if (shape_count > 1)
+                        {
+                            WARNING_INFO(StringFormat("channel %s has %d target shapes,only support the first one", blend_shape_target.name_.c_str(), shape_count));
+                        }
+                        double* full_weights = channel->GetTargetShapeFullWeights();
+                        assert(shape_count == 1);
+                        assert(full_weights[0] == 100.0f);
                         FbxShape* shape = channel->GetTargetShape(0);
                         int control_point_count = shape->GetControlPointsCount();
                         FbxVector4* control_points = shape->GetControlPoints();
-                        blend_shape_target.control_points.reserve(control_point_count);
-                        for (int i_control_point = 0; i_control_point < control_point_count; ++i_control_point)
+                        int mesh_control_point_count = mesh->GetControlPointsCount();
+                        if (control_point_count != mesh_control_point_count)
                         {
-                            FbxVector4 bs_control_point = control_points[i_control_point];
+                            WARNING_INFO(StringFormat("mesh %s 's bs channel %s has %d control points, but mesh has %d control points", skin_mesh.name_.c_str(),blend_shape_target.name_.c_str(), control_point_count,mesh_control_point_count));
+                        }
+                        blend_shape_target.control_points.reserve(control_point_count);
+                        for (int control_point_index = 0; control_point_index < control_point_count; ++control_point_index)
+                        {
+                            FbxVector4 bs_control_point = control_points[control_point_index];
                             bs_control_point = total_matrix.MultT(bs_control_point);
                             const YVector vertex_position = converter_.ConvertPos(bs_control_point);
-                            blend_shape_target.control_points.push_back(vertex_position);
+                            const YVector delta_position = vertex_position - skin_mesh.control_points_[control_point_index];
+                            blend_shape_target.control_points.push_back(delta_position);
                         }
                         bs.target_shapes_[blend_shape_target.name_] = blend_shape_target;
                     }
@@ -353,6 +363,7 @@ struct SplitMeshByBone
     std::vector<VertexWedge> wedges;
     std::vector<int> bone_map;
     std::unordered_set<int> bone_set;
+    std::unordered_map<std::string,std::vector<MorphWedge>> morph_wedge_map;
     bool InBoneSet(const std::vector<BoneWeightAndID>& bone_ids)
     {
         bool in_bone_set = true;
@@ -424,6 +435,23 @@ struct SplitMeshByBone
         }
     }
 
+    void ProcessBS(BlendShape& bs)
+    {
+        for (auto& bs_itor : bs.target_shapes_)
+        {
+            std::string bs_name = bs_itor.first;
+            BlendShapeTarget& bs_target_origin = bs_itor.second;
+            std::vector<MorphWedge>& cur_morph_wedges = morph_wedge_map[bs_name];
+            for (VertexWedge& wedge : wedges)
+            {
+                MorphWedge morph_wedge;
+                morph_wedge.position = bs_target_origin.control_points[wedge.control_point_id];
+                // todo by zyx, normal 
+                //morph_wedge.normal = 
+                cur_morph_wedges.push_back(morph_wedge);
+            }
+        }
+    }
     void Compress()
     {
 
@@ -476,6 +504,45 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
     std::vector<VertexWedge> vertex_wedge_all;
     vertex_wedge_all.reserve(reserve_triangle_count * 3);
     std::vector<std::vector<int>> bone_mappings;
+    //morph
+    bool has_morph = false;
+    {
+        // tell has morph or not
+        for (const SplitMeshByBoneContainer& split_mesh_by_bone_container : skin_split_bone_mesh_containers)
+        {
+            for (const SplitMeshByBone& slit_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
+            {
+                if (slit_mesh_by_bone.morph_wedge_map.size())
+                {
+                    has_morph = true;
+                    break;
+                }
+            }
+        }
+
+        std::unordered_set<std::string> morph_names;
+        for (const SplitMeshByBoneContainer& split_mesh_by_bone_container : skin_split_bone_mesh_containers)
+        {
+            for (const SplitMeshByBone& slit_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
+            {
+                if (slit_mesh_by_bone.morph_wedge_map.size())
+                {
+                    for (auto& iter : slit_mesh_by_bone.morph_wedge_map)
+                    {
+                        morph_names.insert(iter.first);
+                    }
+                }
+            }
+        }
+        if (has_morph)
+        {
+            for (auto& morph_name : morph_names)
+            {
+                render_data->morph_render_data[morph_name].position.resize(reserve_triangle_count * 3,YVector::zero_vector);
+                render_data->morph_render_data[morph_name].normal.resize(reserve_triangle_count * 3,YVector::zero_vector);
+            }
+        }
+    }
     int index = 0;
     for (const SplitMeshByBoneContainer& split_mesh_by_bone_container : skin_split_bone_mesh_containers)
     {
@@ -487,12 +554,19 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
             triangle_count.push_back(triange_conunt_section);
             for (int i = 0; i < triange_conunt_section * 3; ++i)
             {
+                for (auto& iter : slit_mesh_by_bone.morph_wedge_map)
+                {
+                    const std::string& morph_name = iter.first;
+                    const std::vector<MorphWedge>& morph_data = iter.second;
+                    render_data->morph_render_data[morph_name].position[index] = morph_data[i].position;
+                    render_data->morph_render_data[morph_name].normal[index] = morph_data[i].normal;
+                }
                 indexes_all.push_back(index++);
             }
             vertex_wedge_all.insert(vertex_wedge_all.end(), slit_mesh_by_bone.wedges.begin(), slit_mesh_by_bone.wedges.end());
         }
     }
-    // 
+    // debug section color
     int section_count = section_start.size();
     float section_color_channel = 1.0 / (float)section_count * 3.0;
     int section_per_color = YMath::Max(section_count / 3, 1);
@@ -563,6 +637,8 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
     render_data->sections = section_start;
     render_data->triangle_counts = triangle_count;
     render_data->bone_mapping = bone_mappings;
+
+
     return render_data;
 }
 bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
@@ -571,7 +647,7 @@ bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
     YSkinDataImported* skin_data = skeleton_mesh->skin_data_.get();
 
     //split mesh by bone
-    const int max_bone = 16;
+    const int max_bone = 64;
     //const int max_bone = 256; // 256*64 = 16384, constant buffer is 65535 bytes
 
     std::vector<SkinMesh>& skin_meshes = skin_data->meshes_;
@@ -604,7 +680,13 @@ bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
         for (SplitMeshByBone& split_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
         {
             split_mesh_by_bone.Process();
+            //process bs
+            if (skin_mesh.bs_.target_shapes_.size() != 0)
+            {
+                split_mesh_by_bone.ProcessBS(skin_mesh.bs_);
+            }
         }
+        
     }
     skeleton_mesh->render_data_ = GenerateRenderData(skin_split_bone_mesh_containers, import_param_->max_bone_per_section);
     return true;

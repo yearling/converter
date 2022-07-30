@@ -26,6 +26,17 @@ struct VertexWedge
 	YVector4 color;
 };
 
+struct MorphWedge
+{
+    YVector position;
+    YVector normal;
+};
+
+struct MorphRenderData
+{
+    std::vector<YVector> position;
+    std::vector<YVector> normal;
+};
 struct RenderData
 {
 	std::vector<YVector> position;
@@ -39,6 +50,7 @@ struct RenderData
 	std::vector<int> sections;
 	std::vector<int> triangle_counts;
 	std::vector<std::vector<int>> bone_mapping;
+    std::unordered_map<std::string, MorphRenderData> morph_render_data;
 };
 struct BlendShapeTarget
 {
@@ -72,7 +84,6 @@ struct SkinMesh
 	std::vector<VertexWedge> wedges_;
 	BlendShape bs_;
 	std::string name_;
-
 	// RenderData
 
 };
@@ -159,6 +170,7 @@ public:
 	std::unique_ptr<D3DPixelShader> pixel_shader_;
 	std::unique_ptr<DXVertexFactory> vertex_factory_;
 	std::string model_name;
-	std::vector<YVector> cached_position;
+	std::vector<YVector> cached_morph_offset;
+    TComPtr<ID3D11Buffer> morph_position_offset_buffer;
 	std::unique_ptr<RenderData> render_data_;
 };

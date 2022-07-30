@@ -134,7 +134,7 @@ bool GameApplication::Initial()
 
 	std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
 	//const std::string file_path = "E:/topo_split/head.fbx";
-	const std::string file_path = "E:/fbx/female_Rig_DH_01.fbx";
+	//const std::string file_path = "E:/fbx/female_Rig_DH_01.fbx";
 	//const std::string file_path = "E:/fbx/tube_with_animaiton.fbx";
 	//const std::string file_path = "E:/fbx/cube_animation.fbx";
 	//const std::string file_path = "E:/fbx/deer.fbx";
@@ -142,6 +142,7 @@ bool GameApplication::Initial()
 	//const std::string file_path = "E:/fbx/bs/ball_bs.fbx";
 	//const std::string file_path = "E:/fbx/avata/aishapelive_material/male/male_head_BS.fbx";
 	//const std::string file_path = "E:/fbx/bs/animation/man_talking.fbx";
+	const std::string file_path = "E:/fbx/bs/animation/female_talking2.fbx";
 
 	if (static_mesh_importer->ImportFile(file_path))
 	{

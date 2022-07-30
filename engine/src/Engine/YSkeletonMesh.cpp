@@ -82,6 +82,7 @@ public:
         VertexStreamDescription bone_weight_desc2(VertexAttribute::VA_BONEWEIGHTEXTRA, "weight_extra", DataType::Float32, 4, 4, 0, -1, sizeof(YVector4) * 2, sizeof(YVector4), false, false, true);
         VertexStreamDescription bone_id_desc(VertexAttribute::VA_BONEID, "boneid", DataType::Uint32, 5, 4, 0, -1, sizeof(YVector4) * 2, 0, false, false, true);
         VertexStreamDescription bone_id_desc2(VertexAttribute::VA_BONEIDEXTRA, "boneid_extra", DataType::Uint32, 5, 4, 0, -1, sizeof(YVector4) * 2, sizeof(YVector4), false, false, true);
+        VertexStreamDescription morph_position_offset(VertexAttribute::VA_MORPH_POSITION_OFFSET, "morph_position_offset", DataType::Float32, 6, 3, 0, -1, sizeof(YVector), 0, false, false, true);
         vertex_descriptions_.push_back(postion_desc);
         vertex_descriptions_.push_back(normal_desc);
         vertex_descriptions_.push_back(uv_desc);
@@ -90,6 +91,7 @@ public:
         vertex_descriptions_.push_back(bone_weight_desc2);
         vertex_descriptions_.push_back(bone_id_desc);
         vertex_descriptions_.push_back(bone_id_desc2);
+        vertex_descriptions_.push_back(morph_position_offset);
     }
     static int GetGPUMatrixCount() { return gpu_matrix_count; }
 protected:
@@ -169,7 +171,9 @@ void YSkeletonMesh::Update(double delta_time)
                 YQuat rot = track.rot_keys_[current_frame];
                 YVector scale = track.scale_keys_[current_frame];
                 YTransform local_trans = YTransform(pos, rot, scale);
-                bone.local_transform_ = local_trans * bone.bind_local_tranform_;
+                //local_trans = YTransform(YVector::zero_vector, YQuat(0.0, 0.0, 0.0, 1.0), YVector(1.0, 1.0, 1.0));
+                //bone.local_transform_ = local_trans * bone.bind_local_tranform_;
+                bone.local_transform_ = bone.bind_local_tranform_;
                 bone.local_matrix_ = bone.local_transform_.ToMatrix();
             }
 
@@ -181,6 +185,45 @@ void YSkeletonMesh::Update(double delta_time)
                 if (bone.parent_id_ != -1) {
                     YVector parent_joint_center = skeleton_->bones_[bone.parent_id_].global_transform_.TransformPosition(YVector(0, 0, 0));
                     g_Canvas->DrawLine(parent_joint_center, joint_center, YVector4(0.0f, 1.0f, 0.0f, 1.0f));
+                }
+            }
+        }
+        {
+            if (render_data_->morph_render_data.size() && animation_data_ && animation_data_->bs_sequence_track.size())
+            {
+                //cached_morph_offset.resize()
+                std::fill(cached_morph_offset.begin(), cached_morph_offset.end(), YVector::zero_vector);
+                if (animation_data_->bs_sequence_track.count(0))
+                {
+                    const BlendShapeSequneceTrack& bs_sequence_track = animation_data_->bs_sequence_track.at(0);
+
+                    for (auto& key_value : bs_sequence_track.value_curve_)
+                    {
+                        const std::string channel_name = key_value.first;
+                        const std::vector<float>& curve = bs_sequence_track.value_curve_.at(channel_name);
+                        int key_size = curve.size();
+                        int current_key = current_frame % key_size;
+                        float weight = curve[current_key] / 100.0f;
+                        if (!YMath::IsNearlyZero(weight))
+                        {
+                          /*  for (int contorl_point_index = 0; contorl_point_index < mesh.control_points_.size(); contorl_point_index++)
+                            {
+                                YVector& des_pos = mesh.bs_.cached_control_point[contorl_point_index];
+
+                                YVector dif_pos = weight * (key_value.second.control_points[contorl_point_index] - mesh.control_points_[contorl_point_index]);
+                                des_pos = des_pos + dif_pos;
+                            }*/
+                            if (render_data_->morph_render_data.count(channel_name))
+                            {
+                               MorphRenderData& morph_render_data =  render_data_->morph_render_data.at(channel_name);
+                               //morph_render_data.position
+                               for (int i = 0; i < morph_render_data.position.size(); ++i)
+                               {
+                                   cached_morph_offset[i] = cached_morph_offset[i] +  morph_render_data.position[i] * weight;
+                               }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -268,6 +311,20 @@ void YSkeletonMesh::Render(RenderParam* render_param)
     }
     pixel_shader_->Update();
 
+    //update morph
+    if (render_data_->morph_render_data.size() && animation_data_ && animation_data_->bs_sequence_track.size())
+    {
+        assert(cached_morph_offset.size() == render_data_->position.size());
+        {
+            D3D11_MAPPED_SUBRESOURCE MappedSubresource;
+            if (dc->Map(morph_position_offset_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedSubresource) != S_OK)
+            {
+                ERROR_INFO("update skin data error");
+            }
+            memcpy(MappedSubresource.pData, cached_morph_offset.data(), cached_morph_offset.size() * sizeof(YVector));
+            dc->Unmap(morph_position_offset_buffer, 0);
+        }
+    }
     std::vector<YVector>& position_buffer = render_data_->position;
     std::vector<YVector>& normal_buffer = render_data_->normal;
     std::vector<YVector4> blend_matrix_current_section;
@@ -329,6 +386,11 @@ bool YSkeletonMesh::AllocGpuResource()
     std::vector<int> index_buffer = render_data_->indices;
     std::vector<int> bone_id_buffer;
     std::vector<float> bone_weight_buffer;
+   
+    if (render_data_->morph_render_data.size())
+    {
+        cached_morph_offset.resize(position_buffer.size(), YVector::zero_vector);
+    }
 
     {
         uv_buffer.reserve(render_data_->uv.size());
@@ -384,6 +446,8 @@ bool YSkeletonMesh::AllocGpuResource()
         vertex_buffers_.push_back(d3d_vb);
     }
 
+  
+
     {
         if (!g_device->CreateIndexBuffer((unsigned int)index_buffer.size() * sizeof(int), index_buffer.data(), index_buffer_)) {
             ERROR_INFO("Create index buffer failed!!");
@@ -423,6 +487,14 @@ bool YSkeletonMesh::AllocGpuResource()
             return false;
         }
         vertex_buffers_.push_back(d3d_vb);
+    }
+
+    {
+        if (!g_device->CreateVertexBufferDynamic((unsigned int)position_buffer.size() * sizeof(YVector), nullptr, morph_position_offset_buffer)) {
+            ERROR_INFO("Create vertex buffer failed!!");
+            return false;
+        }
+        vertex_buffers_.push_back(morph_position_offset_buffer);
     }
     // vs
     {

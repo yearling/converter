@@ -102,7 +102,7 @@ bool YFbxImporter::ImportBlendShapeAnimation(YSkinDataImported* skin_data, Anima
 		FbxMesh* mesh = geo_node->GetMesh();
 		if (!skin_mesh.bs_.target_shapes_.empty())
 		{
-			BlendShapeSequneceTrack& bs_sequence_track = anim_data->bs_sequence_track[mesh_index];
+			BlendShapeSequneceTrack& bs_sequence_track = anim_data->bs_sequence_track[0];
 			for (FbxTime CurTime = AnimTimeSpan.GetStart(); CurTime <= AnimTimeSpan.GetStop(); CurTime += TimeIncrement)
 			{
 				int lBlendShapeDeformerCount = mesh->GetDeformerCount(FbxDeformer::eBlendShape);
