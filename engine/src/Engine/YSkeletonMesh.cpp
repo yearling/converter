@@ -204,21 +204,16 @@ void YSkeletonMesh::Update(double delta_time)
                         float weight = curve[current_key] / 100.0f;
                         if (!YMath::IsNearlyZero(weight))
                         {
-                          /*  for (int contorl_point_index = 0; contorl_point_index < mesh.control_points_.size(); contorl_point_index++)
+                            if (render_data_->morph_render_data_compress.count(channel_name))
                             {
-                                YVector& des_pos = mesh.bs_.cached_control_point[contorl_point_index];
+                                CompressMorphWedge compress_morph_wedge = render_data_->morph_render_data_compress.at(channel_name);
+                                for (int compress_index = 0; compress_index < compress_morph_wedge.map_index.size(); ++compress_index)
+                                {
+                                    int orignal_vertex_index = compress_morph_wedge.map_index[compress_index];
+                                    YVector pos_diff = compress_morph_wedge.position[compress_index];
+                                    cached_morph_offset[orignal_vertex_index] = cached_morph_offset[orignal_vertex_index] + pos_diff * weight;
 
-                                YVector dif_pos = weight * (key_value.second.control_points[contorl_point_index] - mesh.control_points_[contorl_point_index]);
-                                des_pos = des_pos + dif_pos;
-                            }*/
-                            if (render_data_->morph_render_data.count(channel_name))
-                            {
-                               MorphRenderData& morph_render_data =  render_data_->morph_render_data.at(channel_name);
-                               //morph_render_data.position
-                               for (int i = 0; i < morph_render_data.position.size(); ++i)
-                               {
-                                   cached_morph_offset[i] = cached_morph_offset[i] +  morph_render_data.position[i] * weight;
-                               }
+                                }
                             }
                         }
                     }
@@ -384,7 +379,7 @@ bool YSkeletonMesh::AllocGpuResource()
     std::vector<int> index_buffer = render_data_->indices;
     std::vector<int> bone_id_buffer;
     std::vector<float> bone_weight_buffer;
-   
+
     if (render_data_->morph_render_data.size())
     {
         cached_morph_offset.resize(position_buffer.size(), YVector::zero_vector);
@@ -444,7 +439,7 @@ bool YSkeletonMesh::AllocGpuResource()
         vertex_buffers_.push_back(d3d_vb);
     }
 
-  
+
 
     {
         if (!g_device->CreateIndexBuffer((unsigned int)index_buffer.size() * sizeof(int), index_buffer.data(), index_buffer_)) {

@@ -449,7 +449,7 @@ struct SplitMeshByBone
                 MorphWedge morph_wedge;
                 morph_wedge.position = bs_target_origin.control_points[wedge.control_point_id];
                 // todo by zyx, normal 
-                //morph_wedge.normal = 
+                morph_wedge.normal = YVector::zero_vector;
                 cur_morph_wedges.push_back(morph_wedge);
             }
         }
@@ -478,12 +478,12 @@ struct SplitMeshByBoneContainer
         }
         if (success_add)
         {
-            return;
+        return;
         }
         else
         {
-            cached_meshes.push_back(SplitMeshByBone());
-            AddWedge(v0, v1, v2, material_index, max_bone_per_scetion);
+        cached_meshes.push_back(SplitMeshByBone());
+        AddWedge(v0, v1, v2, material_index, max_bone_per_scetion);
         }
     }
 };
@@ -540,8 +540,8 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
         {
             for (auto& morph_name : morph_names)
             {
-                render_data->morph_render_data[morph_name].position.resize(reserve_triangle_count * 3,YVector::zero_vector);
-                render_data->morph_render_data[morph_name].normal.resize(reserve_triangle_count * 3,YVector::zero_vector);
+                render_data->morph_render_data[morph_name].position.resize(reserve_triangle_count * 3, YVector::zero_vector);
+                render_data->morph_render_data[morph_name].normal.resize(reserve_triangle_count * 3, YVector::zero_vector);
             }
         }
     }
@@ -566,6 +566,24 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
                 indexes_all.push_back(index++);
             }
             vertex_wedge_all.insert(vertex_wedge_all.end(), slit_mesh_by_bone.wedges.begin(), slit_mesh_by_bone.wedges.end());
+        }
+    }
+    //compress morpha render data 
+    {
+        for (auto& iter_origin : render_data->morph_render_data)
+        {
+            CompressMorphWedge& compress_morph_wedge = render_data->morph_render_data_compress[iter_origin.first];
+            MorphRenderData& original_morph_wedge = iter_origin.second;
+            for (int wedge_index = 0; wedge_index < original_morph_wedge.position.size(); ++wedge_index)
+            {
+                if(original_morph_wedge.position[wedge_index].SizeSquared() > YMath::Square(THRESH_POINTS_ARE_NEAR) ||
+                   original_morph_wedge.normal[wedge_index].SizeSquared() > YMath::Square(THRESH_NORMALS_ARE_SAME))
+                {
+                    compress_morph_wedge.position.push_back(original_morph_wedge.position[wedge_index]);
+                    compress_morph_wedge.normal.push_back(original_morph_wedge.normal[wedge_index]);
+                    compress_morph_wedge.map_index.push_back(wedge_index);
+                }
+            }
         }
     }
     // debug section color

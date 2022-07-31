@@ -43,6 +43,16 @@ public:
 	float	operator|(const YVector& v) const;
 	float Dot(const YVector& a, const YVector& b);
 	bool Equals(const YVector& v, float Tolerance = KINDA_SMALL_NUMBER) const;
+    FORCEINLINE float Size() const
+    {
+        return YMath::Sqrt(x * x + y * y + z * z);
+    }
+
+    FORCEINLINE float SizeSquared() const
+    {
+        return x * x + y * y + z * z;
+    }
+
 	YVector operator-(const YVector& v) const;
 	YVector operator+(const YVector& v) const;
 	YVector operator-() const;

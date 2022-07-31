@@ -26,6 +26,13 @@ struct VertexWedge
 	YVector4 color;
 };
 
+struct CompressMorphWedge
+{
+    std::vector<YVector> position;
+    std::vector<YVector> normal;
+    std::vector<int> map_index;
+};
+
 struct MorphWedge
 {
     YVector position;
@@ -51,6 +58,7 @@ struct RenderData
 	std::vector<int> triangle_counts;
 	std::vector<std::vector<int>> bone_mapping;
     std::unordered_map<std::string, MorphRenderData> morph_render_data;
+    std::unordered_map<std::string, CompressMorphWedge> morph_render_data_compress;
 };
 struct BlendShapeTarget
 {
