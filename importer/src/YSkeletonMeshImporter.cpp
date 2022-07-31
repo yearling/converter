@@ -180,12 +180,14 @@ std::unique_ptr<YSkinDataImported> YFbxImporter::ImportSkinData(YSkeleton* skele
                     YTransform test_bone_to_model = converter_.ConverterFbxTransform(bone_to_model);
                     if (!test_bone_to_model.NearEqual(bone.global_transform_, 0.0002))
                     {
-                        ERROR_INFO(bone.bone_name_, "'s global_transform does not equal cluster->GetTransformLinkMatrix");
+                        ERROR_INFO(bone.bone_name_, "'s global_transform does not equal cluster->GetTransformLinkMatrix, use reference bone's inv global_tranform");
+                        bone.inv_bind_global_matrix_ = bone.global_matrix_.Inverse();
                     }
-
-                    FbxAMatrix inv_bone_bind = bone_to_model.Inverse();
-                    bone.inv_bind_global_matrix_ = converter_.ConvertFbxMatrix(inv_bone_bind);
-
+                    else
+                    {
+                        FbxAMatrix inv_bone_bind = bone_to_model.Inverse();
+                        bone.inv_bind_global_matrix_ = converter_.ConvertFbxMatrix(inv_bone_bind);
+                    }
                     int cluster_control_point_count = cluster->GetControlPointIndicesCount();
                     for (int i = 0; i < cluster_control_point_count; ++i)
                     {

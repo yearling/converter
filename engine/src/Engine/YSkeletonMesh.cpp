@@ -170,10 +170,8 @@ void YSkeletonMesh::Update(double delta_time)
                 YVector pos = track.pos_keys_[current_frame];
                 YQuat rot = track.rot_keys_[current_frame];
                 YVector scale = track.scale_keys_[current_frame];
-                YTransform local_trans = YTransform(pos, rot, scale);
-                //local_trans = YTransform(YVector::zero_vector, YQuat(0.0, 0.0, 0.0, 1.0), YVector(1.0, 1.0, 1.0));
-                //bone.local_transform_ = local_trans * bone.bind_local_tranform_;
-                bone.local_transform_ = bone.bind_local_tranform_;
+                YTransform releative_animation_transform_ = YTransform(pos, rot, scale);
+                bone.local_transform_ = releative_animation_transform_ * bone.bind_local_tranform_;
                 bone.local_matrix_ = bone.local_transform_.ToMatrix();
             }
 
