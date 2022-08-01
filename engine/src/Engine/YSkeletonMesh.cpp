@@ -220,39 +220,6 @@ void YSkeletonMesh::Update(double delta_time)
                 }
             }
         }
-        return;
-        int mesh_index = 0;
-        for (SkinMesh& mesh : skin_data_->meshes_)
-        {
-            bool has_bs = !mesh.bs_.target_shapes_.empty();
-
-            if (has_bs)
-            {
-                mesh.bs_.cached_control_point = mesh.control_points_;
-                if (animation_data_->bs_sequence_track.count(mesh_index))
-                {
-                    const BlendShapeSequneceTrack& bs_sequence_track = animation_data_->bs_sequence_track.at(mesh_index);
-                    mesh.bs_.cached_control_point = mesh.control_points_;
-
-                    for (auto& key_value : mesh.bs_.target_shapes_)
-                    {
-                        const std::vector<float>& curve = bs_sequence_track.value_curve_.at(key_value.first);
-                        int key_size = curve.size();
-                        int current_key = current_frame % key_size;
-                        float weight = curve[current_key] / 100.0f;
-
-                        for (int contorl_point_index = 0; contorl_point_index < mesh.control_points_.size(); contorl_point_index++)
-                        {
-                            YVector& des_pos = mesh.bs_.cached_control_point[contorl_point_index];
-
-                            YVector dif_pos = weight * (key_value.second.control_points[contorl_point_index] - mesh.control_points_[contorl_point_index]);
-                            des_pos = des_pos + dif_pos;
-                        }
-                    }
-                }
-            }
-            mesh_index++;
-        }
     }
     else
     {

@@ -478,12 +478,12 @@ struct SplitMeshByBoneContainer
         }
         if (success_add)
         {
-        return;
+            return;
         }
         else
         {
-        cached_meshes.push_back(SplitMeshByBone());
-        AddWedge(v0, v1, v2, material_index, max_bone_per_scetion);
+            cached_meshes.push_back(SplitMeshByBone());
+            AddWedge(v0, v1, v2, material_index, max_bone_per_scetion);
         }
     }
 };
@@ -672,17 +672,17 @@ bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
 
     std::vector<SkinMesh>& skin_meshes = skin_data->meshes_;
     std::vector< SplitMeshByBoneContainer> skin_split_bone_mesh_containers;
-    skin_split_bone_mesh_containers.resize(skin_meshes.size());
+    skin_split_bone_mesh_containers.resize(1);
     for (int skin_mesh_index = 0; skin_mesh_index < skin_meshes.size(); ++skin_mesh_index)
     {
         SkinMesh& skin_mesh = skin_meshes[skin_mesh_index];
         int triangle_num = 0;
-        SplitMeshByBoneContainer& split_mesh_by_bone_container = skin_split_bone_mesh_containers[skin_mesh_index];
+        SplitMeshByBoneContainer& split_mesh_by_bone_container = skin_split_bone_mesh_containers[0];
         for (int triangle_index = 0; triangle_index * 3 < skin_mesh.wedges_.size(); ++triangle_index)
         {
             int wedge_index_base = triangle_index * 3;
             std::unordered_set<int> tmp_add;
-            for (int i = 0; i < 3; ++i) 
+            for (int i = 0; i < 3; ++i)
             {
                 VertexWedge& v0 = skin_mesh.wedges_[wedge_index_base + i];
                 for (const BoneWeightAndID& bone_weight_and_id : v0.weights_and_ids)
@@ -697,16 +697,20 @@ bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
             }
             split_mesh_by_bone_container.AddWedge(skin_mesh.wedges_[wedge_index_base + 0], skin_mesh.wedges_[wedge_index_base + 1], skin_mesh.wedges_[wedge_index_base + 2], 0, import_param_->max_bone_per_section);
         }
-        for (SplitMeshByBone& split_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
-        {
-            split_mesh_by_bone.Process();
-            //process bs
-            if (skin_mesh.bs_.target_shapes_.size() != 0)
-            {
-                split_mesh_by_bone.ProcessBS(skin_mesh.bs_);
-            }
-        }
-        
+        //for (SplitMeshByBone& split_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
+        //{
+        //    split_mesh_by_bone.Process();
+        //    //process bs
+        //    if (skin_mesh.bs_.target_shapes_.size() != 0)
+        //    {
+        //        split_mesh_by_bone.ProcessBS(skin_mesh.bs_);
+        //    }
+        //}
+
+    }
+    for (SplitMeshByBone& split_mesh_by_bone : skin_split_bone_mesh_containers[0].cached_meshes)
+    {
+          split_mesh_by_bone.Process();
     }
     skeleton_mesh->render_data_ = GenerateRenderData(skin_split_bone_mesh_containers, import_param_->max_bone_per_section);
     return true;
