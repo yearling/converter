@@ -88,8 +88,8 @@ void FPSCameraController::Update(double delta_time)
 
 	smooth_delta_pitch_.SmoothAcc(delta_pitch_screen_);
 	smooth_delta_yaw_.SmoothAcc(delta_yaw_screen_);
-	float pitch_delta = smooth_delta_yaw_.Average() * rotation_speed_pitch_ * (float)delta_time;
-	float yaw_delta = smooth_delta_pitch_.Average() * rotation_speed_yaw_ * (float)delta_time;
+	float pitch_delta = delta_yaw_screen_ * rotation_speed_pitch_;
+	float yaw_delta = delta_pitch_screen_ * rotation_speed_yaw_;
 	YRotator final_rotator = camera_->GetRotator();
 	final_rotator.pitch += pitch_delta;
 	final_rotator.pitch = YMath::Clamp(-90.f, 90.0f, final_rotator.pitch);

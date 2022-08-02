@@ -24,6 +24,7 @@ struct VertexWedge
 	std::vector<YVector2> uvs_;
 	std::vector<BoneWeightAndID> weights_and_ids;
 	YVector4 color;
+    int mesh_index; // for morph index
 };
 
 struct CompressMorphWedge

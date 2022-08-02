@@ -25,7 +25,7 @@ struct FbxImportParam
 	bool bake_pivot_in_vertex = true; // bake pivot in vetex only in  static mesh, we choose transform_vertex_to_absolute is false, and want vertex bake in pivot space
 	bool remove_degenerate_triangles = true;
 	int max_bone_per_section = 64;
-	bool import_morph = false;
+	bool import_morph = true;
 };
 
 struct FbxMeshInfo

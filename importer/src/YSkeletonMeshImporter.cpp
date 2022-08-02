@@ -178,7 +178,7 @@ std::unique_ptr<YSkinDataImported> YFbxImporter::ImportSkinData(YSkeleton* skele
                     }
                     cluster->GetTransformLinkMatrix(bone_to_model);
                     YTransform test_bone_to_model = converter_.ConverterFbxTransform(bone_to_model);
-                    if (!test_bone_to_model.NearEqual(bone.global_transform_, 0.0002))
+                    if (!test_bone_to_model.NearEqual(bone.global_transform_, 0.0002f))
                     {
                         ERROR_INFO(bone.bone_name_, "'s global_transform does not equal cluster->GetTransformLinkMatrix, use reference bone's inv global_tranform");
                         bone.inv_bind_global_matrix_ = bone.global_matrix_.Inverse();
@@ -197,7 +197,7 @@ std::unique_ptr<YSkinDataImported> YFbxImporter::ImportSkinData(YSkeleton* skele
                             continue;
                         }
                         double contorl_point_weight = cluster->GetControlPointWeights()[i];
-                        skin_mesh.bone_weights_and_id_[control_point_index].push_back(BoneWeightAndID(contorl_point_weight, bone.bone_id_));
+                        skin_mesh.bone_weights_and_id_[control_point_index].push_back(BoneWeightAndID((float)contorl_point_weight, bone.bone_id_));
                         //skin_mesh.weights_[control_point_index].push_back(contorl_point_weight);
                         //skin_mesh.bone_index_[control_point_index].push_back(bone.bone_id_);
                     }
@@ -352,6 +352,7 @@ std::unique_ptr<YSkinDataImported> YFbxImporter::ImportSkinData(YSkeleton* skele
                         YVector tangent_z = converter_.ConvertDir(temp_value);
                         wedge.normal = tangent_z.GetSafeNormal();
                     }
+                    wedge.mesh_index = skin_mesh_index;
                     skin_mesh.wedges_.push_back(wedge);
                 }
             }
@@ -366,6 +367,7 @@ struct SplitMeshByBone
     std::vector<int> bone_map;
     std::unordered_set<int> bone_set;
     std::unordered_map<std::string,std::vector<MorphWedge>> morph_wedge_map;
+    std::vector<SkinMesh>* skin_meshes;
     bool InBoneSet(const std::vector<BoneWeightAndID>& bone_ids)
     {
         bool in_bone_set = true;
@@ -454,6 +456,33 @@ struct SplitMeshByBone
             }
         }
     }
+    void ProcessBS()
+    {
+        //for (VertexWedge& wedge : wedges)
+        for(int vertex_wedge_index = 0; vertex_wedge_index< (int)wedges.size();++vertex_wedge_index)
+        {
+            VertexWedge& wedge = wedges[vertex_wedge_index];
+            SkinMesh& skin_mesh = (*skin_meshes)[wedge.mesh_index];
+            if (skin_mesh.bs_.target_shapes_.size())
+            {
+                for (auto& bs_itor : skin_mesh.bs_.target_shapes_)
+                {
+                    std::string bs_name = bs_itor.first;
+                    BlendShapeTarget& bs_target_origin = bs_itor.second;
+                    if (!morph_wedge_map.count(bs_name))
+                    {
+                        morph_wedge_map[bs_name].resize(wedges.size());
+                    }
+                    std::vector<MorphWedge>& cur_morph_wedges = morph_wedge_map[bs_name];
+                    MorphWedge morph_wedge;
+                    morph_wedge.position = bs_target_origin.control_points[wedge.control_point_id];
+                    // todo by zyx, normal 
+                    morph_wedge.normal = YVector::zero_vector;
+                    cur_morph_wedges[vertex_wedge_index] = morph_wedge;
+                }
+            }
+        }
+    }
     void Compress()
     {
 
@@ -463,12 +492,13 @@ struct SplitMeshByBone
 struct SplitMeshByBoneContainer
 {
     std::vector<SplitMeshByBone> cached_meshes;
-
-    void AddWedge(const VertexWedge& v0, const VertexWedge& v1, const VertexWedge& v2, int material_index, const int max_bone_per_scetion)
+    std::vector<SkinMesh>* skin_meshes;
+    void AddWedge( VertexWedge& v0, const VertexWedge& v1, const VertexWedge& v2, int material_index, const int max_bone_per_scetion)
     {
         bool success_add = false;
         for (SplitMeshByBone& mesh_section : cached_meshes)
         {
+            mesh_section.skin_meshes = skin_meshes;
             bool add_success = mesh_section.AddBoneSet(v0, v1, v2, max_bone_per_scetion);
             if (add_success)
             {
@@ -495,7 +525,7 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
     {
         for (const SplitMeshByBone& slit_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
         {
-            reserve_triangle_count += slit_mesh_by_bone.wedges.size() / 3;
+            reserve_triangle_count += (int)slit_mesh_by_bone.wedges.size() / 3;
         }
     }
     std::unique_ptr<RenderData> render_data = std::make_unique<RenderData>();
@@ -552,7 +582,7 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
         {
             section_start.push_back(index);
             bone_mappings.push_back(slit_mesh_by_bone.bone_map);
-            int triange_conunt_section = slit_mesh_by_bone.wedges.size() / 3;
+            int triange_conunt_section = (int)slit_mesh_by_bone.wedges.size() / 3;
             triangle_count.push_back(triange_conunt_section);
             for (int i = 0; i < triange_conunt_section * 3; ++i)
             {
@@ -587,7 +617,7 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
         }
     }
     // debug section color
-    int section_count = section_start.size();
+    int section_count =(int) section_start.size();
     float section_color_channel = 1.0 / (float)section_count * 3.0;
     int section_per_color = YMath::Max(section_count / 3, 1);
     int current_section_index = 0;
@@ -665,19 +695,16 @@ bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
 {
     assert(skeleton_mesh);
     YSkinDataImported* skin_data = skeleton_mesh->skin_data_.get();
-
-    //split mesh by bone
-    const int max_bone = 64;
-    //const int max_bone = 256; // 256*64 = 16384, constant buffer is 65535 bytes
-
     std::vector<SkinMesh>& skin_meshes = skin_data->meshes_;
     std::vector< SplitMeshByBoneContainer> skin_split_bone_mesh_containers;
     skin_split_bone_mesh_containers.resize(1);
+    bool has_bs = false;
     for (int skin_mesh_index = 0; skin_mesh_index < skin_meshes.size(); ++skin_mesh_index)
     {
         SkinMesh& skin_mesh = skin_meshes[skin_mesh_index];
         int triangle_num = 0;
         SplitMeshByBoneContainer& split_mesh_by_bone_container = skin_split_bone_mesh_containers[0];
+        split_mesh_by_bone_container.skin_meshes = &skin_meshes;
         for (int triangle_index = 0; triangle_index * 3 < skin_mesh.wedges_.size(); ++triangle_index)
         {
             int wedge_index_base = triangle_index * 3;
@@ -697,6 +724,11 @@ bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
             }
             split_mesh_by_bone_container.AddWedge(skin_mesh.wedges_[wedge_index_base + 0], skin_mesh.wedges_[wedge_index_base + 1], skin_mesh.wedges_[wedge_index_base + 2], 0, import_param_->max_bone_per_section);
         }
+
+        if (skin_mesh.bs_.target_shapes_.size() != 0)
+        {
+            has_bs = true;
+        }
         //for (SplitMeshByBone& split_mesh_by_bone : split_mesh_by_bone_container.cached_meshes)
         //{
         //    split_mesh_by_bone.Process();
@@ -711,6 +743,10 @@ bool YFbxImporter::PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh)
     for (SplitMeshByBone& split_mesh_by_bone : skin_split_bone_mesh_containers[0].cached_meshes)
     {
           split_mesh_by_bone.Process();
+          if (has_bs)
+          {
+              split_mesh_by_bone.ProcessBS();
+          }
     }
     skeleton_mesh->render_data_ = GenerateRenderData(skin_split_bone_mesh_containers, import_param_->max_bone_per_section);
     return true;
