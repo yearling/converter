@@ -36,7 +36,9 @@ public:
 	void RegisterEvents();
 	void OnViewPortChange(int width, int height);
 	SPerspectiveCameraComponent* GetPerspectiveCameraComponent() { return perspective_camera_components_; }
+    //tmp for import
 	std::vector<YSkeletonMesh*> skeleton_meshes_;
+	std::vector<YStaticMesh*> static_meshes_;
 protected:
 	
 };

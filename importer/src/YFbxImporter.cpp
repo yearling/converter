@@ -16,6 +16,7 @@
 #include "YFbxMaterial.h"
 #include "Utility/YPath.h"
 #include "fbxsdk/scene/animation/fbxanimstack.h"
+#include "Utility/YStringFormat.h"
 
 YFbxImporter::YFbxImporter()
 {
@@ -135,6 +136,7 @@ bool YFbxImporter::ParseFile(const FbxImportParam& import_param, ConvertedResult
 void YFbxImporter::RenameNodeName()
 {
 	std::set<std::string> node_names;
+    std::set<std::string> renamed_node_name;
 	int name_index = 0;
 	// 给没有名字的节点一个default的名字
 	for (int node_index = 0; node_index < fbx_scene_->GetNodeCount(); ++node_index)
@@ -147,18 +149,28 @@ void YFbxImporter::RenameNodeName()
 				node_name = "default_node_name_" + std::to_string(name_index++);
 			} while (node_names.find(node_name) != node_names.end());
 			node->SetName(node_name.c_str());
+            renamed_node_name.insert(StringFormat("rename node name:" " ==> %s",node_name.c_str()));
 		}
 		if (node_name.find(':') != std::string::npos)
 		{
+            std::string before_rename = node_name;
 			auto pos = node_name.find(':');
 			node_name[pos] = '_';
 			do {
 				node_name = node_name + std::to_string(name_index++);
 			} while (node_names.find(node_name) != node_names.end());
 			node->SetName(node_name.c_str());
+            renamed_node_name.insert(StringFormat("rename node name:" " ==> %s",node_name.c_str()));
 		}
 		node_names.insert(node_name);
 	}
+    if (!renamed_node_name.empty())
+    {
+        for (const std::string& renamed_name : renamed_node_name)
+        {
+            WARNING_INFO(renamed_name);
+        }
+    }
 }
 
 void YFbxImporter::RenameMaterialName()

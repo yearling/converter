@@ -53,7 +53,9 @@ public:
 	void TestLoad();
 	IRenderInterface* GetRender() const { return renderer.get(); }
 	double GetCurrentGameTime();
+    //temp hold converted result
 	std::unique_ptr<YSkeletonMesh> skeleton_mesh_;
+    std::unique_ptr<YStaticMesh> static_mesh_;
 private:
 	YEngine() = default;
 	~YEngine() = default;

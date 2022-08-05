@@ -34,9 +34,7 @@ bool YForwardRenderer::Render(std::unique_ptr<YRenderScene> render_scene)
 	g_device->SetViewPort(render_scene_->view_port_.left_top_x, render_scene_->view_port_.left_top_y, scene_width, scene_height);
 
 	rts_->BindRenderTargets();
-	rts_->ClearColor(YVector4(0.0f, 0.0f, 0.0f, 1.0f));
-	rts_->ClearColor(YVector4(0.0f, 0.0f, 0.0f, 1.0f));
-	rts_->ClearColor(YVector4(0.0f, 0.0f, 1.0f, 1.0f));
+	rts_->ClearColor(YVector4(0.1f, 0.1f, 0.1f, 1.0f));
 	rts_->ClearDepthStencil(1.0, 0);
 
 

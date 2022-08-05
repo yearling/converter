@@ -143,30 +143,58 @@ bool GameApplication::Initial()
 	//const std::string file_path = "E:/fbx/avata/aishapelive_material/male/male_head_BS.fbx";
 	//const std::string file_path = "E:/fbx/bs/animation/man_talking.fbx";
 	//const std::string file_path = "E:/fbx/bs/animation/female_talking2.fbx";
-    const std::string file_path = "E:/fbx/EpicCharacter_Run.fbx";
+    //const std::string file_path = "E:/fbx/EpicCharacter_Run.fbx";
+    const std::string file_path = "E:/fbx/static_mesh/plane/space-ship/source/space_ship.fbx";
 
 	if (static_mesh_importer->ImportFile(file_path))
 	{
 		FbxImportParam importer_param;
-		importer_param.model_name = "head";
-		importer_param.import_as_skelton = true;
+        const FbxImportSceneInfo* scene_info = static_mesh_importer->GetImportedSceneInfo();
+        importer_param.model_name = scene_info->model_name;
 		importer_param.transform_vertex_to_absolute = true;
-		ConvertedResult result;
-		if (static_mesh_importer->ParseFile(importer_param, result))
-		{
-			//auto& converted_static_mesh_vec = result.static_meshes;
-			//for (auto& mesh : converted_static_mesh_vec)
-			//{
-				//mesh->SaveV0("head");
-			//}
-			YEngine* engine = YEngine::GetEngine();
-			engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
-			SWorld::GetWorld()->GetMainScene()->skeleton_meshes_.push_back(engine->skeleton_mesh_.get());
-		}
-		else
-		{
-			ERROR_INFO("parse file ", file_path, "failed!");
-		}
+        if (scene_info->has_skin)
+        {
+            importer_param.import_as_skelton = true;
+            ConvertedResult result;
+            if (static_mesh_importer->ParseFile(importer_param, result))
+            {
+                //auto& converted_static_mesh_vec = result.static_meshes;
+                //for (auto& mesh : converted_static_mesh_vec)
+                //{
+                    //mesh->SaveV0("head");
+                //}
+                YEngine* engine = YEngine::GetEngine();
+                engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
+                SWorld::GetWorld()->GetMainScene()->skeleton_meshes_.push_back(engine->skeleton_mesh_.get());
+            }
+            else
+            {
+                ERROR_INFO("parse file ", file_path, "failed!");
+            }
+        }
+        else
+        {
+            importer_param.import_as_skelton = false;
+            ConvertedResult result;
+            if (static_mesh_importer->ParseFile(importer_param, result))
+            {
+                YEngine* engine = YEngine::GetEngine();
+                auto& converted_static_mesh_vec = result.static_meshes;
+                for (auto& mesh : converted_static_mesh_vec)
+                {
+                    //mesh->SaveV0("head");
+                    mesh->AllocGpuResource();
+                    engine->static_mesh_ = std::move(mesh);
+                }
+                SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_.get());
+            }
+            else
+            {
+                ERROR_INFO("parse file ", file_path, "failed!");
+            }
+        }
+
+	
 	}
 	else
 	{
