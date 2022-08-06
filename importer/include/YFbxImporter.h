@@ -47,6 +47,8 @@ struct FbxImportSceneInfo
 	double frame_rate = 0.0;
 	std::vector<FbxMeshInfo> mesh_infos;
 	std::string model_name;
+    std::vector<std::string> material_names;
+   
 };
 
 struct ConvertedResult

@@ -17,6 +17,7 @@
 #include "Utility/YPath.h"
 #include "fbxsdk/scene/animation/fbxanimstack.h"
 #include "Utility/YStringFormat.h"
+#include "fbxsdk/scene/shading/fbxsurfacematerial.h"
 
 YFbxImporter::YFbxImporter()
 {
@@ -274,6 +275,24 @@ void YFbxImporter::ParseSceneInfo()
 	{
 		scene_info_->time = 0.0;
 	}
+    int material_count = fbx_scene_->GetMaterialCount();
+    std::vector<std::string> &material_names= scene_info_->material_names;
+    for (int material_index = 0; material_index < material_count; ++material_index)
+    {
+        FbxSurfaceMaterial* cur_surface_material = fbx_scene_->GetMaterial(material_index);
+        if (cur_surface_material)
+        {
+            std::string material_name = cur_surface_material->GetName();
+            if (std::find(material_names.begin(), material_names.end(), material_name) == material_names.end())
+            {
+                material_names.push_back(material_name);
+            }
+        }
+    }
+    for (std::string& mtl_name : material_names)
+    {
+        LOG_INFO("materia name is ", mtl_name);
+    }
 }
 
 void YFbxImporter::ConvertSystemAndUnit()
@@ -458,7 +477,8 @@ void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<
 	if (FbxMesh* mesh_node = fbx_node->GetMesh()) 
 	{
 		std::set<int> used_material_indexes;
-		for (int element_material_index = 0; element_material_index != mesh_node->GetElementMaterialCount(); ++element_material_index)
+        int mesh_node_element_material_count = mesh_node->GetElementMaterialCount();
+		for (int element_material_index = 0; element_material_index != mesh_node_element_material_count; ++element_material_index)
 		{
 			FbxGeometryElementMaterial* element_material = mesh_node->GetElementMaterial(element_material_index);
 			switch (element_material->GetMappingMode())
