@@ -432,11 +432,11 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 		}
 	}
 	YLODMesh* raw_mesh = &static_mesh->raw_meshes[lod_index];
-	std::vector<YFbxMaterial*> mesh_materials;
+	std::vector<std::shared_ptr<YFbxMaterial>> mesh_materials;
 	int node_fail_count = 0;
 	bool is_all_degenerated = true;
 	float SqrBoundingBoxThreshold = THRESH_POINTS_ARE_NEAR * THRESH_POINTS_ARE_NEAR;
-	for (int mesh_index = 0; mesh_index < mesh_nodes.size(); ++mesh_index)
+	for (int mesh_index = 0; mesh_index < 1; ++mesh_index)
 	{
 		FbxNode* node = mesh_nodes[mesh_index];
 		FbxMesh* fbx_mesh = node->GetMesh();
@@ -452,7 +452,8 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 			{
 				is_all_degenerated = false;
 				LOG_INFO("Importing static mesh gemometry ", mesh_index, " of ", mesh_nodes.size());
-				BuildStaticMeshFromGeometry(node, raw_mesh, mesh_materials);
+				//BuildStaticMeshFromGeometry(node, raw_mesh, mesh_materials);
+                BuildStaticMeshFromGeometry(node, *raw_mesh);
 			}
 		}
 	}
@@ -472,7 +473,8 @@ void YFbxImporter::CheckSmoothingInfo(FbxMesh* fbx_mesh)
 }
 
 
-void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<YFbxMaterial*>& out_materials, std::vector<std::string>& us_sets)
+
+void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YFbxMaterial>>& out_materials, std::vector<std::string>& us_sets)
 {
 	if (FbxMesh* mesh_node = fbx_node->GetMesh()) 
 	{
@@ -504,22 +506,22 @@ void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<
 			//only create the material used by mesh element material
 			if (fbx_material && (used_material_indexes.find(material_index) != used_material_indexes.end()))
 			{
-				YFbxMaterial* material = 	FindExistingMaterialFormFbxMaterial(fbx_material);
-				 out_materials.push_back(material);
+				std::shared_ptr<YFbxMaterial> material = 	FindExistingMaterialFormFbxMaterial(fbx_material, us_sets);
+				out_materials[material_index] = material;
 			}
 		}
 	}
 }
 
-YFbxMaterial* YFbxImporter::FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_material)
+std::shared_ptr<YFbxMaterial> YFbxImporter::FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl)
 {
-	if (imported_material_data.fbx_material_to_us_material.find(fbx_material) == imported_material_data.fbx_material_to_us_material.end())
+	if (imported_material_data.fbx_material_to_us_material.find(fbx_materia) == imported_material_data.fbx_material_to_us_material.end())
 	{
-		YFbxMaterial* material = new YFbxMaterial();
-		material->InitFromFbx(fbx_material);
-		imported_material_data.fbx_material_to_us_material[fbx_material] = material;
+        std::shared_ptr<YFbxMaterial> material = GenerateFbxMaterial(fbx_materia,uv_setsl);
+        //material->InitFromFbx(fbx_materia, uv_setsl);
+		imported_material_data.fbx_material_to_us_material[fbx_materia] = material;
 	}
-	return imported_material_data.fbx_material_to_us_material[fbx_material];
+	return imported_material_data.fbx_material_to_us_material[fbx_materia];
 }
 
 FbxAMatrix YFbxImporter::ComputeTotalMatrix(FbxNode* node)

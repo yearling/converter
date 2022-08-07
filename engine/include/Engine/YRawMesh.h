@@ -10,6 +10,24 @@
 #include "YArchive.h"
 
 const int INVALID_ID = -1;
+
+struct YFbxMaterial
+{
+    struct ParamTexture
+    {
+        std::string param_name;
+        std::string texture_path;
+        int uv_index;
+        bool is_normal_map;
+    };
+public:
+    YFbxMaterial() {};
+    std::string name;
+    std::unordered_map<std::string, ParamTexture> param_textures;
+
+};
+
+
 struct YMeshVertexPosition
 {
 	/** All of vertex instances which reference this vertex (for split vertex support) */
@@ -27,12 +45,13 @@ struct YMeshVertexInstance
 	YMeshVertexInstance();
 	/** The vertex this is instancing */
 	int vertex_position_id = -1;
-
+    YVector position;
 	/** List of connected triangles */
 	std::vector<int> connected_triangles;
 
 	YVector vertex_instance_normal{ 0.0,0.0,1.0 };
-	YVector vertex_instance_tangent{ 0.0,0.0,1.0 };
+	YVector vertex_instance_tangent{ 1.0,0.0,0.0 };
+	YVector vertex_instance_bitangent{ 0.0,1.0,0.0 };
 	float vertex_instance_binormal_sign{ 0.0 };
 	YVector4 vertex_instance_color{ 0.0,0.0,0.0,0.0 };
 	std::vector<YVector2> vertex_instance_uvs;
@@ -68,6 +87,7 @@ struct YRawMesh
 {
 public:
 	std::string mesh_name;
+    
 };
 
 struct YLODMesh
@@ -82,13 +102,41 @@ public:
 	std::vector< YMeshPolygon> polygons;
 	std::vector< YMeshEdge> edges;
 	std::vector<YMeshPolygonGroup> polygon_groups;
-	std::unordered_map<int, std::string> polygon_group_to_material_name;
-	
+	std::unordered_map<int,  std::shared_ptr<YFbxMaterial>> polygon_group_to_material_name;
+	std::unordered_map<int,  std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
+    std::unordered_map<uint64_t, int> edged_vertex_id_to_edge_id;
 	YBox aabb;
 	int GetVertexPairEdge(int vertex_id0, int vertex_id1);
 	int CreateEdge(int vertex_id_0, int vertex_id_1);
 	int CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_ids, std::vector<int>& out_edges);
 	void ComputeAABB();
+};
+
+struct YStaticMeshSection
+{
+    int offset=-1;
+    int triangle_count=-1;
+};
+
+struct ImportedRawMesh
+{
+public:
+    ImportedRawMesh();
+    int LOD_index;
+    std::vector<YStaticMeshSection> sections;
+    std::vector<YMeshVertexPosition> vertex_position;
+    //std::vector<YMeshVertex> vertices;
+    std::vector<YMeshVertexInstance> vertex_instances;
+    std::vector< YMeshPolygon> polygons;
+    std::vector< YMeshEdge> edges;
+    std::vector<YMeshPolygonGroup> polygon_groups;
+    std::unordered_map<int, std::string> polygon_group_to_material_name;
+
+    YBox aabb;
+    int GetVertexPairEdge(int vertex_id0, int vertex_id1);
+    int CreateEdge(int vertex_id_0, int vertex_id_1);
+    int CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_ids, std::vector<int>& out_edges);
+    void ComputeAABB();
 };
 
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);

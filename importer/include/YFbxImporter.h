@@ -87,9 +87,10 @@ protected:
 	void BuildFbxMatrixForImportTransform(FbxAMatrix & out_matrix);
 	void GetMeshArray(FbxNode* root,std::vector<FbxNode*>& fbx_mesh_nodes);
 	void CheckSmoothingInfo(FbxMesh* fbx_mesh);
-	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<YFbxMaterial*>& existing_materials);
-	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::vector<YFbxMaterial*>& out_materials, std::vector<std::string>& us_sets);
-	YFbxMaterial* FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_material);
+	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<std::shared_ptr<YFbxMaterial>>& existing_materials);
+	bool BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh& raw_mesh);
+	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YFbxMaterial>>& out_materials, std::vector<std::string>& us_sets);
+	std::shared_ptr<YFbxMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
 	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
 	bool IsOddNegativeScale(FbxAMatrix& total_matrix);
 

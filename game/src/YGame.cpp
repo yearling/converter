@@ -147,7 +147,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/plane/space-ship/source/space_ship.fbx";
     const std::string file_path = "E:/fbx/test_case/two_uv_two_material/test_uv_set.fbx";
     // error
-    //const std::string file_path = "E:/fbx/static_mesh/animal/awil-werewolf/source/Werewolf.fbx";
+    //const std::string file_path = "E:/fbx/static_mesh/animal/awil-werewolf/source/Werewolf.fbx"; // crash ,boen has the same name
     // error
     //const std::string file_path = "E:/fbx/static_mesh/sword/dragon-sword/source/Dragon_Bone_Sword.fbx";
     //const std::string file_path = "E:/fbx/static_mesh/animal/sci-fi-character-dragon-warrior-futuristic/source/dragonArmor_retopo_pose.fbx";

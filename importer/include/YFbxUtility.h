@@ -52,7 +52,7 @@ struct FImportedMaterialData
 {
 public:
 	//void AddImportedMaterial(const FbxSurfaceMaterial* fbx)
-	std::unordered_map<const FbxSurfaceMaterial*, YFbxMaterial*> fbx_material_to_us_material;
+	std::unordered_map<const FbxSurfaceMaterial*, std::shared_ptr<YFbxMaterial>> fbx_material_to_us_material;
 	std::set<std::string> imported_material_names;
 
 };

@@ -1,15 +1,13 @@
 #pragma once
 #include <string>
 #include "Fbxsdk.h"
-struct YFbxMaterial
-{
-public:
-	YFbxMaterial();
-	void InitFromFbx(const FbxSurfaceMaterial* surface_material);
-	std::string name;
-	const FbxSurfaceMaterial* fbx_material=nullptr;
+#include <vector>
+#include <unordered_map>
+#include <memory>
+#include "Engine/YRawMesh.h"
 
-};
+std::shared_ptr<YFbxMaterial> GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set);
+
 
 struct YFbxMaterialCombine
 {
