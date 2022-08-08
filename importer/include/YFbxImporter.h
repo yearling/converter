@@ -88,7 +88,8 @@ protected:
 	void GetMeshArray(FbxNode* root,std::vector<FbxNode*>& fbx_mesh_nodes);
 	void CheckSmoothingInfo(FbxMesh* fbx_mesh);
 	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<std::shared_ptr<YFbxMaterial>>& existing_materials);
-	bool BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh& raw_mesh);
+	bool BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& raw_mesh);
+    bool BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes);
 	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YFbxMaterial>>& out_materials, std::vector<std::string>& us_sets);
 	std::shared_ptr<YFbxMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
 	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
@@ -105,6 +106,7 @@ protected:
 	bool ImportBlendShapeAnimation(YSkinDataImported* skin_data, AnimationData* anim_data, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs);
 	void RecursiveFindMesh(FbxNode* node, std::vector<FbxNode*>& mesh_nodes);
 	bool PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh);
+    std::shared_ptr<YFbxMaterial> GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set);
 private:
 	bool InitSDK();
 	FbxManager* fbx_manager_ = nullptr;

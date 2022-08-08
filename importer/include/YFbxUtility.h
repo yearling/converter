@@ -12,8 +12,8 @@
 #include "Math/YRotator.h"
 #include "Math/YMatrix.h"
 #include "Engine/YMaterial.h"
-#include "YFbxMaterial.h"
 #include "Math/YTransform.h"
+#include "Engine/YRawMesh.h"
 class FbxDataConverter
 {
 public:

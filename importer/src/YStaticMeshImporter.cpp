@@ -488,7 +488,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 }
 
 
-bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh& raw_mesh)
+bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& raw_mesh)
 {
     FbxMesh* fbx_mesh = node->GetMesh();
     std::string node_name = node->GetName();
@@ -770,6 +770,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh& raw_mesh
                 YMeshVertexInstance& cur_vertex_instance = raw_mesh.vertex_instances[vertex_instance_index_in_all_mesh];
 
                 //uv
+                cur_vertex_instance.vertex_instance_uvs.resize(fbx_uvs.unique_count, YVector2(0,0));
                 for (int uv_layer_index = 0; uv_layer_index < fbx_uvs.unique_count; ++uv_layer_index)
                 {
                     YVector2 final_uv_vector(0.0, 0.0);
@@ -994,4 +995,16 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh& raw_mesh
 
     return bIsValidMesh;
 }
+
+bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes)
+{
+    raw_mesh->vertex_position = raw_meshes[0]->vertex_position;
+    raw_mesh->vertex_instances = raw_meshes[0]->vertex_instances;
+    raw_mesh->polygons = raw_meshes[0]->polygons;
+    raw_mesh->edges = raw_meshes[0]->edges;
+    raw_mesh->polygon_groups = raw_meshes[0]->polygon_groups;
+    raw_mesh->polygon_group_to_material = raw_meshes[0]->polygon_group_to_material;
+    return true;
+}
+
 

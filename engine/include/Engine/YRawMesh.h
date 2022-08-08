@@ -130,7 +130,8 @@ public:
     std::vector< YMeshPolygon> polygons;
     std::vector< YMeshEdge> edges;
     std::vector<YMeshPolygonGroup> polygon_groups;
-    std::unordered_map<int, std::string> polygon_group_to_material_name;
+    std::unordered_map<int, std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
+    std::unordered_map<uint64_t, int> edged_vertex_id_to_edge_id;
 
     YBox aabb;
     int GetVertexPairEdge(int vertex_id0, int vertex_id1);

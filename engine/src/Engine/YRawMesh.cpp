@@ -190,6 +190,11 @@ YArchive& operator<<(YArchive& mem_file,  YMeshVertexPosition& mesh_vertex)
 	return mem_file;
 }
 
+ImportedRawMesh::ImportedRawMesh()
+{
+
+}
+
 int ImportedRawMesh::GetVertexPairEdge(int vertex_id0, int vertex_id1)
 {
     //verte
