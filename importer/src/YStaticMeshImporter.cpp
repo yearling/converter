@@ -6,6 +6,7 @@
 #include "YFbxUtility.h"
 #include "Engine/YMaterial.h"
 #include "Engine/YLog.h"
+#include <unordered_set>
 
 bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh, std::vector<std::shared_ptr<YFbxMaterial>>& existing_materials)
 {
@@ -484,7 +485,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 
 	bool bIsValidMesh = has_no_degenerated_polygons;
 
-	return bIsValidMesh;
+	return true;
 }
 
 
@@ -900,7 +901,6 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 raw_mesh.material_to_polygon_group[material_index] = existing_polygon_group_id;
             }
             int polygon_group_id = raw_mesh.material_to_polygon_group[material_index];
-            //raw_mesh->polygon_groups[polygon_group_id].polygons.push_back(real_polygon_index);
 
             // create polygon edeges
             {
@@ -982,8 +982,6 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
         {
             raw_mesh.CompressControlPoint();
         }
-
-
     }
     if (has_degenerated_polygons)
     {
@@ -1004,6 +1002,53 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
     raw_mesh->edges = raw_meshes[0]->edges;
     raw_mesh->polygon_groups = raw_meshes[0]->polygon_groups;
     raw_mesh->polygon_group_to_material = raw_meshes[0]->polygon_group_to_material;
+
+    for (int mesh_index = 1; mesh_index < (int)raw_meshes.size(); ++mesh_index)
+    {
+       int  control_points_size = (int)raw_mesh->vertex_position.size();
+       int wedge_size = (int)raw_mesh->vertex_instances.size();
+       int pogygone_size = (int)raw_mesh->polygons.size();
+       int polygon_group_size = raw_mesh->polygon_groups.size();
+        
+       ImportedRawMesh& import_raw_mesh = *raw_meshes[mesh_index];
+       raw_mesh->vertex_position.insert(raw_mesh->vertex_position.end(),import_raw_mesh.control_points.begin(), import_raw_mesh.control_points.end());
+       for (YMeshVertexWedge& wedge : import_raw_mesh.wedges)
+       {
+           wedge.control_point_id += control_points_size;
+       }
+       raw_mesh->vertex_instances.insert(raw_mesh->vertex_instances.end(), import_raw_mesh.wedges.begin(), import_raw_mesh.wedges.end());
+       
+       for (YMeshPolygon& polygon : import_raw_mesh.polygons)
+       {
+           polygon.wedge_ids[0] += wedge_size;
+           polygon.wedge_ids[1] += wedge_size;
+           polygon.wedge_ids[2] += wedge_size;
+       }
+       raw_mesh->polygons.insert(raw_mesh->polygons.end(), import_raw_mesh.polygons.begin(), import_raw_mesh.polygons.end());
+
+       for (YMeshPolygonGroup& group : import_raw_mesh.polygon_groups)
+       {
+           for (int& polygon_index : group.polygons)
+           {
+               polygon_index += pogygone_size;
+            }
+       }
+
+       raw_mesh->polygon_groups.insert(raw_mesh->polygon_groups.end(), import_raw_mesh.polygon_groups.begin(), import_raw_mesh.polygon_groups.end());
+    }
+   /* return true;
+
+
+    std::vector<std::shared_ptr<YFbxMaterial>> all_materials;
+    for (int mesh_index = 0; mesh_index < (int)raw_meshes.size(); ++mesh_index)
+    {
+        const ImportedRawMesh& raw_mesh = *raw_meshes[mesh_index];
+        for (auto& item : raw_mesh.polygon_group_to_material)
+        {
+            std::shared_ptr<YFbxMaterial> material = item.second;
+        }
+    }*/
+
     return true;
 }
 
