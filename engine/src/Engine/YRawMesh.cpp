@@ -194,8 +194,9 @@ YArchive& operator<<(YArchive& mem_file,  YMeshControlPoint& mesh_vertex)
 	return mem_file;
 }
 
+
 ImportedRawMesh::ImportedRawMesh()
-{
+:LOD_index(INVALID_ID){
 
 }
 
@@ -267,6 +268,7 @@ int ImportedRawMesh::CreatePolygon(int polygon_group_id, std::vector<int> in_wed
 
 void ImportedRawMesh::ComputeAABB()
 {
+    aabb.Init();
     for (YMeshControlPoint& v : control_points)
     {
         aabb += v.position;
@@ -456,4 +458,98 @@ bool ImportedRawMesh::Valid() const
         }
     }
     return true;
+}
+
+void ImportedRawMesh::Merge(ImportedRawMesh& other)
+{
+    // control point
+    int self_control_point_size = (int)control_points.size();
+    int self_wedge_size = (int)wedges.size();
+    int self_polygon_size = (int)polygons.size();
+    int self_edge_size = (int)edges.size();
+    //control_points.insert(control_points.begin(), other.control_points.begin(), other.control_points.end());
+    control_points.reserve(control_points.size() + other.control_points.size());
+    for (YMeshControlPoint& other_control_point : other.control_points)
+    {
+        control_points.push_back(other_control_point);
+        YMeshControlPoint& new_control_pont = control_points.back();
+        for (int& wedge_id : new_control_pont.wedge_ids)
+        {
+            wedge_id += self_wedge_size;
+        }
+        for (int& edge_id : new_control_pont.edge_ids)
+        {
+            edge_id += self_edge_size;
+        }
+    }
+
+    // wedge
+    wedges.reserve(wedges.size() + other.wedges.size());
+    for (YMeshVertexWedge& other_wedge : other.wedges)
+    {
+        wedges.push_back(other_wedge);
+        YMeshVertexWedge& new_wedge = wedges.back();
+        new_wedge.control_point_id += self_control_point_size;
+        for (int& triangle_id : new_wedge.connected_triangles)
+        {
+            triangle_id += self_polygon_size;
+        }
+    }
+
+    //edge
+
+    edges.reserve(edges.size() + other.edges.size());
+    for (YMeshEdge& other_edge : other.edges)
+    {
+        edges.push_back(other_edge);
+        YMeshEdge& new_edge = edges.back();
+        new_edge.control_points_ids[0] += self_control_point_size;
+        new_edge.control_points_ids[1] += self_control_point_size;
+        for (int& triangle_id : new_edge.connected_triangles)
+        {
+            triangle_id += self_polygon_size;
+        }
+    }
+
+    // triangle
+    polygons.reserve(polygons.size() + other.polygons.size());
+    for (YMeshPolygon& polygon : other.polygons)
+    {
+        polygons.push_back(polygon);
+        YMeshPolygon& new_polygon = polygons.back();
+        for (int& wedge_id : new_polygon.wedge_ids)
+        {
+            wedge_id += self_wedge_size;
+        }
+    }
+
+    //polygon group
+    polygon_groups.reserve(polygon_groups.size() + other.polygon_groups.size());
+    for(int other_polygon_group_index=0; other_polygon_group_index< other.polygon_groups.size();++other_polygon_group_index)
+    { 
+        YMeshPolygonGroup& other_polygon_group = other.polygon_groups[other_polygon_group_index];
+        const int new_polygon_group_id = polygon_groups.size();
+        polygon_groups.push_back(other_polygon_group);
+        YMeshPolygonGroup& new_ploygon_group = polygon_groups.back();
+        for (int& polygon_id : new_ploygon_group.polygons)
+        {
+            polygon_id += self_polygon_size;
+        }
+        // polygon_group_to_material
+        polygon_group_to_material[new_polygon_group_id] = other.polygon_group_to_material[other_polygon_group_index];
+    }
+
+    // edge_verttex_id_to_edge_id
+    for (int new_edge_index = self_edge_size; new_edge_index < edges.size(); ++new_edge_index)
+    {
+        YMeshEdge& edge = edges[new_edge_index];
+        uint64_t compacted_key = ((uint64_t)edge.control_points_ids[0]) << 32 | ((uint64_t)edge.control_points_ids[1]);
+        uint64_t compacted_key2 = ((uint64_t)edge.control_points_ids[1]) << 32 | ((uint64_t)edge.control_points_ids[0]);
+        assert(control_point_to_edge.count(compacted_key) == 0);
+        assert(control_point_to_edge.count(compacted_key2) == 0);
+        control_point_to_edge[compacted_key] = new_edge_index;
+        control_point_to_edge[compacted_key2] = new_edge_index;
+    }
+
+    assert(Valid());
 }

@@ -996,6 +996,25 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
 
 bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes)
 {
+    if (raw_meshes.empty())
+    {
+        return false;
+    }
+    std::shared_ptr<ImportedRawMesh> new_copyed_mesh = std::make_shared<ImportedRawMesh>();
+    //*new_copyed_mesh = *raw_meshes[0];
+
+    for (int mesh_index = 1; mesh_index < (int)raw_meshes.size(); ++mesh_index)
+    {
+        raw_meshes[0]->Merge(*raw_meshes[mesh_index]);
+    }
+
+    raw_mesh->vertex_position = raw_meshes[0]->control_points;
+    raw_mesh->vertex_instances = raw_meshes[0]->wedges;
+    raw_mesh->polygons = raw_meshes[0]->polygons;
+    raw_mesh->edges = raw_meshes[0]->edges;
+    raw_mesh->polygon_groups = raw_meshes[0]->polygon_groups;
+    raw_mesh->polygon_group_to_material = raw_meshes[0]->polygon_group_to_material;
+#if 0
     raw_mesh->vertex_position = raw_meshes[0]->control_points;
     raw_mesh->vertex_instances = raw_meshes[0]->wedges;
     raw_mesh->polygons = raw_meshes[0]->polygons;
@@ -1048,7 +1067,7 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
             std::shared_ptr<YFbxMaterial> material = item.second;
         }
     }*/
-
+#endif
     return true;
 }
 

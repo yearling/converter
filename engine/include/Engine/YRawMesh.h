@@ -60,7 +60,7 @@ struct YMeshVertexWedge
 
 struct YMeshPolygon
 {
-	int polygon_group_id = INVALID_ID;
+	int polygon_group_id = INVALID_ID; //deprecate 
 	std::vector<int> wedge_ids;
 };
 
@@ -122,6 +122,7 @@ struct ImportedRawMesh
 {
 public:
     ImportedRawMesh();
+
     int LOD_index;
     std::string name;
     // topo
@@ -146,6 +147,7 @@ public:
     void CompressControlPoint();
     // all referenced
     bool Valid() const;
+    void Merge(ImportedRawMesh& other);
 };
 
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);
