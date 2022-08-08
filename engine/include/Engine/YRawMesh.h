@@ -28,40 +28,40 @@ public:
 };
 
 
-struct YMeshVertexPosition
+struct YMeshControlPoint
 {
 	/** All of vertex instances which reference this vertex (for split vertex support) */
-	std::vector<int> vertex_instance_ids;
+	std::vector<int> wedge_ids;
 	/** The edges connected to this vertex */
-	std::vector<int>  connect_edge_ids;
+	std::vector<int>  edge_ids;
 
 	YVector position;
 
-	void AddVertexInstance(int index);
+	void AddWedge(int index);
 };
 
-struct YMeshVertexInstance
+struct YMeshVertexWedge
 {
-	YMeshVertexInstance();
+	YMeshVertexWedge();
 	/** The vertex this is instancing */
-	int vertex_position_id = -1;
+	int control_point_id = -1;
     YVector position;
 	/** List of connected triangles */
 	std::vector<int> connected_triangles;
 
-	YVector vertex_instance_normal{ 0.0,0.0,1.0 };
-	YVector vertex_instance_tangent{ 1.0,0.0,0.0 };
-	YVector vertex_instance_bitangent{ 0.0,1.0,0.0 };
-	float vertex_instance_binormal_sign{ 0.0 };
-	YVector4 vertex_instance_color{ 0.0,0.0,0.0,0.0 };
-	std::vector<YVector2> vertex_instance_uvs;
+	YVector normal{ 0.0,0.0,1.0 };
+	YVector tangent{ 1.0,0.0,0.0 };
+	YVector bitangent{ 0.0,1.0,0.0 };
+	float binormal_sign{ 0.0 };
+	YVector4 color{ 0.0,0.0,0.0,0.0 };
+	std::vector<YVector2> uvs;
 	void AddTriangleID(int triangle_id);
 };
 
 struct YMeshPolygon
 {
 	int polygon_group_id = -1;
-	std::vector<int> vertex_instance_ids;
+	std::vector<int> wedge_ids;
 };
 
 struct YMeshPolygonGroup
@@ -96,9 +96,9 @@ public:
 	YLODMesh();
 	int LOD_index;
 	std::vector<YRawMesh> sub_meshes;
-	std::vector<YMeshVertexPosition> vertex_position;
+	std::vector<YMeshControlPoint> vertex_position;
 	//std::vector<YMeshVertex> vertices;
-	std::vector<YMeshVertexInstance> vertex_instances;
+	std::vector<YMeshVertexWedge> vertex_instances;
 	std::vector< YMeshPolygon> polygons;
 	std::vector< YMeshEdge> edges;
 	std::vector<YMeshPolygonGroup> polygon_groups;
@@ -123,21 +123,21 @@ struct ImportedRawMesh
 public:
     ImportedRawMesh();
     int LOD_index;
-    std::vector<YStaticMeshSection> sections;
-    std::vector<YMeshVertexPosition> vertex_position;
-    //std::vector<YMeshVertex> vertices;
-    std::vector<YMeshVertexInstance> vertex_instances;
+    std::vector<YMeshControlPoint> control_points;
+    std::vector<YMeshVertexWedge> wedges;
     std::vector< YMeshPolygon> polygons;
     std::vector< YMeshEdge> edges;
     std::vector<YMeshPolygonGroup> polygon_groups;
     std::unordered_map<int, std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
-    std::unordered_map<uint64_t, int> edged_vertex_id_to_edge_id;
+    std::unordered_map<int, int> material_to_polygon_group;
+    std::unordered_map<uint64_t, int> control_point_to_edge;
 
     YBox aabb;
     int GetVertexPairEdge(int vertex_id0, int vertex_id1);
     int CreateEdge(int vertex_id_0, int vertex_id_1);
-    int CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_ids, std::vector<int>& out_edges);
+    int CreatePolygon(int polygon_group_id, std::vector<int> in_wedges, std::vector<int>& out_edges);
     void ComputeAABB();
+    void CompressControlPoint();
 };
 
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);
@@ -150,8 +150,8 @@ YArchive& operator<<(YArchive& mem_file,  YMeshPolygonGroup& mesh_polygon_group)
 
 YArchive& operator<<(YArchive& mem_file,  YMeshPolygon& mesh_polygon);
 
-YArchive& operator<<(YArchive& mem_file,  YMeshVertexInstance& mesh_vertex_instance);
+YArchive& operator<<(YArchive& mem_file,  YMeshVertexWedge& mesh_vertex_instance);
 
-YArchive& operator<<(YArchive& mem_file,  YMeshVertexPosition& mesh_vertex);
+YArchive& operator<<(YArchive& mem_file,  YMeshControlPoint& mesh_vertex);
 
 

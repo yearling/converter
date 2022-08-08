@@ -162,12 +162,12 @@ void YPickupShowMove::RayCast(int x, int y)
 					for (int polygon_index : polygon_group.polygons)
 					{
 						YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-						YMeshVertexInstance& vertex_ins_0 = lod_mesh.vertex_instances[polygon.vertex_instance_ids[0]];
-						YMeshVertexInstance& vertex_ins_1 = lod_mesh.vertex_instances[polygon.vertex_instance_ids[1]];
-						YMeshVertexInstance& vertex_ins_2 = lod_mesh.vertex_instances[polygon.vertex_instance_ids[2]];
-						YVector p0 = lod_mesh.vertex_position[vertex_ins_0.vertex_position_id].position;
-						YVector p1 = lod_mesh.vertex_position[vertex_ins_1.vertex_position_id].position;
-						YVector p2 = lod_mesh.vertex_position[vertex_ins_2.vertex_position_id].position;
+						YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
+						YMeshVertexWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
+						YMeshVertexWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+						YVector p0 = lod_mesh.vertex_position[vertex_ins_0.control_point_id].position;
+						YVector p1 = lod_mesh.vertex_position[vertex_ins_1.control_point_id].position;
+						YVector p2 = lod_mesh.vertex_position[vertex_ins_2.control_point_id].position;
 						p0 = static_mesh_component->GetTransformToWorld().TransformPosition(p0);
 						p1 = static_mesh_component->GetTransformToWorld().TransformPosition(p1);
 						p2 = static_mesh_component->GetTransformToWorld().TransformPosition(p2);

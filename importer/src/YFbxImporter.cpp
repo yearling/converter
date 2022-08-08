@@ -514,7 +514,7 @@ void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unorder
 			//only create the material used by mesh element material
 			if (fbx_material && (used_material_indexes.find(material_index) != used_material_indexes.end()))
 			{
-				std::shared_ptr<YFbxMaterial> material = 	FindExistingMaterialFormFbxMaterial(fbx_material, us_sets);
+				std::shared_ptr<YFbxMaterial> material = FindExistingMaterialFormFbxMaterial(fbx_material, us_sets);
 				out_materials[material_index] = material;
 			}
 		}
@@ -526,7 +526,6 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::FindExistingMaterialFormFbxMaterial(
 	if (imported_material_data.fbx_material_to_us_material.find(fbx_materia) == imported_material_data.fbx_material_to_us_material.end())
 	{
         std::shared_ptr<YFbxMaterial> material = GenerateFbxMaterial(fbx_materia,uv_setsl);
-        //material->InitFromFbx(fbx_materia, uv_setsl);
 		imported_material_data.fbx_material_to_us_material[fbx_materia] = material;
 	}
 	return imported_material_data.fbx_material_to_us_material[fbx_materia];
@@ -534,7 +533,6 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::FindExistingMaterialFormFbxMaterial(
 
 std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set)
 {
-
     auto func_load_material_property = [](const FbxSurfaceMaterial* fbx_material, const char* material_property, const std::vector<std::string>& uv_set, bool is_normal_map, YFbxMaterial::ParamTexture& param_tex)
     {
         FbxProperty fbx_property = fbx_material->FindProperty(material_property);

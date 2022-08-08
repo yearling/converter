@@ -10,7 +10,7 @@ YLODMesh::YLODMesh()
 int YLODMesh::GetVertexPairEdge(int vertex_id0, int vertex_id1)
 {
 	//verte
-	std::vector<int>& connect_edges = vertex_position[vertex_id0].connect_edge_ids;
+	std::vector<int>& connect_edges = vertex_position[vertex_id0].edge_ids;
 	for (int edge : connect_edges)
 	{
 		int vertex_maybe_0 = edges[edge].VertexIDs[0];
@@ -34,8 +34,8 @@ int YLODMesh::CreateEdge(int vertex_id_0, int vertex_id_1)
 	tmp_edge.VertexIDs[1] = vertex_id_1;
 	int edge_id = (int)edges.size();
 	edges.push_back(tmp_edge);
-	vertex_position[vertex_id_0].connect_edge_ids.push_back(edge_id);
-	vertex_position[vertex_id_1].connect_edge_ids.push_back(edge_id);
+	vertex_position[vertex_id_0].edge_ids.push_back(edge_id);
+	vertex_position[vertex_id_1].edge_ids.push_back(edge_id);
 	return edge_id;
 }
 
@@ -49,7 +49,7 @@ int YLODMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_id
 	YMeshPolygon& tmp_polygon = polygons[polygon_id];
 	// polygon_group, both reference
 	tmp_polygon.polygon_group_id = polygon_group_id;
-	tmp_polygon.vertex_instance_ids = vertex_ins_ids;
+	tmp_polygon.wedge_ids = vertex_ins_ids;
 	polygon_groups[polygon_group_id].polygons.push_back(polygon_id);
 
 	std::vector<int> vertex_ids;
@@ -60,8 +60,8 @@ int YLODMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_id
 	{
 		vertex_instances[vertex_ins_ids[i]].AddTriangleID(polygon_id);
 		int i_next = (i + 1) % ((int)vertex_ins_ids.size());
-		int vertex_id = vertex_instances[vertex_ins_ids[i]].vertex_position_id;
-		int vertex_next_id = vertex_instances[vertex_ins_ids[i_next]].vertex_position_id;
+		int vertex_id = vertex_instances[vertex_ins_ids[i]].control_point_id;
+		int vertex_next_id = vertex_instances[vertex_ins_ids[i_next]].control_point_id;
 		int edge_idex = GetVertexPairEdge(vertex_id, vertex_next_id);
 		//create edges
 		if (edge_idex == INVALID_ID)
@@ -79,7 +79,7 @@ int YLODMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_id
 
 void YLODMesh::ComputeAABB()
 {
-	for (YMeshVertexPosition& v : vertex_position)
+	for (YMeshControlPoint& v : vertex_position)
 	{
 		aabb += v.position;
 	}
@@ -102,12 +102,12 @@ void YMeshEdge::AddTriangleID(int triangle_id)
 	}
 }
 
-YMeshVertexInstance::YMeshVertexInstance()
+YMeshVertexWedge::YMeshVertexWedge()
 {
-	vertex_instance_uvs.resize(MAX_MESH_TEXTURE_COORDS, YVector2(0.0, 0.0));
+	uvs.resize(MAX_MESH_TEXTURE_COORDS, YVector2(0.0, 0.0));
 }
 
-void YMeshVertexInstance::AddTriangleID(int triangle_id)
+void YMeshVertexWedge::AddTriangleID(int triangle_id)
 {
 	auto find_reuslt = std::find(connected_triangles.begin(), connected_triangles.end(), triangle_id);
 	if (find_reuslt == connected_triangles.end())
@@ -116,12 +116,12 @@ void YMeshVertexInstance::AddTriangleID(int triangle_id)
 	}
 }
 
-void YMeshVertexPosition::AddVertexInstance(int index)
+void YMeshControlPoint::AddWedge(int index)
 {
-	auto find_reuslt = std::find(vertex_instance_ids.begin(), vertex_instance_ids.end(), index);
-	if (find_reuslt == vertex_instance_ids.end())
+	auto find_reuslt = std::find(wedge_ids.begin(), wedge_ids.end(), index);
+	if (find_reuslt == wedge_ids.end())
 	{
-		vertex_instance_ids.push_back(index);
+		wedge_ids.push_back(index);
 	}
 
 }
@@ -165,27 +165,27 @@ YArchive& operator<<(YArchive& mem_file,  YMeshPolygonGroup& mesh_polygon_group)
 YArchive& operator<<(YArchive& mem_file, YMeshPolygon& mesh_polygon)
 {
 	mem_file << mesh_polygon.polygon_group_id;
-	mem_file << mesh_polygon.vertex_instance_ids;
+	mem_file << mesh_polygon.wedge_ids;
 	return mem_file;
 }
 
-YArchive& operator<<(YArchive& mem_file,  YMeshVertexInstance& mesh_vertex_instance)
+YArchive& operator<<(YArchive& mem_file,  YMeshVertexWedge& mesh_vertex_instance)
 {
-	mem_file << mesh_vertex_instance.vertex_position_id;
+	mem_file << mesh_vertex_instance.control_point_id;
 	mem_file << mesh_vertex_instance.connected_triangles;
-	mem_file << mesh_vertex_instance.vertex_instance_normal;
-	mem_file << mesh_vertex_instance.vertex_instance_tangent;
-	mem_file << mesh_vertex_instance.vertex_instance_binormal_sign;
-	mem_file << mesh_vertex_instance.vertex_instance_color;
-	mem_file << mesh_vertex_instance.vertex_instance_uvs;
+	mem_file << mesh_vertex_instance.normal;
+	mem_file << mesh_vertex_instance.tangent;
+	mem_file << mesh_vertex_instance.binormal_sign;
+	mem_file << mesh_vertex_instance.color;
+	mem_file << mesh_vertex_instance.uvs;
 
 	return mem_file;
 }
 
-YArchive& operator<<(YArchive& mem_file,  YMeshVertexPosition& mesh_vertex)
+YArchive& operator<<(YArchive& mem_file,  YMeshControlPoint& mesh_vertex)
 {
-	mem_file << mesh_vertex.vertex_instance_ids;
-	mem_file << mesh_vertex.connect_edge_ids;
+	mem_file << mesh_vertex.wedge_ids;
+	mem_file << mesh_vertex.edge_ids;
 	mem_file << mesh_vertex.position;
 	return mem_file;
 }
@@ -198,7 +198,7 @@ ImportedRawMesh::ImportedRawMesh()
 int ImportedRawMesh::GetVertexPairEdge(int vertex_id0, int vertex_id1)
 {
     //verte
-    std::vector<int>& connect_edges = vertex_position[vertex_id0].connect_edge_ids;
+    std::vector<int>& connect_edges = control_points[vertex_id0].edge_ids;
     for (int edge : connect_edges)
     {
         int vertex_maybe_0 = edges[edge].VertexIDs[0];
@@ -222,12 +222,12 @@ int ImportedRawMesh::CreateEdge(int vertex_id_0, int vertex_id_1)
     tmp_edge.VertexIDs[1] = vertex_id_1;
     int edge_id = (int)edges.size();
     edges.push_back(tmp_edge);
-    vertex_position[vertex_id_0].connect_edge_ids.push_back(edge_id);
-    vertex_position[vertex_id_1].connect_edge_ids.push_back(edge_id);
+    control_points[vertex_id_0].edge_ids.push_back(edge_id);
+    control_points[vertex_id_1].edge_ids.push_back(edge_id);
     return edge_id;
 }
 
-int ImportedRawMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_ids, std::vector<int>& out_edges)
+int ImportedRawMesh::CreatePolygon(int polygon_group_id, std::vector<int> in_wedges, std::vector<int>& out_edges)
 {
     out_edges.clear();
     // create triangle
@@ -237,24 +237,22 @@ int ImportedRawMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex
     YMeshPolygon& tmp_polygon = polygons[polygon_id];
     // polygon_group, both reference
     tmp_polygon.polygon_group_id = polygon_group_id;
-    tmp_polygon.vertex_instance_ids = vertex_ins_ids;
+    tmp_polygon.wedge_ids = in_wedges;
     polygon_groups[polygon_group_id].polygons.push_back(polygon_id);
 
-    std::vector<int> vertex_ids;
-    vertex_ids.reserve(vertex_ins_ids.size());
-
     //only support triangle,UE support polygon
-    for (int i = 0; i < vertex_ins_ids.size(); ++i)
+    for (int i = 0; i < in_wedges.size(); ++i)
     {
-        vertex_instances[vertex_ins_ids[i]].AddTriangleID(polygon_id);
-        int i_next = (i + 1) % ((int)vertex_ins_ids.size());
-        int vertex_id = vertex_instances[vertex_ins_ids[i]].vertex_position_id;
-        int vertex_next_id = vertex_instances[vertex_ins_ids[i_next]].vertex_position_id;
-        int edge_idex = GetVertexPairEdge(vertex_id, vertex_next_id);
+        wedges[in_wedges[i]].AddTriangleID(polygon_id);
+        int i_next = (i + 1) % ((int)in_wedges.size());
+        int control_point_id = wedges[in_wedges[i]].control_point_id;
+        int next_control_point_id = wedges[in_wedges[i_next]].control_point_id;
+        int edge_idex = GetVertexPairEdge(control_point_id, next_control_point_id);
         //create edges
         if (edge_idex == INVALID_ID)
         {
-            edge_idex = CreateEdge(vertex_id, vertex_next_id);
+            assert("should not here, out side has created");
+            edge_idex = CreateEdge(control_point_id, next_control_point_id);
             out_edges.push_back(edge_idex);
         }
         edges[edge_idex].AddTriangleID(polygon_id);
@@ -265,8 +263,14 @@ int ImportedRawMesh::CreatePolygon(int polygon_group_id, std::vector<int> vertex
 
 void ImportedRawMesh::ComputeAABB()
 {
-    for (YMeshVertexPosition& v : vertex_position)
+    for (YMeshControlPoint& v : control_points)
     {
         aabb += v.position;
     }
+}
+
+void ImportedRawMesh::CompressControlPoint()
+{
+    //因为有退化三角形，有些没引用到的三角形的control point 可以删掉
+
 }

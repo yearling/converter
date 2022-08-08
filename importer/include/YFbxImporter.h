@@ -90,6 +90,9 @@ protected:
 	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<std::shared_ptr<YFbxMaterial>>& existing_materials);
 	bool BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& raw_mesh);
     bool BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes);
+    //获取当前node里所有的FbxMaterial，并保存在out_materials中，key是fbx里的material的index。
+    //因为材质是跨mesh的，所以使用imported_material_data来作为manager，使用FbxSurfaceMaterial*作为key来保证相同的fbx材质
+    //生成唯一的材质
 	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YFbxMaterial>>& out_materials, std::vector<std::string>& us_sets);
 	std::shared_ptr<YFbxMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
 	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
