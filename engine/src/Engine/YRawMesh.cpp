@@ -2,6 +2,10 @@
 #include "Math/YVector.h"
 #include <cassert>
 #include "Engine/YArchive.h"
+#include <unordered_set>
+#include <algorithm>
+#include "Utility/YStringFormat.h"
+#include <set>
 YLODMesh::YLODMesh()
 {
 
@@ -13,25 +17,25 @@ int YLODMesh::GetVertexPairEdge(int vertex_id0, int vertex_id1)
 	std::vector<int>& connect_edges = vertex_position[vertex_id0].edge_ids;
 	for (int edge : connect_edges)
 	{
-		int vertex_maybe_0 = edges[edge].VertexIDs[0];
-		int vertex_maybe_1 = edges[edge].VertexIDs[1];
+		int vertex_maybe_0 = edges[edge].control_points_ids[0];
+		int vertex_maybe_1 = edges[edge].control_points_ids[1];
 		if ((vertex_maybe_0 == vertex_id0 && vertex_maybe_1 == vertex_id1) || (vertex_maybe_0 == vertex_id1 && vertex_maybe_1 == vertex_id0))
 		{
 			return edge;
 		}
 	}
-	return -1;
+	return INVALID_ID;
 }
 
 int YLODMesh::CreateEdge(int vertex_id_0, int vertex_id_1)
 {
 #if defined(DEBUG) || defined(_DEBUG)
 	int exist_id = GetVertexPairEdge(vertex_id_0, vertex_id_1);
-	assert(exist_id == -1);
+	assert(exist_id == INVALID_ID);
 #endif
 	YMeshEdge tmp_edge;
-	tmp_edge.VertexIDs[0] = vertex_id_0;
-	tmp_edge.VertexIDs[1] = vertex_id_1;
+	tmp_edge.control_points_ids[0] = vertex_id_0;
+	tmp_edge.control_points_ids[1] = vertex_id_1;
 	int edge_id = (int)edges.size();
 	edges.push_back(tmp_edge);
 	vertex_position[vertex_id_0].edge_ids.push_back(edge_id);
@@ -87,8 +91,8 @@ void YLODMesh::ComputeAABB()
 
 YMeshEdge::YMeshEdge()
 {
-	VertexIDs[0] = -1;
-	VertexIDs[1] = -1;
+	control_points_ids[0] = INVALID_ID;
+	control_points_ids[1] = INVALID_ID;
 	edge_hardness = false;
 	edge_crease_sharpness = 0.0;
 }
@@ -147,8 +151,8 @@ YArchive& operator<<(YArchive& mem_file, YRawMesh& raw_mesh)
 
 YArchive& operator<<(YArchive& mem_file,  YMeshEdge& mesh_edge)
 {
-	mem_file << mesh_edge.VertexIDs[0];
-	mem_file << mesh_edge.VertexIDs[1];
+	mem_file << mesh_edge.control_points_ids[0];
+	mem_file << mesh_edge.control_points_ids[1];
 	mem_file << mesh_edge.connected_triangles;
 	mem_file << mesh_edge.edge_hardness;
 	mem_file << mesh_edge.edge_crease_sharpness;
@@ -195,31 +199,31 @@ ImportedRawMesh::ImportedRawMesh()
 
 }
 
-int ImportedRawMesh::GetVertexPairEdge(int vertex_id0, int vertex_id1)
+int ImportedRawMesh::GetVertexPairEdge(int vertex_id0, int vertex_id1) const 
 {
     //verte
-    std::vector<int>& connect_edges = control_points[vertex_id0].edge_ids;
+    const std::vector<int>& connect_edges = control_points[vertex_id0].edge_ids;
     for (int edge : connect_edges)
     {
-        int vertex_maybe_0 = edges[edge].VertexIDs[0];
-        int vertex_maybe_1 = edges[edge].VertexIDs[1];
+        int vertex_maybe_0 = edges[edge].control_points_ids[0];
+        int vertex_maybe_1 = edges[edge].control_points_ids[1];
         if ((vertex_maybe_0 == vertex_id0 && vertex_maybe_1 == vertex_id1) || (vertex_maybe_0 == vertex_id1 && vertex_maybe_1 == vertex_id0))
         {
             return edge;
         }
     }
-    return -1;
+    return INVALID_ID;
 }
 
 int ImportedRawMesh::CreateEdge(int vertex_id_0, int vertex_id_1)
 {
 #if defined(DEBUG) || defined(_DEBUG)
     int exist_id = GetVertexPairEdge(vertex_id_0, vertex_id_1);
-    assert(exist_id == -1);
+    assert(exist_id == INVALID_ID);
 #endif
     YMeshEdge tmp_edge;
-    tmp_edge.VertexIDs[0] = vertex_id_0;
-    tmp_edge.VertexIDs[1] = vertex_id_1;
+    tmp_edge.control_points_ids[0] = vertex_id_0;
+    tmp_edge.control_points_ids[1] = vertex_id_1;
     int edge_id = (int)edges.size();
     edges.push_back(tmp_edge);
     control_points[vertex_id_0].edge_ids.push_back(edge_id);
@@ -271,6 +275,185 @@ void ImportedRawMesh::ComputeAABB()
 
 void ImportedRawMesh::CompressControlPoint()
 {
-    //因为有退化三角形，有些没引用到的三角形的control point 可以删掉
+    std::set<int> control_point_set;
+    for (int i = 0; i < control_points.size(); ++i)
+    {
+        control_point_set.insert(i);
+    }
 
+    std::set<int> used_control_point_set;
+    //因为有退化三角形，有些没引用到的三角形的control point 可以删掉
+    //统计没有使用到的control point
+    for (int polygon_group_id = 0; polygon_group_id < (int)polygon_groups.size(); ++polygon_group_id)
+    {
+        const YMeshPolygonGroup& polygon_group = polygon_groups[polygon_group_id];
+        for (int polygon_id : polygon_group.polygons)
+        {
+            const YMeshPolygon& polygon = polygons[polygon_id];
+            int tmp_control_points[3];
+            for (int wedge_index = 0; wedge_index < 3; ++wedge_index)
+            {
+                int wedge_id = polygon.wedge_ids[wedge_index];
+                int contro_point_id = wedges[wedge_id].control_point_id;
+                used_control_point_set.insert(contro_point_id);
+            }
+        }
+    }
+    if (control_point_set.size() != used_control_point_set.size())
+    {
+        assert(used_control_point_set.size() < control_point_set.size());
+    }
+
+    std::vector<int> diff_result(control_point_set.size());
+    auto iter = std::set_difference(control_point_set.begin(), control_point_set.end(), used_control_point_set.begin(), used_control_point_set.end(), diff_result.begin());
+    diff_result.resize(iter - diff_result.begin());
+    
+    auto func_in_diff_set = [&](int n) {
+        return std::find(diff_result.begin(), diff_result.end(), n) != diff_result.end();
+    };
+
+
+   bool result =  func_in_diff_set(2);
+    std::vector<int> old_to_new;
+    std::vector<int> new_to_old;
+    old_to_new.resize(control_point_set.size(), -1);
+    new_to_old.resize(used_control_point_set.size(), -1);
+    std::vector<YMeshControlPoint> new_control_points;
+    new_control_points.reserve(control_points.size());
+    for (int i = 0; i < (int)control_points.size(); ++i)
+    {
+        if (func_in_diff_set(i))
+        {
+            old_to_new[i] = -1;
+        }
+        else
+        {
+            int new_position = new_control_points.size();
+            new_control_points.push_back(control_points[i]);
+            old_to_new[i] = new_position;
+            new_to_old[new_position] = i;
+        }
+    }
+
+    int before_size = (int)control_points.size();
+    int after_size = (int)new_control_points.size();
+    control_points.swap(new_control_points);
+
+    for (YMeshVertexWedge& wedge : wedges)
+    {
+        wedge.control_point_id = old_to_new[wedge.control_point_id];
+    }
+
+    for (YMeshEdge& edge : edges)
+    {
+        edge.control_points_ids[0] = old_to_new[edge.control_points_ids[0]];
+        edge.control_points_ids[1] = old_to_new[edge.control_points_ids[1]];
+    }
+
+    WARNING_INFO(StringFormat("remove mesh's %s degenerate triangle, before is %d , after is %d, smaller %d",name.c_str(),before_size,after_size,before_size-after_size));
+}
+
+
+bool ImportedRawMesh::Valid() const
+{
+    for(int polygon_group_id = 0;polygon_group_id<(int)polygon_groups.size();++polygon_group_id)
+    {
+        if (polygon_group_to_material.count(polygon_group_id) == 0)
+        {
+            WARNING_INFO("Imported RawMesh Valid: polygon_group do not in polygon_group_to_materials");
+            return false;
+        }
+
+        const YMeshPolygonGroup& polygon_group = polygon_groups[polygon_group_id];
+        for (int polygon_id : polygon_group.polygons)
+        {
+            const YMeshPolygon& polygon = polygons[polygon_id];
+            if (polygon.wedge_ids.size() != 3)
+            {
+                WARNING_INFO("Imported RawMesh Valid: polygon only support triangle");
+                return false;
+            }
+            int tmp_control_points[3];
+            for (int wedge_index = 0; wedge_index < 3; ++wedge_index)
+            {
+                int wedge_id = polygon.wedge_ids[wedge_index];
+                {
+                    if (wedge_id >= wedges.size() || wedge_id <= INVALID_ID)
+                    {
+                        WARNING_INFO("Imported RawMesh Valid: Wrong wedge index");
+                        return false;
+                    }
+                    int control_point_id = wedges[wedge_id].control_point_id;
+                    if (control_point_id >= control_points.size() || control_point_id <= INVALID_ID)
+                    {
+                        WARNING_INFO("Imported RawMesh Valid: Wrong control point index");
+                        return false;
+                    }
+                    tmp_control_points[wedge_index] = control_point_id;
+
+                    const std::vector<int>& traingle_ids = wedges[wedge_id].connected_triangles;
+                    if (std::find(traingle_ids.begin(), traingle_ids.end(), polygon_id) == traingle_ids.end())
+                    {
+                        WARNING_INFO("Imported RawMesh Valid: Wrong edge triangle relation");
+                        return false;
+                    }
+                }
+            }
+
+            for (int i = 0; i < 3; ++i)
+            {
+                int i_next = (i + 1) % 3;
+                int edge_index = GetVertexPairEdge(tmp_control_points[i], tmp_control_points[i_next]);
+                if (edge_index <= INVALID_ID || edge_index >= edges.size())
+                {
+                        WARNING_INFO("Imported RawMesh Valid: Wrong edge index");
+                        return false;
+                }
+
+                const std::vector<int>& traingle_ids = edges[edge_index].connected_triangles;
+                if (std::find(traingle_ids.begin(), traingle_ids.end(), polygon_id) == traingle_ids.end())
+                {
+                        WARNING_INFO("Imported RawMesh Valid: Wrong edge triangle relation");
+                        return false;
+                }
+            }
+        }
+    }
+           
+    //for (const YMeshControlPoint& control_point : control_points)
+    for(int control_point_id =0; control_point_id<(int)control_points.size();++control_point_id)
+    {
+        const YMeshControlPoint& control_point = control_points[control_point_id];
+        for (int wedge_id : control_point.wedge_ids)
+        {
+            if (wedge_id >= wedges.size() || wedge_id <= INVALID_ID)
+            {
+                WARNING_INFO("Imported RawMesh Valid: Wrong wedge index");
+                        return false;
+            }
+            if (wedges[wedge_id].control_point_id != control_point_id)
+            {
+                WARNING_INFO("Imported RawMesh Valid: control_point_id not equal wedges's control_point id");
+                return false;
+            }
+        }
+
+        for (int edge_id : control_point.edge_ids)
+        {
+            if (edge_id <= INVALID_ID || edge_id >= edges.size())
+            {
+                WARNING_INFO("Imported RawMesh Valid: Wrong edge index");
+                return false;
+            }
+
+            const YMeshEdge& edge = edges[edge_id];
+            if ((edge.control_points_ids[0] != control_point_id) && (edge.control_points_ids[1] != control_point_id))
+            {
+                WARNING_INFO("Imported RawMesh Valid: edge reference control point wrong");
+                return false;
+            }
+
+        }
+    }
+    return true;
 }

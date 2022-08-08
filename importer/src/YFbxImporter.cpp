@@ -438,7 +438,7 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 	float SqrBoundingBoxThreshold = THRESH_POINTS_ARE_NEAR * THRESH_POINTS_ARE_NEAR;
     std::vector<std::shared_ptr<ImportedRawMesh>> raw_meshes;
     raw_meshes.reserve(mesh_nodes.size());
-	for (int mesh_index = 0; mesh_index < 1; ++mesh_index)
+	for (int mesh_index = 0; mesh_index < mesh_nodes.size(); ++mesh_index)
 	{
 		FbxNode* node = mesh_nodes[mesh_index];
 		FbxMesh* fbx_mesh = node->GetMesh();
@@ -463,7 +463,6 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 			}
 		}
 	}
-    
     BuildStaicMesh(raw_mesh, raw_meshes);
 	return std::move(static_mesh);
 }

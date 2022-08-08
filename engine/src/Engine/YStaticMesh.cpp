@@ -99,6 +99,7 @@ void YStaticMesh::Render(RenderParam* render_param)
 		YVector dir_light = -(*render_param->dir_lights_proxy)[0].light_dir;
 		pixel_shader_->BindResource("light_dir", &dir_light.x, 3);
 	}
+    pixel_shader_->BindResource("show_normal", 1.0f);
 	pixel_shader_->Update();
 
 	int triangle_total = 0;

@@ -33,7 +33,10 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	Output.vPosition = mul(float4(Input.vPosition,1.0), wvp);
 	Output.vTexcoord = Input.vTexCoord;
 	Output.vColor = float4(1.0,1.0,1.0,1.0);
-	Output.vNormal = Input.vNormal;
+	// Output.vNormal = Input.vNormal;
+	float4 trans_normal = mul(float4(Input.vNormal,0.0), wvp);
+	Output.vNormal = trans_normal.xyz/trans_normal.w;
+	Output.vNormal = normalize(Output.vNormal);
 	// matrix matWVP = mul(g_world, g_VP);
 
 	// Output.vPosition = mul(float4(Input.vPosition,1.0), matWVP);

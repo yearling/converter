@@ -492,6 +492,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
 {
     FbxMesh* fbx_mesh = node->GetMesh();
     std::string node_name = node->GetName();
+    raw_mesh.name = node_name;
     FbxUVs fbx_uvs(this, fbx_mesh);
 
     int material_count = node->GetMaterialCount();
@@ -639,7 +640,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
         binormal_mapping_mode = binormal_layer->GetMappingMode();
     }
 
-    bool has_no_degenerated_polygons = false;
+    bool has_degenerated_polygons = false;
     // Construct the matrices for the conversion from right handed to left handed system
     FbxAMatrix total_matrix;
     FbxAMatrix total_matrix_for_normal;
@@ -724,9 +725,11 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 float comparision_threshold = (float)import_param_->remove_degenerate_triangles ? SMALL_NUMBER : 0.f;
                 p.clear();
                 p.resize(polygon_vertex_count_3);
+                int control_point_ids[3];
                 for (int corner_index = 0; corner_index < polygon_vertex_count_3; ++corner_index)
                 {
                     const int control_point_index = fbx_mesh->GetPolygonVertex(polygon_index, corner_index);
+                    control_point_ids[corner_index] = control_point_index;
                     const int vertex_id = control_point_index;
                     p[corner_index] = raw_mesh.control_points[vertex_id].position;
                 }
@@ -734,6 +737,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 if (normal.IsNearlyZero(comparision_threshold) || normal.ContainsNaN())
                 {
                     skipped_wedges += polygon_vertex_count_3;
+                    WARNING_INFO(fbx_mesh->GetName(), " has degenerate traingle, control point id is ", control_point_ids[0], "  ,", control_point_ids[1], "  ,", control_point_ids[2]);
                     continue;
                 }
 
@@ -827,7 +831,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
             }
             // Check if the polygon just discovered is non-degenerate if we haven't found one yet
             //TODO check all polygon vertex, not just the first 3 vertex
-            if (!has_no_degenerated_polygons)
+            //if (!has_no_degenerated_polygons)
             {
                 float triagnle_comparsion_threshold = (float)import_param_->remove_degenerate_triangles ? THRESH_POINTS_ARE_SAME : 0.f;
                 YVector vertex_position[3];
@@ -835,11 +839,12 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 vertex_position[1] = raw_mesh.control_points[control_point_ids[1]].position;
                 vertex_position[2] = raw_mesh.control_points[control_point_ids[2]].position;
 
-                if (!(vertex_position[0].Equals(vertex_position[1])
-                    || vertex_position[0].Equals(vertex_position[2])
-                    || vertex_position[1].Equals(vertex_position[2])))
+                if ((vertex_position[0].Equals(vertex_position[1], triagnle_comparsion_threshold)
+                    || vertex_position[0].Equals(vertex_position[2], triagnle_comparsion_threshold)
+                    || vertex_position[1].Equals(vertex_position[2], triagnle_comparsion_threshold)))
                 {
-                    has_no_degenerated_polygons = true;
+                    has_degenerated_polygons = true;
+                    WARNING_INFO(fbx_mesh->GetName(), " has degenerate traingle, control point id is ", control_point_ids[0], "  ,",control_point_ids[1], "  ,",control_point_ids[2]);
                 }
             }
 
@@ -975,18 +980,18 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
         }
         if (skipped_wedges > 0)
         {
-
+            raw_mesh.CompressControlPoint();
         }
 
 
     }
-    if (!has_no_degenerated_polygons)
+    if (has_degenerated_polygons)
     {
         WARNING_INFO(fbx_mesh->GetName(), "has degenerate triangle");
-
+        
     }
 
-    bool bIsValidMesh = has_no_degenerated_polygons;
+    bool bIsValidMesh = raw_mesh.Valid();
 
     return bIsValidMesh;
 }

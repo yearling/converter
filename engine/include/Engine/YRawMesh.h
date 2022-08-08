@@ -44,7 +44,7 @@ struct YMeshVertexWedge
 {
 	YMeshVertexWedge();
 	/** The vertex this is instancing */
-	int control_point_id = -1;
+	int control_point_id = INVALID_ID;
     YVector position;
 	/** List of connected triangles */
 	std::vector<int> connected_triangles;
@@ -60,7 +60,7 @@ struct YMeshVertexWedge
 
 struct YMeshPolygon
 {
-	int polygon_group_id = -1;
+	int polygon_group_id = INVALID_ID;
 	std::vector<int> wedge_ids;
 };
 
@@ -74,7 +74,7 @@ struct YMeshEdge
 
 	YMeshEdge();
 	/** IDs of the two editable mesh vertices that make up this edge.  The winding direction is not defined. */
-	int VertexIDs[2];
+    int control_points_ids[2] = { INVALID_ID,INVALID_ID };
 
 	/** The triangles that share this edge */
 	std::vector<int> connected_triangles;
@@ -123,21 +123,29 @@ struct ImportedRawMesh
 public:
     ImportedRawMesh();
     int LOD_index;
+    std::string name;
+    // topo
     std::vector<YMeshControlPoint> control_points;
-    std::vector<YMeshVertexWedge> wedges;
-    std::vector< YMeshPolygon> polygons;
     std::vector< YMeshEdge> edges;
+    std::vector< YMeshPolygon> polygons;
     std::vector<YMeshPolygonGroup> polygon_groups;
+    // info
+    std::vector<YMeshVertexWedge> wedges;
+    //material
     std::unordered_map<int, std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
     std::unordered_map<int, int> material_to_polygon_group;
+
+    //speed up structure
     std::unordered_map<uint64_t, int> control_point_to_edge;
 
     YBox aabb;
-    int GetVertexPairEdge(int vertex_id0, int vertex_id1);
+    int GetVertexPairEdge(int vertex_id0, int vertex_id1)const ;
     int CreateEdge(int vertex_id_0, int vertex_id_1);
     int CreatePolygon(int polygon_group_id, std::vector<int> in_wedges, std::vector<int>& out_edges);
     void ComputeAABB();
     void CompressControlPoint();
+    // all referenced
+    bool Valid() const;
 };
 
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);
