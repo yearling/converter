@@ -10,6 +10,18 @@
 #include "YArchive.h"
 
 const int INVALID_ID = -1;
+enum NormalCaculateMethod
+{
+    ImportNormal = 0,
+    Caculate  = 1,
+    ImportNormalAndTangnet=2,
+};
+
+enum TangentMethod
+{
+    Mikkt = 0,
+    BuildIn = 1
+};
 
 struct YFbxMaterial
 {
@@ -62,6 +74,9 @@ struct YMeshPolygon
 {
 	int polygon_group_id = INVALID_ID; //deprecate 
 	std::vector<int> wedge_ids;
+    YVector normal{ 0.0,0.0,1.0 };
+    YVector tangent{ 1.0,0.0,0.0 };
+    YVector bitangent{ 0.0,1.0,0.0 };
 };
 
 struct YMeshPolygonGroup
@@ -136,8 +151,7 @@ public:
     std::unordered_map<int, std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
     std::unordered_map<int, int> material_to_polygon_group;
 
-    //speed up structure
-    std::unordered_map<uint64_t, int> control_point_to_edge;
+   
 
     YBox aabb;
     int GetVertexPairEdge(int vertex_id0, int vertex_id1)const ;
@@ -148,6 +162,8 @@ public:
     // all referenced
     bool Valid() const;
     void Merge(ImportedRawMesh& other);
+    void ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
+    void ComputeTriangleNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
 };
 
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);

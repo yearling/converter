@@ -12,6 +12,7 @@ struct VS_INPUT
 {
 	float3    vPosition		: position;
 	float3    vNormal       : normal;
+	float3    vTangent       : tangent;
 	float2    vTexCoord     : uv;
 	// half3     TangentX		: ATTRIBUTE1;
 	// half4     TangentZ		: ATTRIBUTE2;
@@ -23,6 +24,7 @@ struct VS_OUTPUT
 	float4 vPosition	: SV_POSITION;
 	float4 vColor		: COLOR0;
 	float3 vNormal      : NORMAL;
+	float3 vTangent      : Tangent;
 };
 
 VS_OUTPUT VSMain(VS_INPUT Input)
@@ -37,6 +39,7 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	float4 trans_normal = mul(float4(Input.vNormal,0.0), g_world);
 	Output.vNormal = trans_normal.xyz;
 	Output.vNormal = normalize(Output.vNormal);
+	Output.vTangent = normalize(mul(float4(Input.vTangent,0.0), g_world).xyz);
 	// matrix matWVP = mul(g_world, g_VP);
 
 	// Output.vPosition = mul(float4(Input.vPosition,1.0), matWVP);
@@ -90,7 +93,7 @@ float4 PSMain(VS_OUTPUT Input) :SV_Target
 	float3 srgb = LinearToSrgbBranching(float3(ndl,ndl,ndl));
 	if(show_normal>0.0)
 	{
-		float3 normal_color = CoverNormalToColor(Input.vNormal);
+		float3 normal_color = CoverNormalToColor(Input.vTangent);
 		return float4(normal_color,1.0);
 	}
 	return float4(srgb,1.0);	

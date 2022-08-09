@@ -34,15 +34,17 @@ public:
 	YVector(float in_x, float in_y, float in_z);
 	float& operator[](int index);
 	float operator[](int index)const;
-	bool IsNearlyZero(float tolerance = KINDA_SMALL_NUMBER) const;
+	bool IsNearlyZero(float tolerance = SMALL_NUMBER) const;
 	bool ContainsNaN() const;
 	YVector GetSafeNormal(float Tolerance = SMALL_NUMBER) const;
+    bool Normalize(float Tolerance = SMALL_NUMBER);
 	YVector operator^(const YVector& v) const;
 	YVector operator*(float mul)const;
 	static YVector CrossProduct(const YVector& a, const YVector& b);
 	float	operator|(const YVector& v) const;
-	float Dot(const YVector& a, const YVector& b);
-	bool Equals(const YVector& v, float Tolerance = KINDA_SMALL_NUMBER) const;
+	static float Dot(const YVector& a, const YVector& b);
+	bool Equals(const YVector& v, float Tolerance = SMALL_NUMBER) const;
+    static void YVector::CreateOrthonormalBasis(YVector& XAxis, YVector& YAxis, YVector& ZAxis);
     FORCEINLINE float Size() const
     {
         return YMath::Sqrt(x * x + y * y + z * z);

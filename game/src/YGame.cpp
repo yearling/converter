@@ -144,33 +144,39 @@ bool GameApplication::Initial()
 	//const std::string file_path = "E:/fbx/bs/animation/man_talking.fbx";
 	//const std::string file_path = "E:/fbx/bs/animation/female_talking2.fbx";
     //const std::string file_path = "E:/fbx/EpicCharacter_Run.fbx";
-    //const std::string file_path = "E:/fbx/static_mesh/plane/space-ship/source/space_ship.fbx";
     //const std::string file_path = "E:/fbx/test_case/two_uv_two_material/test_uv_set.fbx";
-    // error
-    //const std::string file_path = "E:/fbx/static_mesh/animal/awil-werewolf/source/Werewolf.fbx"; // crash ,boen has the same name
-    // error
-    //const std::string file_path = "E:/fbx/static_mesh/sword/dragon-sword/source/Dragon_Bone_Sword.fbx";
-    //const std::string file_path = "E:/fbx/static_mesh/animal/sci-fi-character-dragon-warrior-futuristic/source/dragonArmor_retopo_pose.fbx"; //skeltal mesh
+
+    // static mesh
+    const std::string file_path = "E:/fbx/static_mesh/plane/free-spaceship/source/Spaceship_05.fbx";    //very good
+    //const std::string file_path = "E:/fbx/static_mesh/plane/space-ship/source/space_ship.fbx";
     //const std::string file_path = "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog.fbx"; // good for degenerate triangle
-    const std::string file_path = "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog3.fbx"; // good for degenerate triangle
-    //const std::string file_path = "E:/fbx/static_mesh/architecture/gothic-building-for-aria-pack-10/source/GothicBuildingForAriaPack.fbx"; // test for AA
-    //const std::string file_path = "E:/fbx/static_mesh/bose/felstrider-mount/source/FelstriderAnimation.fbx"; 
-    //const std::string file_path = "E:/fbx/static_mesh/bose/four-horsemen-24-pestilence-and-famine/source/Pestilence_4.fbx";  // crash
-    //const std::string file_path = "E:/fbx/static_mesh/bose/four-horsemen-44-conquest/source/ConquestSketchfab.fbx";  // crash
-    //const std::string file_path = "E:/fbx/static_mesh/bose/ibis/source/Ibis.fbx";  // crash
+    //const std::string file_path = "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog3.fbx"; // good for degenerate triangle
+    //const std::string file_path = "E:/fbx/static_mesh/sword/dragon-sword/source/Dragon_Bone_Sword.fbx";
+    //const std::string file_path = "E:/fbx/static_mesh/architecture/gothic-building-for-aria-pack-10/source/GothicBuildingForAriaPack.fbx"; // test for AA,large scale
+    //const std::string file_path = "E:/fbx/static_mesh/bose/felstrider-mount/source/FelstriderAnimation.fbx"; //multi mesh
     //const std::string file_path = "E:/fbx/static_mesh/bose/imp/source/Imp_Posed.fbx"; 
-    //const std::string file_path = "E:/fbx/static_mesh/bose/mandalorian-grogu-floating-pram/source/Mandalorian_The_Child_D.fbx";  // crash 尤达
-    //const std::string file_path = "E:/fbx/static_mesh/bose/rafaj-the-mulberry-warlock/source/Rafaj.fbx";  // bug ,skin error
-    //const std::string file_path = "E:/fbx/static_mesh/bose/red-cherub/source/CherubTest.fbx";   // good  skeletal mesh  
+    //const std::string file_path = "E:/fbx/static_mesh/bose/mandalorian-grogu-floating-pram/source/Mandalorian_The_Child_D.fbx";  // 尤达, hi poly
     //const std::string file_path = "E:/fbx/static_mesh/bose/toxic-toby-dae-stylized-creation/source/SC_FInal_FullSCene.fbx";   // good    
-    //const std::string file_path = "E:/fbx/static_mesh/car/6e48z1kc7r40-bugatti/bugatti.obj";   // no materials   
+    //const std::string file_path = "E:/fbx/static_mesh/car/6e48z1kc7r40-bugatti/bugatti.obj";   // crash, no uv, no materials   
     //const std::string file_path = "E:/fbx/static_mesh/car/futuristic-truck/source/SketchXport.fbx";   // good for testing soft edege   
     //const std::string file_path = "E:/fbx/static_mesh/car/heavy-runner-2087/source/HeavyRunner_1.fbx";   // good for testing soft edege, should scale 0.01   
     //const std::string file_path = "E:/fbx/static_mesh/car/honda-cb-750-f-super-sport-1970/source/Honda.obj";   // no materials ,good   
     //const std::string file_path = "E:/fbx/static_mesh/car/hw7-details-2-xyz-draft-punk/source/2.obj";   // no materials ,good   
-    //const std::string file_path = "E:/fbx/static_mesh/car/mazda-rx-7/source/rx7.fbx";   // good for testing soft edege, should scale 0.01 
+    //const std::string file_path = "E:/fbx/static_mesh/car/mazda-rx-7/source/rx7.fbx";   //crash, good for testing soft edege, should scale 0.01 
+    //const std::string file_path = "E:/fbx/static_mesh/mask/Jonathan_BENAINOUS/source/sci-fi-helmet-blue-neon-jonathan-benainous.fbx";   //花钱买的
     //const std::string file_path = "E:/fbx/static_mesh/car/motorcycle-szh2i2-demo/source/SZH2I2HDAndLDExport.fbx";   // crash
     //const std::string file_path = "E:/fbx/static_mesh/car/oshkosh-m-atv-reinvented/source/Model_1.fbx";   // good for test AA
+    //const std::string file_path = "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx";   // crash
+
+    // skeletal mesh
+    //const std::string file_path = "E:/fbx/static_mesh/animal/sci-fi-character-dragon-warrior-futuristic/source/dragonArmor_retopo_pose.fbx"; //skeltal mesh
+    //const std::string file_path = "E:/fbx/static_mesh/animal/awil-werewolf/source/Werewolf.fbx"; // crash ,boen has the same name
+    //const std::string file_path = "E:/fbx/static_mesh/bose/four-horsemen-24-pestilence-and-famine/source/Pestilence_4.fbx";  // crash
+    //const std::string file_path = "E:/fbx/static_mesh/bose/four-horsemen-44-conquest/source/ConquestSketchfab.fbx";  // crash
+    //const std::string file_path = "E:/fbx/static_mesh/bose/ibis/source/Ibis.fbx";  // crash
+    //const std::string file_path = "E:/fbx/static_mesh/bose/rafaj-the-mulberry-warlock/source/Rafaj.fbx";  // bug ,skin error
+    //const std::string file_path = "E:/fbx/static_mesh/bose/red-cherub/source/CherubTest.fbx";   // good  skeletal mesh  
+
     //const std::string file_path = "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx";   // crash
     //const std::string file_path = "E:/fbx/static_mesh/cloth/haveto-red-mage-helmet-flow-ver-preview/source/RedMageHelmetFlowVer.fbx";   // good
     //const std::string file_path = "E:/fbx/static_mesh/cloth/red-mage-helmet-flow-ver2/source/RedMageHelmetFlowVer2.fbx";   // good
@@ -204,7 +210,6 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/human/silk-shirt-suit-retopo-for-ray-ii/source/SilkShirtSuitRetopoForRayII.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/subsurface-scattering-sss-demo-lara/source/sss.fbx";    //skin error
     //const std::string file_path = "E:/fbx/static_mesh/plane/AH64A/AH64A.fbx";    //very good
-    //const std::string file_path = "E:/fbx/static_mesh/plane/free-spaceship/source/Spaceship_02.fbx";    //very good
     //const std::string file_path = "E:/fbx/static_mesh/plane/ornithopter-dune-2021-se-build-by-zeo/source/Ornithopter_v011_Wings_Spread.obj";    // normal error
     //const std::string file_path = "E:/fbx/static_mesh/plane/space-ship/source/space_ship.fbx";    // very good    
     //const std::string file_path = "E:/fbx/static_mesh/robot/64-iron_man_mark_44_hulkbuster/Iron_Man_Mark_44_Hulkbuster_fbx.fbx";    // crash   
@@ -222,6 +227,7 @@ bool GameApplication::Initial()
         const FbxImportSceneInfo* scene_info = static_mesh_importer->GetImportedSceneInfo();
         importer_param.model_name = scene_info->model_name;
 		importer_param.transform_vertex_to_absolute = true;
+        importer_param.import_scaling = YVector(0.1, 0.1, 0.1);
         if (scene_info->has_skin)
         {
             importer_param.import_as_skelton = true;

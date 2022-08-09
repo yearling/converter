@@ -574,33 +574,33 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
         smoothing_reference_mode = layer_element_smoothing->GetReferenceMode();
     }
 
-    if (!is_smoothing_avaliable)
-    {
-        //不是maya或者是max导出的，有可能是obj模型~
-        fbx_geometry_converter_->ComputeEdgeSmoothingFromNormals(fbx_mesh);
-        layer_element_smoothing = base_layer->GetSmoothing();
-        smoothing_reference_mode = FbxLayerElement::eDirect;
-        smoothing_mapping_mode = FbxLayerElement::eByEdge;
-        if (layer_element_smoothing)
-        {
-            if (layer_element_smoothing->GetMappingMode() == FbxLayerElement::eByPolygon)
-            {
-                // convert the base layer to edge smoothing
-                fbx_geometry_converter_->ComputeEdgeSmoothingFromPolygonSmoothing(fbx_mesh, 0);
-                base_layer = fbx_mesh->GetLayer(0);
-                layer_element_smoothing = base_layer->GetSmoothing();
-            }
+    //if (!is_smoothing_avaliable)
+    //{
+    //    //不是maya或者是max导出的，有可能是obj模型~
+    //    fbx_geometry_converter_->ComputeEdgeSmoothingFromNormals(fbx_mesh);
+    //    layer_element_smoothing = base_layer->GetSmoothing();
+    //    smoothing_reference_mode = FbxLayerElement::eDirect;
+    //    smoothing_mapping_mode = FbxLayerElement::eByEdge;
+    //    if (layer_element_smoothing)
+    //    {
+    //        if (layer_element_smoothing->GetMappingMode() == FbxLayerElement::eByPolygon)
+    //        {
+    //            // convert the base layer to edge smoothing
+    //            fbx_geometry_converter_->ComputeEdgeSmoothingFromPolygonSmoothing(fbx_mesh, 0);
+    //            base_layer = fbx_mesh->GetLayer(0);
+    //            layer_element_smoothing = base_layer->GetSmoothing();
+    //        }
 
-            if (layer_element_smoothing->GetMappingMode() == FbxLayerElement::eByEdge)
-            {
-                is_smoothing_avaliable = true;
-            }
+    //        if (layer_element_smoothing->GetMappingMode() == FbxLayerElement::eByEdge)
+    //        {
+    //            is_smoothing_avaliable = true;
+    //        }
 
 
-            smoothing_mapping_mode = layer_element_smoothing->GetMappingMode();
-            smoothing_reference_mode = layer_element_smoothing->GetReferenceMode();
-        }
-    }
+    //        smoothing_mapping_mode = layer_element_smoothing->GetMappingMode();
+    //        smoothing_reference_mode = layer_element_smoothing->GetReferenceMode();
+    //    }
+    //}
 
     // get the first vertex color layer
     FbxLayerElementVertexColor* vertex_color = base_layer->GetVertexColors();
@@ -681,7 +681,8 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
             return false;
         }
     }
-
+    //speed up structure
+    std::unordered_map<uint64_t, int> control_point_to_fbx_edge; //internal
     fbx_mesh->BeginGetMeshEdgeVertices();
     int fbx_edge_count = fbx_mesh->GetMeshEdgeCount();
     for (int fbx_edge_index = 0; fbx_edge_index < fbx_edge_count; ++fbx_edge_index)
@@ -690,9 +691,9 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
         int edge_end_control_point_index = -1;
         fbx_mesh->GetMeshEdgeVertices(fbx_edge_index, edge_start_control_point_index, edge_end_control_point_index);
         uint64_t compacted_key = static_cast<uint64_t>(edge_start_control_point_index) << 32 | static_cast<uint64_t>(edge_end_control_point_index);
-        raw_mesh.control_point_to_edge[compacted_key] = fbx_edge_index;
+        control_point_to_fbx_edge[compacted_key] = fbx_edge_index;
         uint64_t compacted_key_reverse = static_cast<uint64_t>(edge_end_control_point_index) << 32 | static_cast<uint64_t>(edge_start_control_point_index);
-        raw_mesh.control_point_to_edge[compacted_key_reverse] = fbx_edge_index;
+        control_point_to_fbx_edge[compacted_key_reverse] = fbx_edge_index;
     }
     fbx_mesh->EndGetMeshEdgeVertices();
 
@@ -737,8 +738,18 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 const YVector normal = (p[1] - p[2]) ^ (p[0] - p[2]).GetSafeNormal(comparision_threshold);
                 if (normal.IsNearlyZero(comparision_threshold) || normal.ContainsNaN())
                 {
+                    has_degenerated_polygons = true;
                     skipped_wedges += polygon_vertex_count_3;
                     WARNING_INFO(fbx_mesh->GetName(), " has degenerate traingle, control point id is ", control_point_ids[0], "  ,", control_point_ids[1], "  ,", control_point_ids[2]);
+                    continue;
+                }
+                const float triagnle_comparsion_threshold = (float)import_param_->remove_degenerate_triangles ? THRESH_POINTS_ARE_SAME : 0.f;
+                if ((p[0].Equals(p[1], triagnle_comparsion_threshold)
+                    || p[0].Equals(p[2], triagnle_comparsion_threshold)
+                    || p[1].Equals(p[2], triagnle_comparsion_threshold)))
+                {
+                    WARNING_INFO(fbx_mesh->GetName(), " has degenerate traingle, control point id is ", control_point_ids[0], "  ,", control_point_ids[1], "  ,", control_point_ids[2]);
+                    skipped_wedges += polygon_vertex_count_3;
                     continue;
                 }
 
@@ -808,7 +819,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                     FbxVector4 temp_value = normal_layer->GetDirectArray().GetAt(normal_value_index);
                     temp_value = total_matrix_for_normal.MultT(temp_value);
                     YVector tangent_z = converter_.ConvertDir(temp_value);
-                    wedge.normal = tangent_z;
+                    wedge.normal = tangent_z.GetSafeNormal();
 
                     if (has_NTB_information)
                     {
@@ -817,7 +828,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                         FbxVector4 tangent_value = tangent_layer->GetDirectArray().GetAt(tangent_value_index);
                         tangent_value = total_matrix_for_normal.MultT(tangent_value);
                         YVector tangent_x = converter_.ConvertDir(tangent_value);
-                        wedge.tangent = tangent_x;
+                        wedge.tangent = tangent_x.GetSafeNormal();
 
                         int binormal_map_index = (binormal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : polygon_vertex_index;
                         int binormal_value_index = (binormal_reference_mode == FbxLayerElement::eDirect) ? binormal_map_index : binormal_layer->GetIndexArray().GetAt(binormal_map_index);
@@ -825,30 +836,12 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                         binormal_value = total_matrix_for_normal.MultT(binormal_value);
                         // 保持手性
                         YVector tanget_y = -converter_.ConvertDir(binormal_value);
-                        wedge.bitangent = tanget_y;
+                        wedge.bitangent = tanget_y.GetSafeNormal();
                         wedge.binormal_sign = YMath::GetBasisDeterminantSign(tangent_x, tanget_y, tangent_z);
                     }
                 }
             }
-            // Check if the polygon just discovered is non-degenerate if we haven't found one yet
-            //TODO check all polygon vertex, not just the first 3 vertex
-            //if (!has_no_degenerated_polygons)
-            {
-                float triagnle_comparsion_threshold = (float)import_param_->remove_degenerate_triangles ? THRESH_POINTS_ARE_SAME : 0.f;
-                YVector vertex_position[3];
-                vertex_position[0] = raw_mesh.control_points[control_point_ids[0]].position;
-                vertex_position[1] = raw_mesh.control_points[control_point_ids[1]].position;
-                vertex_position[2] = raw_mesh.control_points[control_point_ids[2]].position;
-
-                if ((vertex_position[0].Equals(vertex_position[1], triagnle_comparsion_threshold)
-                    || vertex_position[0].Equals(vertex_position[2], triagnle_comparsion_threshold)
-                    || vertex_position[1].Equals(vertex_position[2], triagnle_comparsion_threshold)))
-                {
-                    has_degenerated_polygons = true;
-                    WARNING_INFO(fbx_mesh->GetName(), " has degenerate traingle, control point id is ", control_point_ids[0], "  ,",control_point_ids[1], "  ,",control_point_ids[2]);
-                }
-            }
-
+           
             //material index
             int material_index = 0;
             if (material_count > 0)
@@ -924,9 +917,9 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                     //When raw mesh will be completely remove we can create the edges right after the vertex creation.
                     int fbx_edge_index = INVALID_ID;
                     uint64_t compacted_key = ((uint64_t)control_points[0]) << 32 | ((uint64_t)control_points[1]);
-                    if (raw_mesh.control_point_to_edge.count(compacted_key))
+                    if (control_point_to_fbx_edge.count(compacted_key))
                     {
-                        fbx_edge_index = raw_mesh.control_point_to_edge[compacted_key];
+                        fbx_edge_index = control_point_to_fbx_edge[compacted_key];
                     }
                     else
                     {
@@ -945,6 +938,10 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                         }
 
                         fbx_edge_index = fbx_mesh->GetMeshEdgeIndexForPolygon(polygon_index, polygon_edge_number);
+                    }
+                    if (fbx_edge_index == INVALID_ID)
+                    {
+                        
                     }
                     float edge_crease = (float)fbx_mesh->GetEdgeCreaseInfo(fbx_edge_index);
                     YMeshEdge& cur_edge = raw_mesh.edges[match_edge_id];
@@ -1001,19 +998,45 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
         return false;
     }
     std::shared_ptr<ImportedRawMesh> new_copyed_mesh = std::make_shared<ImportedRawMesh>();
-    //*new_copyed_mesh = *raw_meshes[0];
+    *new_copyed_mesh = *raw_meshes[0];
+    LOG_INFO("Bengin merge scene");
+    int all_control_point_size = 0;
+    int all_wedge_size = 0;
+    int all_polygon_size = 0;
+    int all_edge_size = 0;
+    int all_polygon_group_size = 0;
+
+    for (std::shared_ptr<ImportedRawMesh>& impored_raw_mesh : raw_meshes)
+    {
+        all_control_point_size += impored_raw_mesh->control_points.size();
+        all_wedge_size += impored_raw_mesh->wedges.size();
+        all_polygon_size += impored_raw_mesh->polygons.size();
+        all_edge_size += impored_raw_mesh->edges.size();
+        all_polygon_group_size += impored_raw_mesh->polygon_groups.size();
+    }
+
+    new_copyed_mesh->control_points.reserve(all_control_point_size);
+    new_copyed_mesh->wedges.reserve(all_wedge_size);
+    new_copyed_mesh->polygons.reserve(all_polygon_size);
+    new_copyed_mesh->edges.reserve(all_edge_size);
+    new_copyed_mesh->polygon_groups.reserve(all_polygon_group_size);
+    new_copyed_mesh->polygon_group_to_material.reserve(all_polygon_group_size);
+
 
     for (int mesh_index = 1; mesh_index < (int)raw_meshes.size(); ++mesh_index)
     {
-        raw_meshes[0]->Merge(*raw_meshes[mesh_index]);
+        new_copyed_mesh->Merge(*raw_meshes[mesh_index]);
     }
-
-    raw_mesh->vertex_position = raw_meshes[0]->control_points;
-    raw_mesh->vertex_instances = raw_meshes[0]->wedges;
-    raw_mesh->polygons = raw_meshes[0]->polygons;
-    raw_mesh->edges = raw_meshes[0]->edges;
-    raw_mesh->polygon_groups = raw_meshes[0]->polygon_groups;
-    raw_mesh->polygon_group_to_material = raw_meshes[0]->polygon_group_to_material;
+    LOG_INFO("End merge scene");
+    new_copyed_mesh->ComputeTriangleNormalAndTangent(Caculate, Mikkt);
+    
+   
+    raw_mesh->vertex_position = new_copyed_mesh->control_points;
+    raw_mesh->vertex_instances = new_copyed_mesh->wedges;
+    raw_mesh->polygons = new_copyed_mesh->polygons;
+    raw_mesh->edges = new_copyed_mesh->edges;
+    raw_mesh->polygon_groups = new_copyed_mesh->polygon_groups;
+    raw_mesh->polygon_group_to_material = new_copyed_mesh->polygon_group_to_material;
 #if 0
     raw_mesh->vertex_position = raw_meshes[0]->control_points;
     raw_mesh->vertex_instances = raw_meshes[0]->wedges;

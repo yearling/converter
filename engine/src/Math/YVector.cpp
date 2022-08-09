@@ -107,6 +107,41 @@ YVector YVector::GetSafeNormal(float Tolerance) const
 	return YVector(x * Scale, y * Scale, z * Scale);
 }
 
+bool YVector::Normalize(float Tolerance /*= SMALL_NUMBER*/)
+{
+    const float SquareSum = x * x + y * y + z * z;
+    if (SquareSum > Tolerance)
+    {
+        const float Scale = YMath::InvSqrt(SquareSum);
+        x *= Scale; y *= Scale; z *= Scale;
+        return true;
+    }
+    return false;
+}
+
+void YVector::CreateOrthonormalBasis(YVector& XAxis, YVector& YAxis, YVector& ZAxis)
+{
+    // Project the X and Y axes onto the plane perpendicular to the Z axis.
+    XAxis = XAxis - (XAxis | ZAxis) / (ZAxis | ZAxis) * ZAxis;
+    YAxis = YAxis - (YAxis | ZAxis) / (ZAxis | ZAxis) * ZAxis;
+
+    // If the X axis was parallel to the Z axis, choose a vector which is orthogonal to the Y and Z axes.
+    if (XAxis.SizeSquared() < DELTA * DELTA)
+    {
+        XAxis = YAxis ^ ZAxis;
+    }
+
+    // If the Y axis was parallel to the Z axis, choose a vector which is orthogonal to the X and Z axes.
+    if (YAxis.SizeSquared() < DELTA * DELTA)
+    {
+        YAxis = XAxis ^ ZAxis;
+    }
+
+    // Normalize the basis vectors.
+    XAxis.Normalize();
+    YAxis.Normalize();
+    ZAxis.Normalize();
+}
 YVector YVector::operator^(const YVector& v) const
 {
 	return YVector

@@ -69,10 +69,8 @@ bool YApplication::WindowCreate(int width, int height)
 	}
 	DWORD WindowsWithTitleAndBoderStyle = WS_TILEDWINDOW | WS_SIZEBOX;
 	DWORD WindowsPOPStyle = WS_POPUP;
-	int default_win_width = 1920;
-	int default_win_height = 1080;
 	HWND hwnd = CreateWindow("D3D11Demo", "SolidAngleEngine", WindowsWithTitleAndBoderStyle, CW_USEDEFAULT, CW_USEDEFAULT,
-		default_win_width, default_win_width,
+        width, height,
 		nullptr,
 		nullptr,
 		instance_,
@@ -84,7 +82,7 @@ bool YApplication::WindowCreate(int width, int height)
 		return false;
 	}
 	else {
-		RECT window_rect = { 0, 0, (LONG)default_win_width,(LONG)default_win_height };
+		RECT window_rect = { 0, 0, (LONG)width,(LONG)height };
 		// make the call to adjust window_rect
 		::AdjustWindowRect(&window_rect, GetWindowStyle(hwnd), ::GetMenu(hwnd) != nullptr);
 		MoveWindow(hwnd, 400,                           // x position
@@ -99,8 +97,8 @@ bool YApplication::WindowCreate(int width, int height)
 	SetWindowPos(hwnd, HWND_TOP, 1, 1, 1, 1, SWP_NOMOVE | SWP_NOSIZE);
 	std::unique_ptr<YWindow> new_window = std::make_unique<YWindow>();
 	new_window->SetHWND(hwnd);
-	new_window->SetWidth(default_win_width);
-	new_window->SetHeight(default_win_height);
+	new_window->SetWidth(width);
+	new_window->SetHeight(height);
 	windows_.push_back(std::move(new_window));
 	return true;
 }

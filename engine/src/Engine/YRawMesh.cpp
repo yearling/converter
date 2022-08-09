@@ -6,6 +6,7 @@
 #include <algorithm>
 #include "Utility/YStringFormat.h"
 #include <set>
+#include "Math/NumericLimits.h"
 YLODMesh::YLODMesh()
 {
 
@@ -253,6 +254,7 @@ int ImportedRawMesh::CreatePolygon(int polygon_group_id, std::vector<int> in_wed
         int control_point_id = wedges[in_wedges[i]].control_point_id;
         int next_control_point_id = wedges[in_wedges[i_next]].control_point_id;
         int edge_idex = GetVertexPairEdge(control_point_id, next_control_point_id);
+
         //create edges
         if (edge_idex == INVALID_ID)
         {
@@ -539,17 +541,165 @@ void ImportedRawMesh::Merge(ImportedRawMesh& other)
         polygon_group_to_material[new_polygon_group_id] = other.polygon_group_to_material[other_polygon_group_index];
     }
 
-    // edge_verttex_id_to_edge_id
-    for (int new_edge_index = self_edge_size; new_edge_index < edges.size(); ++new_edge_index)
+    assert(Valid());
+}
+
+void ImportedRawMesh::ComputeTriangleNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method)
+{
+    if (normal_method == NormalCaculateMethod::ImportNormalAndTangnet)
     {
-        YMeshEdge& edge = edges[new_edge_index];
-        uint64_t compacted_key = ((uint64_t)edge.control_points_ids[0]) << 32 | ((uint64_t)edge.control_points_ids[1]);
-        uint64_t compacted_key2 = ((uint64_t)edge.control_points_ids[1]) << 32 | ((uint64_t)edge.control_points_ids[0]);
-        assert(control_point_to_edge.count(compacted_key) == 0);
-        assert(control_point_to_edge.count(compacted_key2) == 0);
-        control_point_to_edge[compacted_key] = new_edge_index;
-        control_point_to_edge[compacted_key2] = new_edge_index;
+        return;
     }
 
-    assert(Valid());
+    // Calculate the center of this polygon
+   
+    float AdjustedComparisonThreshold = YMath::Max(SMALL_NUMBER, MIN_flt);
+    for (const YMeshPolygonGroup& polygon_group : polygon_groups)
+    {
+        for (int polygon_id : polygon_group.polygons)
+        {
+            bool bValidNTBs = true;
+            // Calculate the tangent basis for the polygon, based on the average of all constituent triangles
+            YVector Normal(YVector::zero_vector);
+            YVector Tangent(YVector::zero_vector);
+            YVector Binormal(YVector::zero_vector);
+
+            YMeshPolygon& polygon = polygons[polygon_id];
+            const std::vector<int>& wedge_ids = polygon.wedge_ids;
+            int control_point_id0 = wedges[wedge_ids[0]].control_point_id;
+            int control_point_id1 = wedges[wedge_ids[1]].control_point_id;
+            int control_point_id2 = wedges[wedge_ids[2]].control_point_id;
+
+            const YVector Position0 = control_points[control_point_id0].position;
+            const YVector DPosition1 = control_points[control_point_id1].position - Position0;
+            const YVector DPosition2 = control_points[control_point_id2].position - Position0;
+
+            const YVector2 UV0 = wedges[wedge_ids[0]].uvs[0];
+            const YVector2 DUV1 = wedges[wedge_ids[1]].uvs[0] - UV0;
+            const YVector2 DUV2 = wedges[wedge_ids[2]].uvs[0] - UV0;
+
+            // We have a left-handed coordinate system, but a counter-clockwise winding order
+            // Hence normal calculation has to take the triangle vectors cross product in reverse.
+            YVector TmpNormal = YVector::CrossProduct(DPosition2, DPosition1).GetSafeNormal(AdjustedComparisonThreshold);
+            if (!TmpNormal.IsNearlyZero(SMALL_NUMBER))
+            {
+                YMatrix	ParameterToLocal(
+                    YVector4(DPosition1,0.0f),
+                    YVector4(DPosition2,0.0f),
+                    YVector4(Position0,0.0f),
+                    YVector4(0.0,0.0,0.0,1.0)
+                );
+
+                YMatrix ParameterToTexture(
+                    YVector4(DUV1.x, DUV1.y, 0, 0),
+                    YVector4(DUV2.x, DUV2.y, 0, 0),
+                    YVector4(UV0.x, UV0.y, 1, 0),
+                    YVector4(0, 0, 0, 1)
+                );
+
+                // Use InverseSlow to catch singular matrices.  Inverse can miss this sometimes.
+                const YMatrix TextureToLocal = ParameterToTexture.Inverse() * ParameterToLocal;
+
+                YVector TmpTangent = TextureToLocal.TransformVector(YVector(1, 0, 0)).GetSafeNormal();
+                YVector TmpBinormal = TextureToLocal.TransformVector(YVector(0, 1, 0)).GetSafeNormal();
+                YVector::CreateOrthonormalBasis(TmpTangent, TmpBinormal, TmpNormal);
+
+                if (TmpTangent.IsNearlyZero() || TmpTangent.ContainsNaN()
+                    || TmpBinormal.IsNearlyZero() || TmpBinormal.ContainsNaN())
+                {
+                    TmpTangent = YVector::zero_vector;
+                    TmpBinormal = YVector::zero_vector;
+                    bValidNTBs = false;
+                }
+
+                if (TmpNormal.IsNearlyZero() || TmpNormal.ContainsNaN())
+                {
+                    TmpNormal = YVector::zero_vector;
+                    bValidNTBs = false;
+                }
+
+                Normal = TmpNormal;
+                Tangent = TmpTangent;
+                Binormal = TmpBinormal;
+            }
+            else
+            {
+                //This will force a recompute of the normals and tangents
+                Normal = YVector::zero_vector;
+                Tangent = YVector::zero_vector;
+                Binormal = YVector::zero_vector;
+
+                // The polygon is degenerated
+                bValidNTBs = false;
+            }
+            if (!bValidNTBs)
+            {
+                WARNING_INFO(StringFormat("triangle %d has bad NTB", polygon_id));
+            }
+            polygon.normal = Normal.GetSafeNormal();
+            polygon.tangent = Tangent.GetSafeNormal();
+            polygon.bitangent = Binormal.GetSafeNormal();
+            for (int i = 0; i < 3; ++i) {
+                wedges[wedge_ids[i]].normal = polygon.normal;
+                wedges[wedge_ids[i]].tangent = polygon.tangent;
+                wedges[wedge_ids[i]].bitangent = polygon.bitangent;
+
+            }
+        }
+    }
+}
+
+void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method)
+{
+    bool tangent_valid = false;
+    bool btn_valid = true;
+
+    for (YMeshVertexWedge& wedge : wedges)
+    {
+        if (!wedge.tangent.Equals(YVector(1.0, 0.0, 0.0)))
+        {
+            tangent_valid = true;
+            break;
+        }
+    }
+    if (tangent_valid)
+    {
+        for (YMeshVertexWedge& wedge : wedges)
+        {
+            if (wedge.tangent.IsNearlyZero() ||
+                wedge.bitangent.IsNearlyZero() ||
+                wedge.normal.IsNearlyZero())
+            {
+                btn_valid = false;
+                break;
+            }
+
+            YVector test_normal = YVector::CrossProduct(wedge.tangent, wedge.bitangent).GetSafeNormal();
+            float samilirity = YMath::Abs(YVector::Dot(test_normal,wedge.normal));
+            if (!YMath::IsNearlyEqual(samilirity,1.0f,SMALL_NUMBER))
+            {
+                btn_valid = false;
+                break;
+            }
+        }
+    }
+    else
+    {
+        btn_valid = false;
+    }
+
+    if (tangent_valid && btn_valid && normal_method == ImportNormalAndTangnet)
+    {
+        return;
+    }
+
+    if (!tangent_valid && normal_method == ImportNormalAndTangnet)
+    {
+        normal_method = ImportNormal;
+    }
+
+
+    ComputeTriangleNormalAndTangent(normal_method, tangent_method);
+   
+
 }

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <string>
 #include <memory>
 #include "fbxsdk.h"
@@ -72,44 +72,65 @@ public:
 	bool ImportFile(const std::string& file_path);
 	const FbxImportSceneInfo* GetImportedSceneInfo() const;
 	bool ParseFile(const FbxImportParam& import_param, ConvertedResult& out_result);
+
 protected:
-	std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string&  mesh_name,int lod_index = 0);
-	std::unique_ptr<YSkeletonMesh> ImportSkeletonMesh(FbxNode* root_node, const std::string& mesh_name);
-	std::unique_ptr<YSkeleton> BuildSkeleton(FbxNode* root_node,std::unordered_map<int,FbxNode*>& out_map);
-	std::unique_ptr<AnimationData> ImportAnimationData(YSkeleton* skeleton,  std::unordered_map<int, FbxNode*>& bone_id_to_fbxnode);
-protected:
-	void RenameNodeName();
-	void RenameMaterialName();
-	void ParseSceneInfo();
-	void ConvertSystemAndUnit();
-	void ValidateAllMeshesAreReferenceByNodeAttribute();
-	void ApplyTransformSettingsToFbxNode(FbxNode* node);
-	void BuildFbxMatrixForImportTransform(FbxAMatrix & out_matrix);
-	void GetMeshArray(FbxNode* root,std::vector<FbxNode*>& fbx_mesh_nodes);
-	void CheckSmoothingInfo(FbxMesh* fbx_mesh);
-	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<std::shared_ptr<YFbxMaterial>>& existing_materials);
-	bool BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& raw_mesh);
-    bool BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes);
-    //»ñÈ¡µ±Ç°nodeÀïËùÓĞµÄFbxMaterial£¬²¢±£´æÔÚout_materialsÖĞ£¬keyÊÇfbxÀïµÄmaterialµÄindex¡£
-    //ÒòÎª²ÄÖÊÊÇ¿çmeshµÄ£¬ËùÒÔÊ¹ÓÃimported_material_dataÀ´×÷Îªmanager£¬Ê¹ÓÃFbxSurfaceMaterial*×÷ÎªkeyÀ´±£Ö¤ÏàÍ¬µÄfbx²ÄÖÊ
-    //Éú³ÉÎ¨Ò»µÄ²ÄÖÊ
-	void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YFbxMaterial>>& out_materials, std::vector<std::string>& us_sets);
-	std::shared_ptr<YFbxMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
-	FbxAMatrix ComputeTotalMatrix(FbxNode* node);
-	bool IsOddNegativeScale(FbxAMatrix& total_matrix);
+
 
 protected:
 	//skeleton mesh:bone
 	FbxNode* GetRootSketeton(FbxNode* link);
 	bool RetrievePoseFromBindPose(const std::vector<FbxNode*>& mesh_nodes, std::vector<FbxPose*>& pose_array);
 	void RecursiveBuildSkeleton(FbxNode* link, std::vector<FbxNode*>& out_bones);
+	std::unique_ptr<YSkeleton> BuildSkeleton(FbxNode* root_node,std::unordered_map<int,FbxNode*>& out_map);
 
 protected:
+    // animation 
+	std::unique_ptr<AnimationData> ImportAnimationData(YSkeleton* skeleton,  std::unordered_map<int, FbxNode*>& bone_id_to_fbxnode);
+
+protected:
+    //skeleton mesh:skin
+	std::unique_ptr<YSkeletonMesh> ImportSkeletonMesh(FbxNode* root_node, const std::string& mesh_name);
 	std::unique_ptr<YSkinDataImported> ImportSkinData(YSkeleton* skeleton, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs);
 	bool ImportBlendShapeAnimation(YSkinDataImported* skin_data, AnimationData* anim_data, const std::vector<FbxNode*>& mesh_contain_skeleton_and_bs);
-	void RecursiveFindMesh(FbxNode* node, std::vector<FbxNode*>& mesh_nodes);
 	bool PostProcessSkeletonMesh(YSkeletonMesh* skeleton_mesh);
+
+protected:
+    //static mesh
+	std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string&  mesh_name,int lod_index = 0);
+	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<std::shared_ptr<YFbxMaterial>>& existing_materials);
+	bool BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& raw_mesh);
+    bool BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes);
+
+    // å…¬å…±å‡½æ•°
+protected:
+	void RecursiveFindMesh(FbxNode* node, std::vector<FbxNode*>& mesh_nodes);
+    void RenameNodeName();
+    void RenameMaterialName();
+    void ParseSceneInfo();
+    void ValidateAllMeshesAreReferenceByNodeAttribute();
+    void GetMeshArray(FbxNode* root, std::vector<FbxNode*>& fbx_mesh_nodes);
+
+protected:
+    // çŸ©é˜µç›¸å…³
+    void ApplyTransformSettingsToFbxNode(FbxNode* node);
+    void BuildFbxMatrixForImportTransform(FbxAMatrix& out_matrix);
+    void ConvertSystemAndUnit();
+    void CheckSmoothingInfo(FbxMesh* fbx_mesh);
+    FbxAMatrix ComputeTotalMatrix(FbxNode* node);
+    bool IsOddNegativeScale(FbxAMatrix& total_matrix);
+protected:
+    //æè´¨ç›¸å…³
+    //è·å–å½“å‰nodeé‡Œæ‰€æœ‰çš„FbxMaterialï¼Œå¹¶ä¿å­˜åœ¨out_materialsä¸­ï¼Œkeyæ˜¯fbxé‡Œçš„materialçš„indexã€‚
+       //å› ä¸ºæè´¨æ˜¯è·¨meshçš„ï¼Œæ‰€ä»¥ä½¿ç”¨imported_material_dataæ¥ä½œä¸ºmanagerï¼Œä½¿ç”¨FbxSurfaceMaterial*ä½œä¸ºkeyæ¥ä¿è¯ç›¸åŒçš„fbxæè´¨
+       //ç”Ÿæˆå”¯ä¸€çš„æè´¨
+    void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YFbxMaterial>>& out_materials, std::vector<std::string>& us_sets);
+    std::shared_ptr<YFbxMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
     std::shared_ptr<YFbxMaterial> GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set);
+
+
+
+
+
 private:
 	bool InitSDK();
 	FbxManager* fbx_manager_ = nullptr;
