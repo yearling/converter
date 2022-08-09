@@ -21,6 +21,7 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	VS_OUTPUT Output;
 	matrix vp= mul(g_view,g_projection);
 	Output.vPosition = mul(float4(Input.vPosition,1.0), vp);
+	Output.vPosition.z =Output.vPosition.z - Output.vPosition.w* 0.00001;
 	Output.vColor = Input.vColor;
 	return Output;
 }

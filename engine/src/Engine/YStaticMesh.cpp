@@ -138,22 +138,21 @@ void YStaticMesh::Render(RenderParam* render_param)
                 YVector control_point2 = lod_mesh.vertex_position[control_point[2]].position;
                 if (edge0_hard)
                 {
-                    g_Canvas->DrawLine(control_point0, control_point1, edge0_hard ? YVector4(1.0, 1.0, 1.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
+                    g_Canvas->DrawLine(control_point0, control_point1, edge0_hard ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
                 }
                 if (edge1_hard)
                 {
-                    g_Canvas->DrawLine(control_point1, control_point2, edge1_hard ? YVector4(1.0, 1.0, 1.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
+                    g_Canvas->DrawLine(control_point1, control_point2, edge1_hard ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
                 }
 
                 if (edge2_hard)
                 {
-                    g_Canvas->DrawLine(control_point2, control_point0, edge2_hard ? YVector4(1.0, 1.0, 1.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
+                    g_Canvas->DrawLine(control_point2, control_point0, edge2_hard ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
                 }
             }
         }
     }
-    
-    const bool draw_normal_tangent_bitangent = true;
+    const bool draw_normal_tangent_bitangent = false;
     if (draw_normal_tangent_bitangent)
     {
         for (YMeshPolygonGroup& polygon_group : lod_mesh.polygon_groups)
@@ -175,10 +174,13 @@ void YStaticMesh::Render(RenderParam* render_param)
                             YVector4(normal, 0.0),
                             YVector4(control_point0, 1.0)
                         );
-                    float scale = 2.0;
+                    float scale = 0.7;
                     YVector normal_end_pose = YVector(0.0, 0.0, 1.0) * scale;
                     normal_end_pose = trans_tangent_to_local.TransformPosition(normal_end_pose);
                     g_Canvas->DrawLine(control_point0, normal_end_pose, YVector4(0.0, 0.0, 1.0, 1.0));
+                    YVector tangent_end_pose = YVector(1.0, 0.0, 0.0) * scale;
+                    tangent_end_pose = trans_tangent_to_local.TransformPosition(tangent_end_pose);
+                    g_Canvas->DrawLine(control_point0, tangent_end_pose, YVector4(1.0, 0.0, 0.0, 1.0));
                 }
               
             }

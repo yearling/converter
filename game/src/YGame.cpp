@@ -39,8 +39,13 @@ LRESULT GameApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 	switch (msg)
 	{
 	case WM_LBUTTONDOWN:
+		SetCapture(hwnd);
 		g_input_manager->OnEventLButtonDown(x, y);
 		break;
+    case WM_LBUTTONUP:
+        g_input_manager->OnEventLButtonUp(x, y);
+        ReleaseCapture();
+        break;
 	case WM_RBUTTONDOWN:
 		SetCapture(hwnd);
 		g_input_manager->OnEventRButtonDown(x, y);
@@ -147,7 +152,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/test_case/two_uv_two_material/test_uv_set.fbx";
 
     // static mesh
-    const std::string file_path = "E:/fbx/static_mesh/plane/free-spaceship/source/Spaceship_05.fbx";    //very good
+    //const std::string file_path = "E:/fbx/static_mesh/plane/free-spaceship/source/Spaceship_05.fbx";    //very good
     //const std::string file_path = "E:/fbx/static_mesh/plane/space-ship/source/space_ship.fbx";
     //const std::string file_path = "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog.fbx"; // good for degenerate triangle
     //const std::string file_path = "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog3.fbx"; // good for degenerate triangle
@@ -163,7 +168,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/car/honda-cb-750-f-super-sport-1970/source/Honda.obj";   // no materials ,good   
     //const std::string file_path = "E:/fbx/static_mesh/car/hw7-details-2-xyz-draft-punk/source/2.obj";   // no materials ,good   
     //const std::string file_path = "E:/fbx/static_mesh/car/mazda-rx-7/source/rx7.fbx";   //crash, good for testing soft edege, should scale 0.01 
-    //const std::string file_path = "E:/fbx/static_mesh/mask/Jonathan_BENAINOUS/source/sci-fi-helmet-blue-neon-jonathan-benainous.fbx";   //花钱买的
+    const std::string file_path = "E:/fbx/static_mesh/mask/Jonathan_BENAINOUS/source/sci-fi-helmet-blue-neon-jonathan-benainous.fbx";   //花钱买的
     //const std::string file_path = "E:/fbx/static_mesh/car/motorcycle-szh2i2-demo/source/SZH2I2HDAndLDExport.fbx";   // crash
     //const std::string file_path = "E:/fbx/static_mesh/car/oshkosh-m-atv-reinvented/source/Model_1.fbx";   // good for test AA
     //const std::string file_path = "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx";   // crash
@@ -227,7 +232,7 @@ bool GameApplication::Initial()
         const FbxImportSceneInfo* scene_info = static_mesh_importer->GetImportedSceneInfo();
         importer_param.model_name = scene_info->model_name;
 		importer_param.transform_vertex_to_absolute = true;
-        importer_param.import_scaling = YVector(0.1, 0.1, 0.1);
+        importer_param.import_scaling = YVector(0.01, 0.01, 0.01);
         if (scene_info->has_skin)
         {
             importer_param.import_as_skelton = true;

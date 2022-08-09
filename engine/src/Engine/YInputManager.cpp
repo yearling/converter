@@ -73,6 +73,16 @@ void InputManger::OnEventLButtonDown(int x, int y)
 	}
 }
 
+void InputManger::OnEventLButtonUp(int x, int y)
+{
+    x -= relative_to_viewport.x;
+    y -= relative_to_viewport.y;
+    for (auto& func : mouse_LButton_up_funcs_)
+    {
+        func(x, y);
+    }
+}
+
 void InputManger::SetEditorViewportOffset(YVector2 offset)
 {
 	relative_to_viewport = offset;

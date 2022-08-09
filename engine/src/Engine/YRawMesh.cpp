@@ -541,6 +541,8 @@ void ImportedRawMesh::Merge(ImportedRawMesh& other)
         polygon_group_to_material[new_polygon_group_id] = other.polygon_group_to_material[other_polygon_group_index];
     }
 
+    //update aabb
+    ComputeAABB();
     assert(Valid());
 }
 
@@ -649,6 +651,183 @@ void ImportedRawMesh::ComputeTriangleNormalAndTangent(NormalCaculateMethod norma
     }
 }
 
+struct FlowFlagRawMesh
+{
+    int triangle_id = -1;
+    bool visited = false;
+    int wedge_id = -1;
+};
+
+void RecursiveFindGroup(ImportedRawMesh& lod_mesh, int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids)
+{
+    if (around_triangle_ids[triangle_id].visited)
+    {
+        return;
+    }
+    around_triangle_ids[triangle_id].visited = true;
+    out_triangle_group.insert(triangle_id);
+    int cur_wedge_index = around_triangle_ids[triangle_id].wedge_id;
+    YMeshPolygon& polygon = lod_mesh.polygons[triangle_id];
+    int last_id[2] = { -1,-1 };
+    if (polygon.wedge_ids[0] == cur_wedge_index)
+    {
+        last_id[0] = polygon.wedge_ids[1];
+        last_id[1] = polygon.wedge_ids[2];
+    }
+    else if (polygon.wedge_ids[1] == cur_wedge_index)
+    {
+        last_id[0] = polygon.wedge_ids[0];
+        last_id[1] = polygon.wedge_ids[2];
+    }
+    else if (polygon.wedge_ids[2] = cur_wedge_index)
+    {
+        last_id[0] = polygon.wedge_ids[0];
+        last_id[1] = polygon.wedge_ids[1];
+    }
+
+    YMeshVertexWedge& cur_wedge = lod_mesh.wedges[cur_wedge_index];
+    YMeshVertexWedge& wedge1 = lod_mesh.wedges[last_id[0]];
+    YMeshVertexWedge& wedge2 = lod_mesh.wedges[last_id[1]];
+    int edge_id01 = lod_mesh.GetVertexPairEdge(cur_wedge.control_point_id, wedge1.control_point_id);
+    assert(edge_id01 != -1);
+    YMeshEdge& edge_01 = lod_mesh.edges[edge_id01];
+    if (!edge_01.edge_hardness)
+    {
+        int other_triangle_id = -1;
+        //有可能在边界
+        for (int i_sub_edge = 0; i_sub_edge < edge_01.connected_triangles.size(); ++i_sub_edge)
+        {
+            int triangle_same_edege = edge_01.connected_triangles[i_sub_edge];
+            if (triangle_same_edege == triangle_id)
+            {
+                continue;
+            }
+            else
+            {
+                RecursiveFindGroup(lod_mesh, triangle_same_edege, out_triangle_group, around_triangle_ids);
+            }
+        }
+    }
+
+
+    int edge_id02 = lod_mesh.GetVertexPairEdge(cur_wedge.control_point_id, wedge2.control_point_id);
+    assert(edge_id02 != -1);
+    YMeshEdge& edge_02 = lod_mesh.edges[edge_id02];
+    if (!edge_02.edge_hardness)
+    {
+        int other_triangle_id = -1;
+        //有可能在边界
+        for (int i_sub_edge = 0; i_sub_edge < edge_02.connected_triangles.size(); ++i_sub_edge)
+        {
+            int triangle_same_edege = edge_02.connected_triangles[i_sub_edge];
+            if (triangle_same_edege == triangle_id)
+            {
+                continue;
+            }
+            else
+            {
+                RecursiveFindGroup(lod_mesh, triangle_same_edege, out_triangle_group, around_triangle_ids);
+            }
+        }
+    }
+}
+
+void RemoveNearHaredEdge(ImportedRawMesh& lod_mesh, int triangle_id, std::set<int>& out_triangle_group, const std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids)
+{
+    int cur_wedge_index = around_triangle_ids.at(triangle_id).wedge_id;
+    YMeshPolygon& polygon = lod_mesh.polygons[triangle_id];
+    int last_id[2] = { -1,-1 };
+    if (polygon.wedge_ids[0] == cur_wedge_index)
+    {
+        last_id[0] = polygon.wedge_ids[1];
+        last_id[1] = polygon.wedge_ids[2];
+    }
+    else if (polygon.wedge_ids[1] == cur_wedge_index)
+    {
+        last_id[0] = polygon.wedge_ids[0];
+        last_id[1] = polygon.wedge_ids[2];
+    }
+    else if (polygon.wedge_ids[2] = cur_wedge_index)
+    {
+        last_id[0] = polygon.wedge_ids[0];
+        last_id[1] = polygon.wedge_ids[1];
+    }
+
+    YMeshVertexWedge& cur_wedge = lod_mesh.wedges[cur_wedge_index];
+    YMeshVertexWedge& wedge1 = lod_mesh.wedges[last_id[0]];
+    YMeshVertexWedge& wedge2 = lod_mesh.wedges[last_id[1]];
+    int edge_id01 = lod_mesh.GetVertexPairEdge(cur_wedge.control_point_id, wedge1.control_point_id);
+    assert(edge_id01 != -1);
+    YMeshEdge& edge_01 = lod_mesh.edges[edge_id01];
+    if (edge_01.edge_hardness)
+    {
+        //有可能在边界
+        for (int i_sub_edge = 0; i_sub_edge < edge_01.connected_triangles.size(); ++i_sub_edge)
+        {
+            int triangle_same_edege = edge_01.connected_triangles[i_sub_edge];
+            if (triangle_same_edege == triangle_id)
+            {
+                continue;
+            }
+            else
+            {
+                if (out_triangle_group.count(triangle_same_edege))
+                {
+                    out_triangle_group.erase(triangle_same_edege);
+                }
+            }
+        }
+    }
+
+
+    int edge_id02 = lod_mesh.GetVertexPairEdge(cur_wedge.control_point_id, wedge2.control_point_id);
+    assert(edge_id02 != -1);
+    YMeshEdge& edge_02 = lod_mesh.edges[edge_id02];
+    if (edge_02.edge_hardness)
+    {
+        int other_triangle_id = -1;
+        //有可能在边界
+        for (int i_sub_edge = 0; i_sub_edge < edge_02.connected_triangles.size(); ++i_sub_edge)
+        {
+            int triangle_same_edege = edge_02.connected_triangles[i_sub_edge];
+            if (triangle_same_edege == triangle_id)
+            {
+                continue;
+            }
+            else
+            {
+                if (out_triangle_group.count(triangle_same_edege))
+                {
+                    out_triangle_group.erase(triangle_same_edege);
+                }
+            }
+        }
+    }
+}
+
+std::set<int> GetSplitTriangleGroupBySoftEdge(ImportedRawMesh& lod_mesh, int wedge_index)
+{
+    YMeshVertexWedge& wedge = lod_mesh.wedges[wedge_index];
+    int triangle_id = wedge.connected_triangles[0];
+    YMeshPolygon& start_triangle = lod_mesh.polygons[triangle_id];
+
+    YMeshControlPoint& control_point_search = lod_mesh.control_points[wedge.control_point_id];
+    std::unordered_map<int, FlowFlagRawMesh> around_triangle_ids;
+    for (int wedge_id : control_point_search.wedge_ids)
+    {
+        FlowFlagRawMesh tmp_flag;
+        tmp_flag.triangle_id = lod_mesh.wedges[wedge_id].connected_triangles[0];
+        tmp_flag.wedge_id = wedge_id;
+        tmp_flag.visited = false;
+        around_triangle_ids[tmp_flag.triangle_id] = tmp_flag;
+    }
+    std::set<int> first_group;
+    RecursiveFindGroup(lod_mesh, triangle_id, first_group, around_triangle_ids);
+    
+    RemoveNearHaredEdge(lod_mesh, triangle_id, first_group, around_triangle_ids);
+    return first_group;
+
+}
 void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method)
 {
     bool tangent_valid = false;
@@ -700,6 +879,26 @@ void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_m
 
 
     ComputeTriangleNormalAndTangent(normal_method, tangent_method);
-   
+    for (int wedge_index = 0;wedge_index<wedges.size();++wedge_index)
+    {
 
+        std::set<int> connect_triangles= GetSplitTriangleGroupBySoftEdge(*this, wedge_index);
+        YVector normal = YVector::zero_vector;
+        YVector tangent = YVector::zero_vector;
+        YVector bitangent = YVector::zero_vector;
+        for (int connect_triangle_id : connect_triangles)
+        {
+            YMeshPolygon& polygon = polygons[connect_triangle_id];
+            normal = normal + polygon.normal;
+            tangent = tangent + polygon.tangent;
+            bitangent = bitangent + polygon.bitangent;
+        }
+        normal = normal.GetSafeNormal();
+        tangent = tangent.GetSafeNormal();
+        bitangent = bitangent.GetSafeNormal();
+        YVector::CreateOrthonormalBasis(tangent, bitangent, normal);
+        wedges[wedge_index].normal = normal;
+        wedges[wedge_index].tangent = tangent;
+        wedges[wedge_index].bitangent = bitangent;
+    }
 }

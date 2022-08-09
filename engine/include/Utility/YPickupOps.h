@@ -18,6 +18,7 @@ public:
 	virtual void RegiesterEventProcess();
 	virtual void Update(double delta_time);
 	void OnLButtonDown(int x, int y);
+	void OnLButtonUp(int x, int y);
 	void OnMouseMove(int x, int y);
 	void RayCast(int x, int y);
 	void SetRayCastToTriangle(bool ray_cast) { ray_cast_to_triangle = ray_cast; }
@@ -29,6 +30,9 @@ protected:
 	YVector last_v2 = YVector::zero_vector;
 	YVector last_hit_pos = YVector::zero_vector;
 	YVector last_hit_normal = YVector::zero_vector;
-	bool ray_cast_to_triangle = false;
+	bool ray_cast_to_triangle = true;
 	bool show_aabb_ = true;
+    int select_triangle_id = -1;
+    int select_wedge_id = -1;
+    bool begin_search = false;
 };

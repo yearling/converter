@@ -110,6 +110,11 @@ void YCamvas::DrawAABB(const YBox& box, const YVector4& Color, bool solid /*= tr
 	DrawLine(v5, v4, Color, solid);
 }
 
+void YCamvas::DrawTriangle(const YVector& p0, const YVector& p1, const YVector& p2, const YVector4& color, bool solid /*= true*/)
+{
+
+}
+
 void YCamvas::Update()
 {
 	AllocGPUResource();

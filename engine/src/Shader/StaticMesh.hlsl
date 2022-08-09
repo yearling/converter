@@ -93,7 +93,7 @@ float4 PSMain(VS_OUTPUT Input) :SV_Target
 	float3 srgb = LinearToSrgbBranching(float3(ndl,ndl,ndl));
 	if(show_normal>0.0)
 	{
-		float3 normal_color = CoverNormalToColor(Input.vTangent);
+		float3 normal_color = CoverNormalToColor(Input.vNormal);
 		return float4(normal_color,1.0);
 	}
 	return float4(srgb,1.0);	

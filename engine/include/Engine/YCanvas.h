@@ -13,6 +13,7 @@ public:
 	void DrawCube(const YVector& Pos, const YVector4& Color, float length = 0.3f, bool solid=true);
 	void DrawRay(const YRay& ray, const YVector4& Color, bool solid = true);
 	void DrawAABB(const YBox& box, const YVector4& Color, bool solid = true);
+    void DrawTriangle(const YVector& p0, const YVector& p1, const YVector& p2, const YVector4& color, bool solid = true);
 	void Update();
 	void Render(CameraBase* camera);
 	void Render(class RenderParam* render_param);
@@ -30,6 +31,7 @@ protected:
 		bool solid_;
 	};
 
+
 	std::unique_ptr<IVertexFactory> vertex_factory_;
 	std::vector<LineDesc> lines_;
 	std::vector<TComPtr<ID3D11Buffer>> vertex_buffers_;
@@ -45,6 +47,17 @@ protected:
 	std::unique_ptr<D3DPixelShader> pixel_shader_;
 	int solid_index_ = 0;
 	int transparent_index = 0;
+
+protected:
+    // 3D canvas
+   /* struct TriangleDesc
+    {
+        YVector vertex[3];
+        YVector4 color;
+    };
+    std::unique_ptr<IVertexFactory> canvas_3d_factory_;
+    std::vector<TriangleDesc> triangle_buffer;*/
+
 };
 
 extern YCamvas* g_Canvas;
