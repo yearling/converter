@@ -8,6 +8,7 @@
 #include "YFile.h"
 #include "Math/YBox.h"
 #include "YArchive.h"
+#include <set>
 
 const int INVALID_ID = -1;
 enum NormalCaculateMethod
@@ -77,6 +78,7 @@ struct YMeshPolygon
     YVector normal{ 0.0,0.0,1.0 };
     YVector tangent{ 1.0,0.0,0.0 };
     YVector bitangent{ 0.0,1.0,0.0 };
+    float bitanget_sign = 1.0;
 };
 
 struct YMeshPolygonGroup
@@ -164,6 +166,18 @@ public:
     void Merge(ImportedRawMesh& other);
     void ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
     void ComputeTriangleNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
+protected:
+    std::set<int> GetSplitTriangleGroupBySoftEdge( int wedge_index);
+    std::set<int> GetSplitTriangleGroupBySoftEdgeSameTangentSign(int wedge_index, const std::set<int>& connected_triangles);
+    struct FlowFlagRawMesh
+    {
+        int triangle_id = -1;
+        bool visited = false;
+        int wedge_id = -1;
+    };
+    void RecursiveFindGroup(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids);
+    void RemoveNearHaredEdge(int triangle_id, std::set<int>& out_triangle_group, const std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids);
+
 };
 
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);

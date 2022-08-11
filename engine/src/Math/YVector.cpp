@@ -142,6 +142,21 @@ void YVector::CreateOrthonormalBasis(YVector& XAxis, YVector& YAxis, YVector& ZA
     YAxis.Normalize();
     ZAxis.Normalize();
 }
+
+void YVector::CreateGramSchmidtOrthogonalization(YVector& XAxis, YVector& YAxis, YVector& ZAxis)
+{
+    // Gram-Schmidt orthogonalization
+ 
+    XAxis = XAxis - ZAxis * (ZAxis | XAxis);
+    XAxis.Normalize();
+
+    YAxis = YAxis - XAxis * (XAxis | YAxis);
+    YAxis.Normalize();
+
+    YAxis = YAxis - ZAxis * (ZAxis | YAxis);
+    YAxis.Normalize();
+}
+
 YVector YVector::operator^(const YVector& v) const
 {
 	return YVector
@@ -278,6 +293,11 @@ YVector YVector4::AffineTransform() const
 	}
 
 	return YVector(x / w, y / w, z / w);
+}
+
+bool YVector4::Equals(const YVector4& v, float Tolerance /*= SMALL_NUMBER*/) const
+{
+	return YMath::Abs(x - v.x) <= Tolerance && YMath::Abs(y - v.y) <= Tolerance && YMath::Abs(z - v.z) <= Tolerance && YMath::Abs(x - v.x) <= Tolerance;
 }
 
 const YVector4 YVector4::zero_vector = YVector4(0.f, 0.f, 0.f, 0.f);

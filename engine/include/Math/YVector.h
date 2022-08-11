@@ -44,7 +44,9 @@ public:
 	float	operator|(const YVector& v) const;
 	static float Dot(const YVector& a, const YVector& b);
 	bool Equals(const YVector& v, float Tolerance = SMALL_NUMBER) const;
-    static void YVector::CreateOrthonormalBasis(YVector& XAxis, YVector& YAxis, YVector& ZAxis);
+    static void CreateOrthonormalBasis(YVector& XAxis, YVector& YAxis, YVector& ZAxis);
+    static void CreateGramSchmidtOrthogonalization(YVector& XAxis, YVector& YAxis, YVector& ZAxis);
+
     FORCEINLINE float Size() const
     {
         return YMath::Sqrt(x * x + y * y + z * z);
@@ -96,6 +98,7 @@ public:
 	YVector4& operator=(YVector4&&) = default;
 	YVector4(float in_x, float in_y, float in_z, float in_w);
 	YVector AffineTransform()const;
+    bool Equals(const YVector4& v, float Tolerance = SMALL_NUMBER) const;
 	// (0.f,0.f,0.f,0.f)
 	static const YVector4 zero_vector;
 };

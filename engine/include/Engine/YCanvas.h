@@ -20,15 +20,23 @@ public:
 protected:
 	bool AllocGPUResource();
 	friend class YCanvasVertexFactory;
-	struct LineDesc
-	{
-		LineDesc(const YVector& in_s, const YVector& in_e, const YVector4& in_color)
-			:start(in_s), end(in_e), color(in_color),solid_(true) {}
-		LineDesc(const YVector& in_s, const YVector& in_e, const YVector4& in_color, bool solid)
-			:start(in_s), end(in_e), color(in_color), solid_(solid) {}
-		YVector start, end;
-		YVector4 color;
-		bool solid_;
+    struct LineDesc
+    {
+        LineDesc(const YVector& in_s, const YVector& in_e, const YVector4& in_color)
+            :start(in_s), end(in_e), color(in_color), solid_(true) {}
+        LineDesc(const YVector& in_s, const YVector& in_e, const YVector4& in_color, bool solid)
+            :start(in_s), end(in_e), color(in_color), solid_(solid) {}
+        YVector start, end;
+        YVector4 color;
+        bool solid_;
+        bool operator==(const LineDesc& other)
+        {
+            if (start.Equals(other.start) && end.Equals(other.end) && color.Equals(other.color) && solid_ == other.solid_)
+            {
+                return true;
+            }
+            return false;
+        }
 	};
 
 
