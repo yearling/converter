@@ -460,6 +460,10 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
                 {
                     raw_meshes.push_back(raw_mesh);
                 }
+                else
+                {
+                    WARNING_INFO("node ", node->GetName(), " import mesh failed!");
+                }
 			}
 		}
 	}

@@ -97,7 +97,6 @@ protected:
 protected:
     //static mesh
 	std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string&  mesh_name,int lod_index = 0);
-	bool BuildStaticMeshFromGeometry(FbxNode* node,YLODMesh* raw_mesh, std::vector<std::shared_ptr<YFbxMaterial>>& existing_materials);
 	bool BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& raw_mesh);
     bool BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes);
 

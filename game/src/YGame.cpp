@@ -190,7 +190,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/robot/security-robot/source/texDev003.fbx";    // very good  ,小机甲 
     //const std::string file_path = "E:/fbx/static_mesh/robot/industrial-robot/source/armLOW.fbx";    // very good   ,机械臂
     //const std::string file_path = "E:/fbx/static_mesh/robot/blue-rig-procedural-reshade-version/source/Blue5.fbx";    // very good  ,机械人 
-    //const std::string file_path = "E:/fbx/static_mesh/robot/64-iron_man_mark_44_hulkbuster/Iron_Man_Mark_44_Hulkbuster_fbx.fbx";    // 法线反转了 
+    const std::string file_path = "E:/fbx/static_mesh/robot/64-iron_man_mark_44_hulkbuster/Iron_Man_Mark_44_Hulkbuster_fbx.fbx";    // 法线反转了 
     //const std::string file_path = "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx";   // crash
     //const std::string file_path = "E:/fbx/static_mesh/cloth/haveto-red-mage-helmet-flow-ver-preview/source/RedMageHelmetFlowVer.fbx";   // good
     //const std::string file_path = "E:/fbx/static_mesh/cloth/red-mage-mask-procedural-reshade-ver/source/RedMageMask.fbx";   // good
@@ -212,7 +212,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/car/buggy-2/source/VHC_SC_Buggy_01.fbx";   // good,老爷车
     //const std::string file_path = "E:/fbx/static_mesh/funature/cathedral/source/combined02.obj";   // good,我的世界--教堂
     //const std::string file_path = "E:/fbx/static_mesh/bose/xeno-raven/source/XenoRaven.fbx";   // 异形
-    const std::string file_path = "E:/fbx/static_mesh/bose/cthulhu-statuette/source/Horror_low_subd.obj";   // 异形
+   // const std::string file_path = "E:/fbx/static_mesh/bose/cthulhu-statuette/source/Horror_low_subd.obj";   // 异形
 
 
     // skeletal mesh
@@ -288,8 +288,8 @@ bool GameApplication::Initial()
                 {
                     //mesh->SaveV0("head");
                     mesh->AllocGpuResource();
-                    /*engine->static_mesh_ = std::move(mesh);
-                    std::string test_pic = "/textures/uv.png";
+                    engine->static_mesh_ = std::move(mesh);
+                    /*std::string test_pic = "/textures/uv.png";
                     TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
                     if (texture)
                     {
