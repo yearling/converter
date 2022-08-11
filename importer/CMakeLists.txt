@@ -11,7 +11,8 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 endif(MSVC)
 add_compile_definitions(FBXSDK_SHARED)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/fbxsdk/include
-					${CMAKE_CURRENT_SOURCE_DIR}/../engine/include)
+					${CMAKE_CURRENT_SOURCE_DIR}/../engine/include
+					${CMAKE_CURRENT_SOURCE_DIR}/../third_party/jsoncpp/include)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../libs)
 add_library(fbximporter STATIC ${LIB_SRCS} ${LIB_INCLUDES})
 target_include_directories(fbximporter PUBLIC "include")

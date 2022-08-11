@@ -67,7 +67,7 @@ bool YApplication::WindowCreate(int width, int height)
 	{
 		WARNING_INFO("register window class failed!");
 	}
-	DWORD WindowsWithTitleAndBoderStyle = WS_TILEDWINDOW | WS_SIZEBOX;
+	DWORD WindowsWithTitleAndBoderStyle = WS_POPUP | WS_MINIMIZEBOX ;
 	DWORD WindowsPOPStyle = WS_POPUP;
 	HWND hwnd = CreateWindow("D3D11Demo", "SolidAngleEngine", WindowsWithTitleAndBoderStyle, CW_USEDEFAULT, CW_USEDEFAULT,
         width, height,
@@ -85,8 +85,11 @@ bool YApplication::WindowCreate(int width, int height)
 		RECT window_rect = { 0, 0, (LONG)width,(LONG)height };
 		// make the call to adjust window_rect
 		::AdjustWindowRect(&window_rect, GetWindowStyle(hwnd), ::GetMenu(hwnd) != nullptr);
-		MoveWindow(hwnd, 400,                           // x position
-			200,                                   // y position
+        //my 4k screen
+        int left = 1920 - width / 2;
+        int top = 1080 - height / 2;
+		MoveWindow(hwnd, left,                           // x position
+			top,                                   // y position
 			window_rect.right - window_rect.left,  // width
 			window_rect.bottom - window_rect.top,  // height
 			FALSE);
@@ -94,7 +97,7 @@ bool YApplication::WindowCreate(int width, int height)
 
 	ShowWindow(hwnd, SW_SHOW);
 	UpdateWindow(hwnd);
-	SetWindowPos(hwnd, HWND_TOP, 1, 1, 1, 1, SWP_NOMOVE | SWP_NOSIZE);
+	SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	std::unique_ptr<YWindow> new_window = std::make_unique<YWindow>();
 	new_window->SetHWND(hwnd);
 	new_window->SetWidth(width);

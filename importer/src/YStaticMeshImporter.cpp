@@ -1,4 +1,4 @@
-#include <cassert>
+ï»¿#include <cassert>
 #include "fbxsdk/scene/geometry/fbxlayer.h"
 #include "YFbxImporter.h"
 #include "Engine/YRawMesh.h"
@@ -255,9 +255,9 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 				corner_vertices_position_ids[corner_index] = vertex_id;
 				const YVector vertex_position = raw_mesh->vertex_position[vertex_id].position;
                 YMeshVertexWedge new_vertex_instance;
-				// vertex_ins µ½ vertexµÄË÷Òı
+				// vertex_ins åˆ° vertexçš„ç´¢å¼•
 				new_vertex_instance.control_point_id = vertex_id;
-				// vertex µ½ vertex_insµÄË÷Òı£¬Ë«Ïò
+				// vertex åˆ° vertex_insçš„ç´¢å¼•ï¼ŒåŒå‘
 				raw_mesh->vertex_position[vertex_id].AddWedge(vertex_instance_index_in_all_mesh);
 				raw_mesh->vertex_instances.push_back(new_vertex_instance);
 				if ((vertex_instance_index_in_all_mesh + 1) != raw_mesh->vertex_instances.size())
@@ -317,7 +317,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, YLODMesh* raw_mesh
 						int binormal_value_index = (binormal_reference_mode == FbxLayerElement::eDirect) ? binormal_map_index : binormal_layer->GetIndexArray().GetAt(binormal_map_index);
 						FbxVector4 binormal_value = binormal_layer->GetDirectArray().GetAt(binormal_value_index);
 						binormal_value = total_matrix_for_normal.MultT(binormal_value);
-						// ±£³ÖÊÖĞÔ
+						// ä¿æŒæ‰‹æ€§
 						YVector tanget_y = -converter_.ConvertDir(binormal_value);
 						cur_vertex_instance.binormal_sign = YMath::GetBasisDeterminantSign(tangent_x, tanget_y, tangent_z);
 					}
@@ -543,7 +543,11 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
     {
         fbx_uvs.Phase2(this, fbx_mesh);
     }
-
+    if (fbx_uvs.unique_count == 0)
+    {
+        ERROR_INFO("mesh ", raw_mesh.name, " does not have uvs");
+        return false;
+    }
     //	get the "material index" layer.  Do this AFTER the triangulation step as that may reorder material indices
     FbxLayerElementMaterial* layer_element_material = base_layer->GetMaterials();
     FbxLayerElement::EMappingMode material_mapping_model = layer_element_material ? layer_element_material->GetMappingMode() : FbxLayerElement::eByPolygon;
@@ -574,33 +578,33 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
         smoothing_reference_mode = layer_element_smoothing->GetReferenceMode();
     }
 
-    //if (!is_smoothing_avaliable)
-    //{
-    //    //²»ÊÇmaya»òÕßÊÇmaxµ¼³öµÄ£¬ÓĞ¿ÉÄÜÊÇobjÄ£ĞÍ~
-    //    fbx_geometry_converter_->ComputeEdgeSmoothingFromNormals(fbx_mesh);
-    //    layer_element_smoothing = base_layer->GetSmoothing();
-    //    smoothing_reference_mode = FbxLayerElement::eDirect;
-    //    smoothing_mapping_mode = FbxLayerElement::eByEdge;
-    //    if (layer_element_smoothing)
-    //    {
-    //        if (layer_element_smoothing->GetMappingMode() == FbxLayerElement::eByPolygon)
-    //        {
-    //            // convert the base layer to edge smoothing
-    //            fbx_geometry_converter_->ComputeEdgeSmoothingFromPolygonSmoothing(fbx_mesh, 0);
-    //            base_layer = fbx_mesh->GetLayer(0);
-    //            layer_element_smoothing = base_layer->GetSmoothing();
-    //        }
+    if (!is_smoothing_avaliable)
+    {
+        //ä¸æ˜¯mayaæˆ–è€…æ˜¯maxå¯¼å‡ºçš„ï¼Œæœ‰å¯èƒ½æ˜¯objæ¨¡å‹~
+        fbx_geometry_converter_->ComputeEdgeSmoothingFromNormals(fbx_mesh);
+        layer_element_smoothing = base_layer->GetSmoothing();
+        smoothing_reference_mode = FbxLayerElement::eDirect;
+        smoothing_mapping_mode = FbxLayerElement::eByEdge;
+        if (layer_element_smoothing)
+        {
+            if (layer_element_smoothing->GetMappingMode() == FbxLayerElement::eByPolygon)
+            {
+                // convert the base layer to edge smoothing
+                fbx_geometry_converter_->ComputeEdgeSmoothingFromPolygonSmoothing(fbx_mesh, 0);
+                base_layer = fbx_mesh->GetLayer(0);
+                layer_element_smoothing = base_layer->GetSmoothing();
+            }
 
-    //        if (layer_element_smoothing->GetMappingMode() == FbxLayerElement::eByEdge)
-    //        {
-    //            is_smoothing_avaliable = true;
-    //        }
+            if (layer_element_smoothing->GetMappingMode() == FbxLayerElement::eByEdge)
+            {
+                is_smoothing_avaliable = true;
+            }
 
 
-    //        smoothing_mapping_mode = layer_element_smoothing->GetMappingMode();
-    //        smoothing_reference_mode = layer_element_smoothing->GetReferenceMode();
-    //    }
-    //}
+            smoothing_mapping_mode = layer_element_smoothing->GetMappingMode();
+            smoothing_reference_mode = layer_element_smoothing->GetReferenceMode();
+        }
+    }
 
     // get the first vertex color layer
     FbxLayerElementVertexColor* vertex_color = base_layer->GetVertexColors();
@@ -666,7 +670,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
     //uv_num = YMath::Min(1, uv_num);
     //lod_mesh->vertex_instance_uvs.resize(uv_num);
 
-    //±£´æcontorl points
+    //ä¿å­˜contorl points
     for (int vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
     {
         FbxVector4 fbx_position = fbx_mesh->GetControlPoints()[vertex_index];
@@ -834,7 +838,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                         int binormal_value_index = (binormal_reference_mode == FbxLayerElement::eDirect) ? binormal_map_index : binormal_layer->GetIndexArray().GetAt(binormal_map_index);
                         FbxVector4 binormal_value = binormal_layer->GetDirectArray().GetAt(binormal_value_index);
                         binormal_value = total_matrix_for_normal.MultT(binormal_value);
-                        // ±£³ÖÊÖĞÔ
+                        // ä¿æŒæ‰‹æ€§
                         YVector tanget_y = -converter_.ConvertDir(binormal_value);
                         wedge.bitangent = tanget_y.GetSafeNormal();
                         wedge.binormal_sign = YMath::GetBasisDeterminantSign(tangent_x, tanget_y, tangent_z);
