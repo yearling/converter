@@ -144,13 +144,14 @@ void YFbxImporter::RenameNodeName()
 	{
 		FbxNode* node = fbx_scene_->GetNode(node_index);
 		std::string node_name = node->GetName();
+        const std::string original_fbx_node_name = node->GetName();
 		if (node_name.empty())
 		{
 			do {
 				node_name = "default_node_name_" + std::to_string(name_index++);
 			} while (node_names.find(node_name) != node_names.end());
 			node->SetName(node_name.c_str());
-            renamed_node_name.insert(StringFormat("rename node name:" " ==> %s",node_name.c_str()));
+            renamed_node_name.insert(StringFormat("rename node name: %s ==> %s", original_fbx_node_name.c_str(),node_name.c_str()));
 		}
 		if (node_name.find(':') != std::string::npos)
 		{
@@ -161,7 +162,7 @@ void YFbxImporter::RenameNodeName()
 				node_name = node_name + std::to_string(name_index++);
 			} while (node_names.find(node_name) != node_names.end());
 			node->SetName(node_name.c_str());
-            renamed_node_name.insert(StringFormat("rename node name:" " ==> %s",node_name.c_str()));
+            renamed_node_name.insert(StringFormat("rename node name: %s ==> %s", original_fbx_node_name.c_str(),node_name.c_str()));
 		}
 		node_names.insert(node_name);
 	}

@@ -17,6 +17,8 @@ public:
 	bool Initial() override;
 	void Exit() override;
 	
+    void OnKeyDown(char c);
+    void SwitchModel();
 	std::unique_ptr<D3D11Device> device;
 	std::unique_ptr<CameraController> camera_controller;
 	std::unique_ptr< YPickupShowMove> pickup;
@@ -26,4 +28,6 @@ public:
 	//std::unique_ptr<Editor> g_editor;
 	const int defaut_windows_width = 3840;
 	const int defaut_windows_height = 2160;
+    int current_index = 0;
+    std::vector<std::string> static_modle_path;
 };

@@ -138,21 +138,62 @@ void YStaticMesh::Render(RenderParam* render_param)
                 YVector control_point2 = lod_mesh.vertex_position[control_point[2]].position;
                 if (edge0_hard)
                 {
-                    g_Canvas->DrawLine(control_point0, control_point1, edge0_hard ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
+                    g_Canvas->DrawLine(control_point0, control_point1, edge0_hard ? YVector4(1.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0),false);
                 }
                 if (edge1_hard)
                 {
-                    g_Canvas->DrawLine(control_point1, control_point2, edge1_hard ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
+                    g_Canvas->DrawLine(control_point1, control_point2, edge1_hard ? YVector4(1.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0),false);
                 }
 
                 if (edge2_hard)
                 {
-                    g_Canvas->DrawLine(control_point2, control_point0, edge2_hard ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
+                    g_Canvas->DrawLine(control_point2, control_point0, edge2_hard ? YVector4(1.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0),false);
                 }
             }
         }
     }
-    const bool draw_normal_tangent_bitangent = false;
+
+    const bool draw_seam_edge = true;
+    if (draw_seam_edge)
+    {
+        for (YMeshPolygonGroup& polygon_group : lod_mesh.polygon_groups)
+        {
+            for (int polygon_index : polygon_group.polygons)
+            {
+                YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
+                YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
+                YMeshVertexWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
+                YMeshVertexWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+                int control_point[3] = { vertex_ins_0.control_point_id, vertex_ins_1.control_point_id, vertex_ins_2.control_point_id };
+                int edge0_index = lod_mesh.GetVertexPairEdge(control_point[0], control_point[1]);
+                int edge1_index = lod_mesh.GetVertexPairEdge(control_point[1], control_point[2]);
+                int edge2_index = lod_mesh.GetVertexPairEdge(control_point[2], control_point[0]);
+
+                bool edge0_seam = lod_mesh.edges[edge0_index].is_uv_seam;
+                bool edge1_seam = lod_mesh.edges[edge1_index].is_uv_seam;
+                bool seam = lod_mesh.edges[edge2_index].is_uv_seam;
+
+                YVector control_point0 = lod_mesh.vertex_position[control_point[0]].position;
+                YVector control_point1 = lod_mesh.vertex_position[control_point[1]].position;
+                YVector control_point2 = lod_mesh.vertex_position[control_point[2]].position;
+                if (edge0_seam)
+                {
+                    g_Canvas->DrawLine(control_point0, control_point1, edge0_seam ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0), false);
+                }
+                if (edge1_seam)
+                {
+                    g_Canvas->DrawLine(control_point1, control_point2, edge1_seam ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0), false);
+                }
+
+                if (seam)
+                {
+                    g_Canvas->DrawLine(control_point2, control_point0, seam ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0), false);
+                }
+            }
+        }
+    }
+
+    const bool draw_normal_tangent_bitangent = true;
     if (draw_normal_tangent_bitangent)
     {
         for (YMeshPolygonGroup& polygon_group : lod_mesh.polygon_groups)

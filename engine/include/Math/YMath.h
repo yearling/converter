@@ -59,6 +59,7 @@ struct YBox;
 
 #define THRESH_VECTOR_NORMALIZED		(0.01f)		/** Allowed error for a normalized vector (against squared magnitude) */
 #define THRESH_QUAT_NORMALIZED			(0.01f)		/** Allowed error for a normalized quaternion (against squared magnitude) */
+#define THRESH_UV_SAME                  (0.0000610f) // 1/ pow(2,14)
 #define MAX_MESH_TEXTURE_COORDS			 8
 #define Z_PRECISION	0.0f
 enum EForceInit

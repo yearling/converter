@@ -21,6 +21,11 @@ YVector2 YVector2::operator+(const YVector2& v) const
 	return YVector2(x + v.x, y + v.y);
 }
 
+bool YVector2::Equals(const YVector2& v, float Tolerance /*= SMALL_NUMBER*/) const
+{
+    return YMath::Abs(x - v.x) <= Tolerance && YMath::Abs(y - v.y) <= Tolerance;
+}
+
 const YVector2 YVector2::zero_vector = YVector2(0.0,0.0);
 
 bool YVector2::operator!=(const YVector2& v) const

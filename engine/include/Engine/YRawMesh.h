@@ -98,6 +98,7 @@ struct YMeshEdge
 	bool edge_hardness = false;
 	float edge_crease_sharpness = 0;
 	void AddTriangleID(int triangle_id);
+    bool is_uv_seam = false;
 };
 
 struct YRawMesh
@@ -166,8 +167,9 @@ public:
     void Merge(ImportedRawMesh& other);
     void ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
     void ComputeTriangleNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
+    void ComputeUVSeam();
 protected:
-    std::set<int> GetSplitTriangleGroupBySoftEdge( int wedge_index);
+    std::set<int> GetSplitTriangleGroupBySoftEdge( int wedge_index, bool split_uv_seam );
     std::set<int> GetSplitTriangleGroupBySoftEdgeSameTangentSign(int wedge_index, const std::set<int>& connected_triangles);
     struct FlowFlagRawMesh
     {
@@ -175,8 +177,9 @@ protected:
         bool visited = false;
         int wedge_id = -1;
     };
-    void RecursiveFindGroup(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids);
+    void RecursiveFindGroup(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids, bool split_uv_seam);
     void RemoveNearHaredEdge(int triangle_id, std::set<int>& out_triangle_group, const std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids);
+    bool IsUVSeam(int edge_index);
 
 };
 

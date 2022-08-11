@@ -566,7 +566,6 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
     LOG_INFO("End merge scene");
     //new_copyed_mesh->ComputeTriangleNormalAndTangent(Caculate, Mikkt);
     new_copyed_mesh->ComputeWedgeNormalAndTangent(Caculate, Mikkt);
-    
    
     raw_mesh->vertex_position = new_copyed_mesh->control_points;
     raw_mesh->vertex_instances = new_copyed_mesh->wedges;

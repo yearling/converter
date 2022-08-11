@@ -17,6 +17,7 @@ public:
 	YVector2 operator*(float mul)const;
 	YVector2 operator-(const YVector2& v) const;
 	YVector2 operator+(const YVector2& v) const;
+    bool Equals(const YVector2& v, float Tolerance = SMALL_NUMBER) const;
 	static const YVector2 zero_vector;
 };
 
