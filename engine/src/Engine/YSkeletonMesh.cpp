@@ -496,7 +496,7 @@ bool YSkeletonMesh::AllocGpuResource()
     }
 
     if (!rs_) {
-        g_device->CreateRasterStateNonCull(rs_);
+        g_device->CreateRasterState(rs_);
     }
 
     if (!ds_) {

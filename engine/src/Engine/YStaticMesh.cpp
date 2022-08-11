@@ -174,13 +174,16 @@ void YStaticMesh::Render(RenderParam* render_param)
                             YVector4(normal, 0.0),
                             YVector4(control_point0, 1.0)
                         );
-                    float scale = 0.7;
+                    float scale = 0.3;
                     YVector normal_end_pose = YVector(0.0, 0.0, 1.0) * scale;
                     normal_end_pose = trans_tangent_to_local.TransformPosition(normal_end_pose);
                     g_Canvas->DrawLine(control_point0, normal_end_pose, YVector4(0.0, 0.0, 1.0, 1.0));
                     YVector tangent_end_pose = YVector(1.0, 0.0, 0.0) * scale;
                     tangent_end_pose = trans_tangent_to_local.TransformPosition(tangent_end_pose);
                     g_Canvas->DrawLine(control_point0, tangent_end_pose, YVector4(1.0, 0.0, 0.0, 1.0));
+                    YVector binormal_end_pose = YVector(0.0, 1.0, 0.0) * scale;
+                    binormal_end_pose = trans_tangent_to_local.TransformPosition(binormal_end_pose);
+                    g_Canvas->DrawLine(control_point0, binormal_end_pose, YVector4(0.0, 1.0, 0.0, 1.0));
                 }
               
             }
@@ -346,7 +349,7 @@ bool YStaticMesh::AllocGpuResource()
 	}
 
 	if (!rs_) {
-		g_device->CreateRasterStateNonCull(rs_);
+		g_device->CreateRasterState(rs_);
 	}
 
 	if (!ds_) {
