@@ -376,12 +376,6 @@ bool ImportedRawMesh::Valid() const
 {
     for (int polygon_group_id = 0; polygon_group_id < (int)polygon_groups.size(); ++polygon_group_id)
     {
-        if (polygon_group_to_material.count(polygon_group_id) == 0)
-        {
-            WARNING_INFO("Imported RawMesh Valid: polygon_group do not in polygon_group_to_materials");
-            return false;
-        }
-
         const YMeshPolygonGroup& polygon_group = polygon_groups[polygon_group_id];
         for (int polygon_id : polygon_group.polygons)
         {
@@ -546,17 +540,16 @@ void ImportedRawMesh::Merge(ImportedRawMesh& other)
         YMeshPolygonGroup& other_polygon_group = other.polygon_groups[other_polygon_group_index];
         const int new_polygon_group_id = polygon_groups.size();
         polygon_groups.push_back(other_polygon_group);
+        polygon_group_to_material.push_back(other.polygon_group_to_material[other_polygon_group_index]);
         YMeshPolygonGroup& new_ploygon_group = polygon_groups.back();
         for (int& polygon_id : new_ploygon_group.polygons)
         {
             polygon_id += self_polygon_size;
         }
-        // polygon_group_to_material
-        polygon_group_to_material[new_polygon_group_id] = other.polygon_group_to_material[other_polygon_group_index];
     }
 
-    //update aabb
     ComputeAABB();
+    CompressMaterials();
     assert(Valid());
 }
 
@@ -668,6 +661,29 @@ void ImportedRawMesh::ComputeUVSeam()
     {
         edges[i].is_uv_seam = IsUVSeam(i);
     }
+}
+
+void ImportedRawMesh::CompressMaterials()
+{
+    std::unordered_map<std::shared_ptr<YFbxMaterial>, int > map_material_to_new_group_id;
+    std::vector< YMeshPolygonGroup> new_polygon_groups;
+    std::vector< std::shared_ptr<YFbxMaterial>> new_polygon_group_to_material;
+    for (int polygon_group_index = 0; polygon_group_index < polygon_group_to_material.size(); ++polygon_group_index)
+    {
+        std::shared_ptr<YFbxMaterial> material = polygon_group_to_material[polygon_group_index];
+        if (!map_material_to_new_group_id.count(material))
+        {
+            int new_polygon_group_id = new_polygon_groups.size();
+            new_polygon_groups.push_back(YMeshPolygonGroup());
+            new_polygon_group_to_material.push_back(material);
+            map_material_to_new_group_id[material] = new_polygon_group_id;
+        }
+        int new_group_id = map_material_to_new_group_id[material];
+        YMeshPolygonGroup& new_polygon_group = new_polygon_groups[new_group_id];
+        new_polygon_group.polygons.insert(new_polygon_group.polygons.end(), polygon_groups[polygon_group_index].polygons.begin(), polygon_groups[polygon_group_index].polygons.end());
+    }
+    polygon_groups.swap(new_polygon_groups);
+    polygon_group_to_material.swap(new_polygon_group_to_material);
 }
 
 void ImportedRawMesh::RecursiveFindGroup(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids, bool split_uv_seam)

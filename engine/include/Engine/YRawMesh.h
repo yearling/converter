@@ -153,11 +153,8 @@ public:
     // info
     std::vector<YMeshVertexWedge> wedges;
     //material
-    std::unordered_map<int, std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
-    std::unordered_map<int, int> material_to_polygon_group;
-
-   
-
+    std::vector<std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
+    
     YBox aabb;
     int GetVertexPairEdge(int vertex_id0, int vertex_id1)const ;
     int CreateEdge(int vertex_id_0, int vertex_id_1);
@@ -170,6 +167,7 @@ public:
     void ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method,bool ignore_degenerate_triangle = true);
     void ComputeTriangleNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
     void ComputeUVSeam();
+    void CompressMaterials();
 protected:
     friend struct MikktHelper;
     std::set<int> GetSplitTriangleGroupBySoftEdge( int wedge_index, bool split_uv_seam );
