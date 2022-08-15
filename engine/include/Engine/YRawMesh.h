@@ -69,6 +69,7 @@ struct YMeshVertexWedge
 	YVector4 color{ 0.0,0.0,0.0,0.0 };
 	std::vector<YVector2> uvs;
 	void AddTriangleID(int triangle_id);
+    float corner_angle = 0.0;
 };
 
 struct YMeshPolygon
@@ -79,6 +80,7 @@ struct YMeshPolygon
     YVector tangent{ 1.0,0.0,0.0 };
     YVector bitangent{ 0.0,1.0,0.0 };
     float bitanget_sign = 1.0;
+    float aera = 0.0f;
 };
 
 struct YMeshPolygonGroup
@@ -180,6 +182,8 @@ protected:
     void RecursiveFindGroup(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids, bool split_uv_seam);
     void RemoveNearHaredEdge(int triangle_id, std::set<int>& out_triangle_group, const std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids);
     bool IsUVSeam(int edge_index);
+    static float CalculateTriangleArea(const YVector& v0, const YVector& v1, const YVector& v2);
+    static float ComputeTriangleCornerAngle(const YVector& v0, const YVector& v1, const YVector& v2);
 
 };
 

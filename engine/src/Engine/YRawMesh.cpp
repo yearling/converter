@@ -264,7 +264,20 @@ int ImportedRawMesh::CreatePolygon(int polygon_group_id, std::vector<int> in_wed
         }
         edges[edge_idex].AddTriangleID(polygon_id);
     }
+    
+    // calculate triangle aera and wedge corner angle for normal average
+    YMeshVertexWedge& wedge0 = wedges[tmp_polygon.wedge_ids[0]];
+    YMeshVertexWedge& wedge1 = wedges[tmp_polygon.wedge_ids[1]];
+    YMeshVertexWedge& wedge2 = wedges[tmp_polygon.wedge_ids[2]];
+    YVector position0 = control_points[wedge0.control_point_id].position;
+    YVector position1 = control_points[wedge1.control_point_id].position;
+    YVector position2 = control_points[wedge2.control_point_id].position;
+    tmp_polygon.aera = CalculateTriangleArea(position0, position1, position2);
+    wedge0.corner_angle = ComputeTriangleCornerAngle(position0, position1, position2);
+    wedge1.corner_angle = ComputeTriangleCornerAngle(position1, position0, position2);
+    wedge2.corner_angle = ComputeTriangleCornerAngle(position2, position0, position1);
 
+    
     return polygon_id;
 }
 
@@ -642,12 +655,12 @@ void ImportedRawMesh::ComputeTriangleNormalAndTangent(NormalCaculateMethod norma
 
             float determinant = YMatrix(YVector4(polygon.tangent, 0.0), YVector4(polygon.bitangent, 0.0), YVector4(polygon.normal, 0.0), YVector4(0.0, 0.0, 0.0, 1.0)).Determinant();
             polygon.bitanget_sign = determinant < 0 ? -1.0 : 1.0;
-            for (int i = 0; i < 3; ++i) {
+          /*  for (int i = 0; i < 3; ++i) {
                 wedges[wedge_ids[i]].normal = polygon.normal;
                 wedges[wedge_ids[i]].tangent = polygon.tangent;
                 wedges[wedge_ids[i]].bitangent = polygon.bitangent;
 
-            }
+            }*/
         }
     }
 }
@@ -867,6 +880,25 @@ bool ImportedRawMesh::IsUVSeam(int edge_index)
     return true;
 }
 
+float ImportedRawMesh::CalculateTriangleArea(const YVector& v0, const YVector& v1, const YVector& v2)
+{
+    return YVector::CrossProduct((v1 - v0), (v2 - v0)).Size() / 2.0f;
+}
+
+float ImportedRawMesh::ComputeTriangleCornerAngle(const YVector& v0, const YVector& v1, const YVector& v2)
+{
+    YVector E1 = (v1 - v0);
+    YVector E2 = (v2 - v0);
+    //Normalize both edges (unit vector) of the triangle so we get a dotProduct result that will be a valid acos input [-1, 1]
+    if (!E1.Normalize() || !E2.Normalize())
+    {
+        //Return a null ratio if the polygon is degenerate
+        return 0.0f;
+    }
+    float DotProduct = YVector::Dot(E1,E2);
+    return YMath::Acos(DotProduct);
+}
+
 std::set<int> ImportedRawMesh::GetSplitTriangleGroupBySoftEdge(int wedge_index,bool split_uv_seam)
 {
     YMeshVertexWedge& wedge = wedges[wedge_index];
@@ -961,12 +993,12 @@ void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_m
 
     ComputeUVSeam();
     ComputeTriangleNormalAndTangent(normal_method, tangent_method);
-    for (int wedge_index = 0;wedge_index<wedges.size();++wedge_index)
+    for (int wedge_index = 0; wedge_index < wedges.size(); ++wedge_index)
     {
-
-        std::set<int> connect_normal_triangles= GetSplitTriangleGroupBySoftEdge(wedge_index,false);
+        YMeshVertexWedge& cur_wedge = wedges[wedge_index];
+        std::set<int> connect_normal_triangles = GetSplitTriangleGroupBySoftEdge(wedge_index, false);
         std::set<int> connect_tangent_triangle = GetSplitTriangleGroupBySoftEdge(wedge_index, true);
-        connect_tangent_triangle= GetSplitTriangleGroupBySoftEdgeSameTangentSign(wedge_index, connect_tangent_triangle);
+        connect_tangent_triangle = GetSplitTriangleGroupBySoftEdgeSameTangentSign(wedge_index, connect_tangent_triangle);
         YVector normal = YVector::zero_vector;
         YVector tangent = YVector::zero_vector;
         YVector bitangent = YVector::zero_vector;
@@ -975,7 +1007,11 @@ void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_m
             YMeshPolygon& polygon = polygons[connect_triangle_id];
             if ((!polygon.normal.IsNearlyZero(SMALL_NUMBER)) && !(polygon.normal.ContainsNaN()))
             {
-                normal = normal + polygon.normal;
+                //normal = normal + polygon.normal*polygon.aera * cur_wedge.corner_angle;
+                if (normal_method == ImportNormal)
+                {
+                    normal = normal + polygon.normal * cur_wedge.corner_angle;
+                }
             }
             if (connect_tangent_triangle.count(connect_triangle_id))
             {
@@ -990,7 +1026,15 @@ void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_m
                 }
             }
         }
-        normal = normal.GetSafeNormal();
+
+        if (normal_method == Caculate)
+        {
+            normal = normal.GetSafeNormal();
+        }
+        else
+        {
+            normal = cur_wedge.normal.GetSafeNormal();
+        }
         tangent = tangent.GetSafeNormal();
         bitangent = bitangent.GetSafeNormal();
         const YMeshPolygon& polygon = polygons[wedges[wedge_index].connected_triangles[0]];
@@ -1016,9 +1060,10 @@ void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_m
         }
         YVector::CreateGramSchmidtOrthogonalization(tangent, bitangent, normal);
         float determinant = YMatrix(YVector4(tangent, 0.0), YVector4(bitangent, 0.0), YVector4(normal, 0.0), YVector4(0.0, 0.0, 0.0, 1.0)).Determinant();
-        wedges[wedge_index].normal = normal;
-        wedges[wedge_index].tangent = tangent;
-        wedges[wedge_index].bitangent = bitangent;
-        wedges[wedge_index].binormal_sign = determinant < 0 ? -1.0 : 1.0;
+        cur_wedge.normal = normal;
+        cur_wedge.tangent = tangent;
+        cur_wedge.bitangent = bitangent;
+        cur_wedge.binormal_sign = determinant < 0 ? -1.0 : 1.0;
     }
 }
+

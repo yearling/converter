@@ -89,10 +89,10 @@ float4 PSMain(VS_OUTPUT Input) :SV_Target
 	float3 dir_light = float3(1.0,1.0,-1.0);
 	dir_light = normalize(dir_light);
 	float ndl = dot(light_dir,normalize(Input.vNormal));
-	ndl = clamp(ndl,0,1.0)+0.1;
+	ndl = clamp(ndl,0.02,1.0);
 	float4 diffuse_color = pow(g_MeshTexture.Sample(g_sampler,Input.vTexcoord),2.2);
 	// float3 srgb = LinearToSrgbBranching(float3(ndl,ndl,ndl));
-	float3 srgb = LinearToSrgbBranching(diffuse_color.xyz);
+	float3 srgb = LinearToSrgbBranching(diffuse_color.xyz*ndl);
 	return float4(srgb,1.0);
 	// if(show_normal>0.0)
 	// {

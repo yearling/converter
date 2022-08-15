@@ -351,6 +351,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                     temp_value = total_matrix_for_normal.MultT(temp_value);
                     YVector tangent_z = converter_.ConvertDir(temp_value);
                     wedge.normal = tangent_z.GetSafeNormal();
+                    wedge.original_normal = wedge.normal;
 
                     if (has_NTB_information)
                     {
@@ -360,6 +361,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                         tangent_value = total_matrix_for_normal.MultT(tangent_value);
                         YVector tangent_x = converter_.ConvertDir(tangent_value);
                         wedge.tangent = tangent_x.GetSafeNormal();
+                        wedge.original_tangent = wedge.tangent;
 
                         int binormal_map_index = (binormal_mapping_mode == FbxLayerElement::eByControlPoint) ? control_point_index : polygon_vertex_index;
                         int binormal_value_index = (binormal_reference_mode == FbxLayerElement::eDirect) ? binormal_map_index : binormal_layer->GetIndexArray().GetAt(binormal_map_index);
@@ -369,6 +371,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                         YVector tanget_y = -converter_.ConvertDir(binormal_value);
                         wedge.bitangent = tanget_y.GetSafeNormal();
                         wedge.binormal_sign = YMath::GetBasisDeterminantSign(tangent_x, tanget_y, tangent_z);
+                        wedge.original_bitangent = wedge.bitangent;
                     }
                 }
             }
@@ -565,7 +568,7 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
     }
     LOG_INFO("End merge scene");
     //new_copyed_mesh->ComputeTriangleNormalAndTangent(Caculate, Mikkt);
-    new_copyed_mesh->ComputeWedgeNormalAndTangent(Caculate, Mikkt);
+    new_copyed_mesh->ComputeWedgeNormalAndTangent(ImportNormal, Mikkt);
    
     raw_mesh->vertex_position = new_copyed_mesh->control_points;
     raw_mesh->vertex_instances = new_copyed_mesh->wedges;
