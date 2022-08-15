@@ -103,6 +103,8 @@ void YStaticMesh::Render(RenderParam* render_param)
 		pixel_shader_->BindResource("light_dir", &dir_light.x, 3);
 	}
     pixel_shader_->BindResource("show_normal", 1.0f);
+    pixel_shader_->BindTextureSampler("g_sampler", sampler_state_);
+    pixel_shader_->BindSRV("g_MeshTexture", diffuse_tex_->texture_2d_->srv_);
 	pixel_shader_->Update();
 
 	int triangle_total = 0;

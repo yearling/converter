@@ -47,7 +47,7 @@ public:
 	friend D3DVertexShader;
 	friend D3DPixelShader;
 	friend class STexture;
-protected:
+public:
 	TComPtr<ID3D11Texture2D> d3d_texture2d_;
 	TComPtr<ID3D11ShaderResourceView> srv_;
 	TComPtr<ID3D11RenderTargetView> rtv_;

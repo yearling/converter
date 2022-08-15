@@ -250,7 +250,7 @@ bool STexture::LoadFromMemoryFile(std::unique_ptr<MemoryFile> mem_file)
 		WARNING_INFO("load picture ",name_, " failed");
 		return false;
 	}
-	
+    FreeImage_FlipVertical(bitmap);
 	has_alpha_ = FreeImage_IsTransparent(bitmap);
 	is_greyscale_ = FreeImage_GetColorType(bitmap) == FREE_IMAGE_COLOR_TYPE::FIC_MINISBLACK;
 	sRGB_ = FreeImageHelper::IsSRGB(bitmap);
@@ -302,7 +302,7 @@ bool STexture::LoadFromPackage(const std::string& path)
 		WARNING_INFO("texture ", path, "'s format not support");
 		return false;
 	}
-	std::string asset_binary_path = path;
+	std::string asset_binary_path = path.substr(1);
 	bool asset_binary_exist = YPath::FileExists(asset_binary_path);
 	if (asset_binary_exist)
 	{
@@ -407,7 +407,7 @@ bool STexture::UploadGPUBuffer()
 	data.SysMemPitch = scane_width_;
 	data.SysMemSlicePitch = memory_size_;
 	texture_2d_ = std::make_unique<D3DTexture2D>(TextureUsage::TU_ShaderResource);
-	if (!g_device->Create2DTextureWithSRV(width_, height_, DXGI_FORMAT_R8G8B8A8_UNORM, generate_mipmap, 1, &data, texture_2d_->d3d_texture2d_, texture_2d_->srv_))
+	if (!g_device->Create2DTextureWithSRV(width_, height_, DXGI_FORMAT_B8G8R8A8_UNORM, generate_mipmap, 1, &data, texture_2d_->d3d_texture2d_, texture_2d_->srv_))
 	{
 		WARNING_INFO(name_, " Create Texture2d failed!");
 		return false;

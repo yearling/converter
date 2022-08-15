@@ -137,8 +137,8 @@ bool GameApplication::Initial()
 {
     int windows_x = defaut_windows_width;
     int windows_y = defaut_windows_height;
-    windows_x = 3000;
-    windows_y = 2000;
+    windows_x = 2560;
+    windows_y = 1440;
     WindowCreate(windows_x, windows_y);
     //create engine
     YEngine* engine = YEngine::GetEngine();
@@ -159,7 +159,6 @@ bool GameApplication::Initial()
           "E:/fbx/test_case/nija/qq_plane_uv_mirror.fbx",    //测试 uv 镜像
           "E:/fbx/test_case/nija/mirror_nija_no_seam_small.fbx"    //测试 uv 镜像
           "E:/fbx/static_mesh/plane/space-ship/source/space_ship.fbx",
-          "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog.fbx", // good for degenerate triangle
           "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog3.fbx", // good for degenerate triangle
           "E:/fbx/static_mesh/sword/dragon-sword/source/Dragon_Bone_Sword.fbx",
           "E:/fbx/static_mesh/bose/felstrider-mount/source/FelstriderAnimation.fbx", //multi mesh
@@ -179,7 +178,7 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/gun/ar-15-style-rifle/source/ar style gun.fbx",   // good
           "E:/fbx/static_mesh/human/baphomet/source/body1.fbx",   // good
           "E:/fbx/static_mesh/bose/black-fish/source/BlackFish.obj",   // good
-          "E:/fbx/static_mesh/car/buggy-2/source/VHC_SC_Buggy_01.fbx",   // good,老爷车
+          "E:/fbx/static_mesh/car/buggy-2/source/VHC_SC_Buggy_01.fbx",   // good,老爷车, 测试 uv 镜像
           "E:/fbx/static_mesh/bose/xeno-raven/source/XenoRaven.fbx",   // 异形
           "E:/fbx/static_mesh/bose/cthulhu-statuette/source/Horror_low_subd.obj",   // 异形
           "E:/fbx/static_mesh/plane/spaceship-nortend/source/model.dae",   // good texture ,scale 10
@@ -216,6 +215,7 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/funature/cathedral/source/combined02.obj",   // good,我的世界--教堂
           "E:/fbx/static_mesh/architecture/abandoned-house/source/abandonhouse.fbx", // test for AO
           "E:/fbx/static_mesh/car/6e48z1kc7r40-bugatti/bugatti.obj",   // crash, no uv, no materials   
+          "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog.fbx", // good for degenerate triangle
     };
 
     std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
@@ -367,12 +367,13 @@ bool GameApplication::Initial()
                     //mesh->SaveV0("head");
                     mesh->AllocGpuResource();
                     engine->static_mesh_ = std::move(mesh);
-                    /*std::string test_pic = "/textures/uv.png";
+                    std::string test_pic = "/textures/uv4096.png";
                     TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
                     if (texture)
                     {
                         texture->UploadGPUBuffer();
-                    }*/
+                    }
+                    engine->static_mesh_->diffuse_tex_ = texture;
                 }
                 SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_.get());
             }
@@ -470,6 +471,7 @@ void GameApplication::SwitchModel()
                 YEngine* engine = YEngine::GetEngine();
                 engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
                 SWorld::GetWorld()->GetMainScene()->skeleton_meshes_.push_back(engine->skeleton_mesh_.get());
+              
             }
             else
             {
@@ -495,6 +497,14 @@ void GameApplication::SwitchModel()
                     {
                         texture->UploadGPUBuffer();
                     }*/
+                    std::string test_pic = "/textures/uv4096.png";
+                    TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
+                    if (texture)
+                    {
+                        texture->UploadGPUBuffer();
+                    }
+                    engine->static_mesh_->diffuse_tex_ = texture;
+                   
                 }
                 SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
                 SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_.get());

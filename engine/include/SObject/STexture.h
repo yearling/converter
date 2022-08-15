@@ -30,8 +30,8 @@ public:
 	int GetScanWidth() const;
 	int GetMemorySize() const;
 	bool UploadGPUBuffer();
-protected:
-
+//protected:
+public:
 	TextureType texture_type_ = Texture_Unknown;
 	EPixelFormat  pixel_format_ = PF_Unknown;
 	int mipmap_level_ = 0;

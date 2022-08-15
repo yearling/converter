@@ -6,8 +6,8 @@
 	matrix g_InvVP;
 	float3 light_dir;
 	float show_normal;
-
-
+    Texture2D g_MeshTexture;
+    SamplerState g_sampler; 
 struct VS_INPUT
 {
 	float3    vPosition		: position;
@@ -90,11 +90,14 @@ float4 PSMain(VS_OUTPUT Input) :SV_Target
 	dir_light = normalize(dir_light);
 	float ndl = dot(light_dir,normalize(Input.vNormal));
 	ndl = clamp(ndl,0,1.0)+0.1;
-	float3 srgb = LinearToSrgbBranching(float3(ndl,ndl,ndl));
-	if(show_normal>0.0)
-	{
-		float3 normal_color = CoverNormalToColor(Input.vNormal);
-		return float4(normal_color,1.0);
-	}
-	return float4(srgb,1.0);	
+	float4 diffuse_color = pow(g_MeshTexture.Sample(g_sampler,Input.vTexcoord),2.2);
+	// float3 srgb = LinearToSrgbBranching(float3(ndl,ndl,ndl));
+	float3 srgb = LinearToSrgbBranching(diffuse_color.xyz);
+	return float4(srgb,1.0);
+	// if(show_normal>0.0)
+	// {
+	// 	float3 normal_color = CoverNormalToColor(Input.vNormal);
+	// 	return float4(normal_color,1.0);
+	// }
+	// return float4(srgb,1.0);	
 }

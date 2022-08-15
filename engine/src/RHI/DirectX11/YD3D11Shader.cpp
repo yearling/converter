@@ -1067,6 +1067,10 @@ bool D3DPixelShader::Update() {
 					d3d_dc->PSSetSamplers(slot.second, 1, &state);
 				}
 			}
+            else
+            {
+                WARNING_INFO("Pixel shader's sampler ", slot.first, " dose not match");
+            }
 		}
 		return true;
 	}

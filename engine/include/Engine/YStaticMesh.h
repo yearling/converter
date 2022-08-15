@@ -4,6 +4,8 @@
 #include <memory>
 #include "RHI/DirectX11/D3D11VertexFactory.h"
 #include "Engine/YCamera.h"
+#include "YReferenceCount.h"
+#include "SObject/STexture.h"
 class YStaticMesh
 {
 public:
@@ -30,4 +32,5 @@ public:
 	std::unique_ptr<D3DPixelShader> pixel_shader_;
 	std::unique_ptr<DXVertexFactory> vertex_factory_;
 	std::string model_name;
+    TRefCountPtr<STexture> diffuse_tex_;
 };
