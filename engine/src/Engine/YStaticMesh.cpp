@@ -195,7 +195,7 @@ void YStaticMesh::Render(RenderParam* render_param)
         }
     }
 
-    const bool draw_normal_tangent_bitangent = false;
+    const bool draw_normal_tangent_bitangent = true;
     if (draw_normal_tangent_bitangent)
     {
         for (YMeshPolygonGroup& polygon_group : lod_mesh.polygon_groups)
@@ -205,54 +205,13 @@ void YStaticMesh::Render(RenderParam* render_param)
                 YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
                 for (int i = 0; i < 3; ++i)
                 {
-                    YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[i]];
-                    YVector control_point0 = lod_mesh.vertex_position[vertex_ins_0.control_point_id].position;
-                    YVector normal = vertex_ins_0.normal.GetSafeNormal();
-                    YVector tangent = vertex_ins_0.tangent.GetSafeNormal();
-                    YVector bitangent = vertex_ins_0.bitangent.GetSafeNormal();
-                    YMatrix trans_tangent_to_local =
-                        YMatrix(
-                            YVector4(tangent, 0.0),
-                            YVector4(bitangent, 0.0),
-                            YVector4(normal, 0.0),
-                            YVector4(control_point0, 1.0)
-                        );
-                    float scale = 1.0;
-                    YVector normal_end_pose = YVector(0.0, 0.0, 1.0) * scale;
-                    normal_end_pose = trans_tangent_to_local.TransformPosition(normal_end_pose);
-                    g_Canvas->DrawLine(control_point0, normal_end_pose, YVector4(0.0, 0.0, 1.0, 1.0));
-                    YVector tangent_end_pose = YVector(1.0, 0.0, 0.0) * scale;
-                    tangent_end_pose = trans_tangent_to_local.TransformPosition(tangent_end_pose);
-                    g_Canvas->DrawLine(control_point0, tangent_end_pose, YVector4(1.0, 0.0, 0.0, 1.0));
-                    YVector binormal_end_pose = YVector(0.0, 1.0, 0.0) * scale;
-                    binormal_end_pose = trans_tangent_to_local.TransformPosition(binormal_end_pose);
-                    g_Canvas->DrawLine(control_point0, binormal_end_pose, YVector4(0.0, 1.0, 0.0, 1.0));
-                }
 
-            }
-        }
-    }
-    const bool draw_normal_tangent_diff = false;
-    if (draw_normal_tangent_diff)
-    {
-        for (YMeshPolygonGroup& polygon_group : lod_mesh.polygon_groups)
-        {
-            for (int polygon_index : polygon_group.polygons)
-            {
-                YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-                for (int i = 0; i < 3; ++i)
-                {
                     YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[i]];
                     YVector control_point0 = lod_mesh.vertex_position[vertex_ins_0.control_point_id].position;
                     YVector normal = vertex_ins_0.normal.GetSafeNormal();
                     YVector tangent = vertex_ins_0.tangent.GetSafeNormal();
                     YVector bitangent = vertex_ins_0.bitangent.GetSafeNormal();
 
-                    YVector orignal_normal = vertex_ins_0.original_normal.GetSafeNormal();
-                    YVector orignal_tangent = vertex_ins_0.original_tangent.GetSafeNormal();
-                    YVector orignal_bitangent = vertex_ins_0.original_bitangent.GetSafeNormal();
-
-                    //if (!YMath::IsNearlyEqual(YMath::Abs(YVector::Dot(tangent, orignal_tangent)), 1.0f, 0.01f))
                     {
                         YMatrix trans_tangent_to_local =
                             YMatrix(
@@ -262,13 +221,6 @@ void YStaticMesh::Render(RenderParam* render_param)
                                 YVector4(control_point0, 1.0)
                             );
 
-                        YMatrix trans_orignal_tangent_to_local =
-                            YMatrix(
-                                YVector4(orignal_tangent, 0.0),
-                                YVector4(orignal_bitangent, 0.0),
-                                YVector4(orignal_normal, 0.0),
-                                YVector4(control_point0, 1.0)
-                            );
                         float scale = 1.0;
                         YVector normal_end_pose = YVector(0.0, 0.0, 1.0) * scale;
                         normal_end_pose = trans_tangent_to_local.TransformPosition(normal_end_pose);

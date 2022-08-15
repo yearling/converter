@@ -167,10 +167,11 @@ public:
     // all referenced
     bool Valid() const;
     void Merge(ImportedRawMesh& other);
-    void ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
+    void ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method,bool ignore_degenerate_triangle = true);
     void ComputeTriangleNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
     void ComputeUVSeam();
 protected:
+    friend struct MikktHelper;
     std::set<int> GetSplitTriangleGroupBySoftEdge( int wedge_index, bool split_uv_seam );
     std::set<int> GetSplitTriangleGroupBySoftEdgeSameTangentSign(int wedge_index, const std::set<int>& connected_triangles);
     struct FlowFlagRawMesh
@@ -184,7 +185,7 @@ protected:
     bool IsUVSeam(int edge_index);
     static float CalculateTriangleArea(const YVector& v0, const YVector& v1, const YVector& v2);
     static float ComputeTriangleCornerAngle(const YVector& v0, const YVector& v1, const YVector& v2);
-
+    void ComputeTangentSpaceMikktMethod(bool ignore_degenerate_triangle = true);
 };
 
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);

@@ -33,7 +33,7 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 endif(MSVC)
 
 # cpp files
-file(GLOB_RECURSE SRC_LIST "src/*.cpp" "src/*.h" )
+file(GLOB_RECURSE SRC_LIST "src/*.cpp" "src/*.h" "src/*.c" )
 # .h files
 file(GLOB_RECURSE HEAD_LIST "include/*.h" "include/*.inl")
 # hlsl files
