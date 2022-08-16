@@ -1225,6 +1225,21 @@ std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVer
 std::unique_ptr< MediumStaticVertexData> PostProcessRenderMesh::GenerateMediumStaticVertexData()
 {
     std::unique_ptr<MediumStaticVertexData> render_data = std::make_unique<MediumStaticVertexData>();
+    CompressVertex();
+    render_data->position.reserve(vertex_data_cache.size());
+    render_data->vertex_infos.reserve(vertex_data_cache.size());
+    for (FullStaticVertexData& full_vertex_data : vertex_data_cache)
+    {
+        render_data->position.push_back(full_vertex_data.position);
+        MediumStaticVertexData::MediumVertexInfo tmp;
+        tmp.normal = YVector4(full_vertex_data.normal, 0.0);
+        tmp.tangent = full_vertex_data.tangent;
+        tmp.uv0 = full_vertex_data.uv0;
+        tmp.uv1 = full_vertex_data.uv1;
+        render_data->vertex_infos.push_back(tmp);
+    }
+
+    render_data->GenerateIndexBuffers(section_indices);
     return render_data;
 }
 

@@ -33,8 +33,8 @@ public:
 	void SetupVertexDescriptionPolicy()
 	{
 		vertex_descriptions_.clear();
-		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector),0, false, false, true);
-		VertexStreamDescription uv_desc(VertexAttribute::VA_COLOR, "color", DataType::Uint8, 1, 4, 0, -1, sizeof(int), 0,true, false, true);
+		VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32,DXGI_FORMAT_R32G32B32_FLOAT ,0, 3, 0, -1, sizeof(YVector),0, false, false, true);
+		VertexStreamDescription uv_desc(VertexAttribute::VA_COLOR, "color", DataType::Uint8, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 4, 0, -1, sizeof(int), 0,true, false, true);
 		vertex_descriptions_.push_back(postion_desc);
 		vertex_descriptions_.push_back(uv_desc);
 	}

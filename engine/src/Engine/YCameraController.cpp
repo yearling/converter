@@ -92,7 +92,7 @@ void FPSCameraController::Update(double delta_time)
 	float yaw_delta = delta_pitch_screen_ * rotation_speed_yaw_;
 	YRotator final_rotator = camera_->GetRotator();
 	final_rotator.pitch += pitch_delta;
-	final_rotator.pitch = YMath::Clamp(-90.f, 90.0f, final_rotator.pitch);
+	final_rotator.pitch = YMath::Clamp(final_rotator.pitch ,-90.f, 90.0f);
 	final_rotator.yaw += yaw_delta;
 	camera_->SetRotation(final_rotator);
 	wheel_speed_ = 0.0;

@@ -33,14 +33,17 @@ enum VertexAttribute
 enum DataType
 {
 	Float32,
+    Float16,
 	Uint8,
 	Uint32
 };
+
 struct VertexStreamDescription {
 	VertexStreamDescription();
 	VertexStreamDescription(VertexAttribute in_vertex_attribe,
 		                 const std::string& in_name, 
 		                 DataType in_type,  
+                         DXGI_FORMAT in_format,
 						int in_cpu_data_index,           
                         int in_com_num, 
                         int in_buffer_size, 
@@ -53,6 +56,7 @@ struct VertexStreamDescription {
 	VertexAttribute vertex_attribute;
 	std::string name;
 	DataType data_type;
+    DXGI_FORMAT data_format;
 	int cpu_data_index;
 	int com_num;
 	int buffer_size;
@@ -89,6 +93,9 @@ public:
 	DXVertexFactory();
 	~DXVertexFactory() override;
 	void SetInputLayout(const TComPtr<ID3D11InputLayout>& input_layout);
+    void SetupStreamsWithBuffer(const std::vector<TComPtr<ID3D11Buffer>>& buffers);
 protected:
 	TComPtr<ID3D11InputLayout> vertex_input_layout_;
 };
+
+

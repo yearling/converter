@@ -249,7 +249,7 @@ struct YMath
 	static unsigned int GetIntColor(const YVector4& color);
 
 	template<class T>
-	static T Clamp(T min_value, T max_value, T in_value)
+	static T Clamp(T in_value, T min_value, T max_value)
 	{
 		if (in_value < min_value)
 		{

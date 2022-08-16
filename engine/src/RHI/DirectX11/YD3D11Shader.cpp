@@ -894,11 +894,11 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
 		if (reflected_desc.Format == DXGI_FORMAT_R32G32B32_FLOAT && vertex_stream_desc.data_type == DataType::Float32 && vertex_stream_desc.com_num == 3) {
 			return true;
 		}
-		if (reflected_desc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT && (vertex_stream_desc.data_type == DataType::Float32 || vertex_stream_desc.data_type == DataType::Uint8) &&
+		/*if (reflected_desc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT && (vertex_stream_desc.data_type == DataType::Float32 || vertex_stream_desc.data_type == DataType::Uint8) &&
 			vertex_stream_desc.com_num == 4) {
 
 			return true;
-		}
+		}*/
 		if (reflected_desc.Format == DXGI_FORMAT_R32_UINT && vertex_stream_desc.data_type == DataType::Uint8 &&
 			vertex_stream_desc.com_num == 4 ) {
 			return true;
@@ -908,6 +908,36 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
 			vertex_stream_desc.com_num == 4) {
 			return true;
 		}
+
+        if (reflected_desc.Format == DXGI_FORMAT_R32G32B32A32_FLOAT)
+        {
+            if (vertex_stream_desc.data_type == DataType::Float32)
+            {
+                return true;
+            }
+
+            if (vertex_stream_desc.data_type == DataType::Uint8 && vertex_stream_desc.com_num == 4)
+            {
+                return true;
+            }
+
+            if (vertex_stream_desc.data_type == DataType::Float16 && vertex_stream_desc.com_num == 2)
+            {
+                return true;
+            }
+        }
+
+        if (reflected_desc.Format == DXGI_FORMAT_R32G32_FLOAT)
+        {
+            if (vertex_stream_desc.data_type == DataType::Float32)
+            {
+                return true;
+            }
+            if (vertex_stream_desc.data_type == DataType::Float16 && vertex_stream_desc.com_num == 2)
+            {
+                return true;
+            }
+        }
 		return false;
 	};
 	bool input_layout_march = true;
@@ -926,10 +956,21 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
 					find_same_name = true;
 					vertex_stream_descs[j].slot = reflected_input_layout_desc[i].InputSlot;
                     reflected_input_layout_desc[i].AlignedByteOffset = vertex_stream_descs[j].offset;
-					if (reflected_input_layout_desc[i].Format == DXGI_FORMAT_R32G32B32A32_FLOAT && vertex_stream_descs[j].data_type == DataType::Uint8)
+					if (reflected_input_layout_desc[i].Format == DXGI_FORMAT_R32G32B32A32_FLOAT )
 					{
-						reflected_input_layout_desc[i].Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                        if (vertex_stream_descs[j].data_type == DataType::Uint8 && vertex_stream_descs[j].com_num == 4)
+                        {
+                            reflected_input_layout_desc[i].Format = vertex_stream_descs[j].data_format;
+                        }
 					}
+
+                    if (reflected_input_layout_desc[i].Format == DXGI_FORMAT_R32G32_FLOAT)
+                    {
+                        if (vertex_stream_descs[j].data_type == DataType::Float16 && vertex_stream_descs[j].com_num == 2)
+                        {
+                            reflected_input_layout_desc[i].Format = vertex_stream_descs[j].data_format;
+                        }
+                    }
 				}
 				break;
 			}

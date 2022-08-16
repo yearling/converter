@@ -11,20 +11,19 @@
 struct VS_INPUT
 {
 	float3    vPosition		: position;
-	float3    vNormal       : normal;
-	float3    vTangent       : tangent;
+	float4    vNormal       : normal;
+	float4    vTangent       : tangent;
 	float2    vTexCoord     : uv;
-	// half3     TangentX		: ATTRIBUTE1;
-	// half4     TangentZ		: ATTRIBUTE2;
-    // half2     TexCoords[2]  : ATTRIBUTE3;
+	float2    vTexCoord1     : uv1;
 };
+
 struct VS_OUTPUT
 {
 	float2 vTexcoord	: TEXCOORD0;
 	float4 vPosition	: SV_POSITION;
 	float4 vColor		: COLOR0;
 	float3 vNormal      : NORMAL;
-	float3 vTangent      : Tangent;
+	float4 vTangent      : Tangent;
 };
 
 VS_OUTPUT VSMain(VS_INPUT Input)
@@ -33,23 +32,14 @@ VS_OUTPUT VSMain(VS_INPUT Input)
 	matrix vp= mul(g_view,g_projection);
 	matrix wvp = mul (g_world,vp);
 	Output.vPosition = mul(float4(Input.vPosition,1.0), wvp);
+
 	Output.vTexcoord = Input.vTexCoord;
 	Output.vColor = float4(1.0,1.0,1.0,1.0);
-	// Output.vNormal = Input.vNormal;
-	float4 trans_normal = mul(float4(Input.vNormal,0.0), g_world);
+	float4 trans_normal = mul(float4(Input.vNormal.xyz,0.0), g_world);
 	Output.vNormal = trans_normal.xyz;
 	Output.vNormal = normalize(Output.vNormal);
-	Output.vTangent = normalize(mul(float4(Input.vTangent,0.0), g_world).xyz);
-	// matrix matWVP = mul(g_world, g_VP);
-
-	// Output.vPosition = mul(float4(Input.vPosition,1.0), matWVP);
-	// Output.vTexcoord[0] = Input.TexCoords[0];
-	// Output.vTexcoord[1] = Input.TexCoords[1];
-
-	// float3 TangentX = normalize(Input.TangentX.xyz);
-	// float3 TangentZ = normalize(Input.TangentZ.xyz);
-	// float3 TangentY = cross(TangentZ, TangentX)* Input.TangentZ.w;
-	// Output.TangentToLocal = float3x3(TangentX, TangentY, TangentZ);
+	Output.vTangent.xyz = normalize(mul(float4(Input.vTangent.xyz,0.0), g_world).xyz);
+	Output.vTangent.w =  Input.vTangent.w;
 	return Output;
 }
 

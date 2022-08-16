@@ -658,7 +658,8 @@ bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vecto
     new_copyed_mesh->ComputeWedgeNormalAndTangent(ImportNormal, Mikkt, import_param_->remove_degenerate_triangles);
     
     PostProcessRenderMesh process(new_copyed_mesh.get());
-    static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
+    //static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
+    static_mesh->lod_render_data_.push_back(process.GenerateMediumStaticVertexData());
     return true;
 }
 
