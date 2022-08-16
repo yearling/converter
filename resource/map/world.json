@@ -1,30 +1,30 @@
 {
     "actors" :
     [
-        {
-            "root_component":
-            {
-                    "type":"StaticMesh",
-                    "model":"/model/shader_ball/shader_ball",
-                    "local_translation":[ 3.0,0.0,20.0],
-                    "local_rotation":[0.0,0.0,0.0],
-                    "local_scale":[1.0,1.0,1.0],
-                    "children":
-                    [
-                        {
+        // {
+        //     "root_component":
+        //     {
+        //             "type":"StaticMesh",
+        //             "model":"/model/shader_ball/shader_ball",
+        //             "local_translation":[ 3.0,0.0,20.0],
+        //             "local_rotation":[0.0,0.0,0.0],
+        //             "local_scale":[1.0,1.0,1.0],
+        //             "children":
+        //             [
+        //                 {
                    
-                                "type":"StaticMesh",
-                                "model":"/model/blender_shader_ball/blender_shader_ball",
-                                "local_translation":[ 5.0,0.0,0.0],
-                                "local_rotation":[0.0,0.0,0.0],
-                                "local_scale":[2.0,2.0,2.0]
-                        }
-                    ]
-            },
-            "name":"shader_ball",
-            "id":0
-        }
-        ,
+        //                         "type":"StaticMesh",
+        //                         "model":"/model/blender_shader_ball/blender_shader_ball",
+        //                         "local_translation":[ 5.0,0.0,0.0],
+        //                         "local_rotation":[0.0,0.0,0.0],
+        //                         "local_scale":[2.0,2.0,2.0]
+        //                 }
+        //             ]
+        //     },
+        //     "name":"shader_ball",
+        //     "id":0
+        // }
+        // ,
         {
             "root_component":
              {

@@ -359,6 +359,7 @@ void YPickupShowMove::RayCast(int x, int y)
     YRay ray = camera_component->camera_->GetWorldRayFromScreen(YVector2(ScreenCoordinateX, ScreenCoordinateY));
 	
 
+    return;
     YEngine* engine = YEngine::GetEngine();
     YStaticMesh* static_mesh = engine->static_mesh_.get();
     YLODMesh& lod_mesh = static_mesh->raw_meshes[0];

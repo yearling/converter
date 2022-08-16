@@ -52,6 +52,50 @@ protected:
     YStaticMesh* mesh_ = nullptr;
 };
 
+class YHiStaticMeshVertexFactory :public DXVertexFactory
+{
+public:
+    YHiStaticMeshVertexFactory(YStaticMesh* mesh)
+        :mesh_(mesh)
+    {
+
+    }
+    void SetupStreams()override
+    {
+        if (vertex_input_layout_)
+        {
+            const TComPtr<ID3D11DeviceContext> dc = g_device->GetDC();
+            dc->IASetInputLayout(vertex_input_layout_);
+            for (VertexStreamDescription& desc : vertex_descriptions_) {
+                ID3D11Buffer* buffer = mesh_->vertex_buffers_[desc.cpu_data_index];
+                unsigned int stride = desc.stride;
+                unsigned int offset = 0;
+                if (desc.slot != -1) {
+                    dc->IASetVertexBuffers(desc.slot, 1, &buffer, &stride, &offset);
+                }
+            }
+        }
+    }
+    void SetupVertexDescriptionPolicy()
+    {
+        vertex_descriptions_.clear();
+        
+        VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, 0, 3, 0, -1, sizeof(YVector), 0, false, false, false);
+        VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, 1, 4, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 0, false, false, false);
+        VertexStreamDescription tanget_desc(VertexAttribute::VA_TANGENT, "tangent", DataType::Float32, 1, 4, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 16, false, false, false);
+        VertexStreamDescription uv0_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, 1, 2, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 32, false, false, false);
+        VertexStreamDescription uv1_desc(VertexAttribute::VA_UV1, "uv1", DataType::Float32, 1, 2, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 40, false, false, false);
+        VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Uint8, 1, 4, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 48,false, false, false);
+        vertex_descriptions_.push_back(postion_desc);
+        vertex_descriptions_.push_back(normal_desc);
+        vertex_descriptions_.push_back(tanget_desc);
+        vertex_descriptions_.push_back(uv0_desc);
+        vertex_descriptions_.push_back(uv1_desc);
+        vertex_descriptions_.push_back(color_desc);
+    }
+protected:
+    YStaticMesh* mesh_ = nullptr;
+};
 void YStaticMesh::Render(CameraBase* camera)
 {
     ID3D11Device* device = g_device->GetDevice();
@@ -93,7 +137,18 @@ void YStaticMesh::Render(RenderParam* render_param)
     //bind im
     vertex_factory_->SetupStreams();
     //bind ib
-    dc->IASetIndexBuffer(index_buffer_, DXGI_FORMAT_R32_UINT, 0);
+
+    std::unique_ptr< StaticVertexRenderData>& lod_renderdata = lod_render_data_[0];
+    if (lod_renderdata->use_32_indices)
+    {
+        dc->IASetIndexBuffer(index_buffer_, DXGI_FORMAT_R32_UINT, 0);
+    }
+    else
+    {
+        dc->IASetIndexBuffer(index_buffer_, DXGI_FORMAT_R16_UINT, 0);
+    }
+
+
     vertex_shader_->BindResource("g_projection", render_param->camera_proxy->projection_matrix_);
     vertex_shader_->BindResource("g_view", render_param->camera_proxy->view_matrix_);
     vertex_shader_->BindResource("g_world", render_param->local_to_world_);
@@ -106,6 +161,7 @@ void YStaticMesh::Render(RenderParam* render_param)
     pixel_shader_->BindTextureSampler("g_sampler", sampler_state_);
     pixel_shader_->BindSRV("g_MeshTexture", diffuse_tex_->texture_2d_->srv_);
     pixel_shader_->Update();
+#if 0
     int triangle_total = 0;
     for (auto& polygon_group : raw_meshes[0].polygon_groups)
     {
@@ -114,6 +170,12 @@ void YStaticMesh::Render(RenderParam* render_param)
         triangle_total += triangle_count * 3;
     }
 
+#else 
+    for (StaticVertexRenderData::IndexOffsetAndTriangleCount& offset : lod_renderdata->sections)
+    {
+        dc->DrawIndexed(offset.triangle_count*3,offset.offset, 0);
+    }
+#endif
     YLODMesh& lod_mesh = raw_meshes[0];
     const bool draw_hard_edge = false;
     if (draw_hard_edge)
@@ -254,8 +316,8 @@ bool YStaticMesh::AllocGpuResource()
     {
         return false;
     }
-    std::unique_ptr< YStaticMeshVertexFactory > static_mesh_vertex_factory = std::make_unique<YStaticMeshVertexFactory>(this);
-    static_mesh_vertex_factory->SetupVertexDescriptionPolicy();
+ /*   std::unique_ptr< YStaticMeshVertexFactory > static_mesh_vertex_factory = std::make_unique<YStaticMeshVertexFactory>(this);
+    static_mesh_vertex_factory->SetupVertexDescriptionPolicy();*/
     YLODMesh& lod_mesh = raw_meshes[0];
     //vb
         // expand position buffer
@@ -313,6 +375,7 @@ bool YStaticMesh::AllocGpuResource()
     assert(normal_buffer.size() == triagle_count * 3);
     assert(uv_buffer.size() == triagle_count * 3);
 
+#if 0
     {
         TComPtr<ID3D11Buffer> d3d_vb;
         if (!g_device->CreateVertexBufferStatic((unsigned int)position_buffer.size() * sizeof(YVector), &position_buffer[0], d3d_vb)) {
@@ -391,6 +454,85 @@ bool YStaticMesh::AllocGpuResource()
             return false;
         }
     }
+#else
+std::unique_ptr< YHiStaticMeshVertexFactory > static_mesh_vertex_factory = std::make_unique<YHiStaticMeshVertexFactory>(this);
+static_mesh_vertex_factory->SetupVertexDescriptionPolicy();
+std::unique_ptr< StaticVertexRenderData>& lod_mesh_render_data = lod_render_data_[0];
+//vb
+{
+    TComPtr<ID3D11Buffer> d3d_vb;
+    if (!g_device->CreateVertexBufferStatic((unsigned int)lod_mesh_render_data->position.size() * sizeof(YVector), lod_mesh_render_data->position.data(), d3d_vb)) {
+        ERROR_INFO("Create vertex buffer failed!!");
+        return false;
+    }
+    vertex_buffers_.push_back(d3d_vb);
+}
+
+{
+    TComPtr<ID3D11Buffer> d3d_vb;
+    if (!g_device->CreateVertexBufferStatic((unsigned int)lod_mesh_render_data->GetVertexInfoSize(), lod_mesh_render_data->GetVertexInfoData(), d3d_vb)) {
+        ERROR_INFO("Create vertex buffer failed!!");
+        return false;
+    }
+    vertex_buffers_.push_back(d3d_vb);
+}
+
+
+{
+    if (lod_mesh_render_data->use_32_indices)
+    {
+        if (!g_device->CreateIndexBuffer((unsigned int)lod_mesh_render_data->indices_32.size() * sizeof(uint32), lod_mesh_render_data->indices_32.data(), index_buffer_)) {
+            ERROR_INFO("Create index buffer failed!!");
+            return false;
+        }
+    }
+    else
+    {
+        if (!g_device->CreateIndexBuffer((unsigned int)lod_mesh_render_data->indices_16.size() * sizeof(uint16), lod_mesh_render_data->indices_16.data(), index_buffer_)) {
+            ERROR_INFO("Create index buffer failed!!");
+            return false;
+        }
+    }
+
+}
+
+// vs
+{
+    vertex_shader_ = std::make_unique<D3DVertexShader>();
+    const std::string shader_path = "Shader/StaticMesh_hi.hlsl";
+    YFile vertex_shader_source(shader_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_TXT));
+    std::unique_ptr<MemoryFile> mem_file = vertex_shader_source.ReadFile();
+    if (!mem_file)
+    {
+        ERROR_INFO("open shader ", shader_path, " failed!");
+        return false;
+    }
+    std::string str(mem_file->GetReadOnlyFileContent().begin(), mem_file->GetReadOnlyFileContent().end());
+    if (!vertex_shader_->CreateShaderFromSource(str, "VSMain", static_mesh_vertex_factory.get()))
+    {
+        return false;
+    }
+}
+//ps
+{
+    pixel_shader_ = std::make_unique<D3DPixelShader>();
+    const std::string shader_path = "Shader/StaticMesh_hi.hlsl";
+
+    YFile vertex_shader_source(shader_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_TXT));
+    std::unique_ptr<MemoryFile> mem_file = vertex_shader_source.ReadFile();
+    if (!mem_file)
+    {
+        ERROR_INFO("open shader ", shader_path, " failed!");
+        return false;
+    }
+    std::string str(mem_file->GetReadOnlyFileContent().begin(), mem_file->GetReadOnlyFileContent().end());
+    if (!pixel_shader_->CreateShaderFromSource(str, "PSMain"))
+    {
+        return false;
+    }
+}
+
+#endif
     if (!bs_) {
         g_device->CreateBlendState(bs_, true);
     }

@@ -618,4 +618,47 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
     return true;
 }
 
+bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes)
+{
+    if (raw_meshes.empty())
+    {
+        return false;
+    }
+    std::shared_ptr<ImportedRawMesh> new_copyed_mesh = std::make_shared<ImportedRawMesh>();
+    *new_copyed_mesh = *raw_meshes[0];
+    LOG_INFO("Bengin merge scene");
+    int all_control_point_size = 0;
+    int all_wedge_size = 0;
+    int all_polygon_size = 0;
+    int all_edge_size = 0;
+    int all_polygon_group_size = 0;
+
+    for (std::shared_ptr<ImportedRawMesh>& impored_raw_mesh : raw_meshes)
+    {
+        all_control_point_size += impored_raw_mesh->control_points.size();
+        all_wedge_size += impored_raw_mesh->wedges.size();
+        all_polygon_size += impored_raw_mesh->polygons.size();
+        all_edge_size += impored_raw_mesh->edges.size();
+        all_polygon_group_size += impored_raw_mesh->polygon_groups.size();
+    }
+
+    new_copyed_mesh->control_points.reserve(all_control_point_size);
+    new_copyed_mesh->wedges.reserve(all_wedge_size);
+    new_copyed_mesh->polygons.reserve(all_polygon_size);
+    new_copyed_mesh->edges.reserve(all_edge_size);
+    new_copyed_mesh->polygon_groups.reserve(all_polygon_group_size);
+    new_copyed_mesh->polygon_group_to_material.reserve(all_polygon_group_size);
+
+
+    for (int mesh_index = 1; mesh_index < (int)raw_meshes.size(); ++mesh_index)
+    {
+        new_copyed_mesh->Merge(*raw_meshes[mesh_index]);
+    }
+    LOG_INFO("End merge scene");
+    new_copyed_mesh->ComputeWedgeNormalAndTangent(ImportNormal, Mikkt, import_param_->remove_degenerate_triangles);
+    
+    PostProcessRenderMesh process(new_copyed_mesh.get());
+    static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
+    return true;
+}
 

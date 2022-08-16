@@ -8,6 +8,7 @@
 #include <set>
 #include "Math/NumericLimits.h"
 #include "Utility/mikktspace.h"
+#include "Math/YColor.h"
 YLODMesh::YLODMesh()
 {
 
@@ -1157,3 +1158,150 @@ void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_m
     }
 }
 
+PostProcessRenderMesh::PostProcessRenderMesh(ImportedRawMesh* raw_mesh)
+    :raw_mesh_(raw_mesh)
+{
+    int wedege_count = (int)raw_mesh_->wedges.size();
+    vertex_data_cache.reserve(wedege_count);
+    section_indices.reserve(wedege_count);
+
+}
+
+void PostProcessRenderMesh::CompressVertex()
+{
+    vertex_data_cache.reserve(raw_mesh_->wedges.size());
+    section_indices.resize(raw_mesh_->polygon_groups.size());
+    for (int golygon_group_index = 0; golygon_group_index < raw_mesh_->polygon_groups.size(); ++golygon_group_index)
+    {
+        const YMeshPolygonGroup& polygon_group = raw_mesh_->polygon_groups[golygon_group_index];
+        for (int triangle_id : polygon_group.polygons)
+        {
+            const YMeshPolygon& triangle = raw_mesh_->polygons[triangle_id];
+            for (int i = 0; i < 3; ++i)
+            {
+                const YMeshVertexWedge& wedge = raw_mesh_->wedges[triangle.wedge_ids[i]];
+                FullStaticVertexData tmp;
+                tmp.position = wedge.position;
+                tmp.normal = wedge.normal;
+                tmp.tangent = YVector4(wedge.tangent, wedge.binormal_sign);
+                tmp.uv0 = wedge.uvs[0];
+                //todo 
+                tmp.uv1 = wedge.uvs[0];
+                tmp.color = wedge.color;
+                section_indices[golygon_group_index].push_back((int)vertex_data_cache.size());
+                vertex_data_cache.push_back(tmp);
+            }
+        }
+    }
+}
+
+void PostProcessRenderMesh::OptimizeIndices()
+{
+
+}
+
+std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVertexData()
+{
+    CompressVertex();
+    std::unique_ptr<HiSttaticVertexData> render_data = std::make_unique<HiSttaticVertexData>();
+    render_data->position.reserve(vertex_data_cache.size());
+    render_data->vertex_infos.reserve(vertex_data_cache.size());
+    for (FullStaticVertexData& full_vertex_data : vertex_data_cache)
+    {
+        render_data->position.push_back(full_vertex_data.position);
+        HiSttaticVertexData::HiVertexInfo tmp;
+        tmp.normal = YVector4(full_vertex_data.normal,0.0);
+        tmp.tangent = full_vertex_data.tangent;
+        tmp.uv0 = full_vertex_data.uv0;
+        tmp.uv1 = full_vertex_data.uv1;
+        tmp.color = FLinearColor(full_vertex_data.color).ToFColor(false).AlignmentDummy;
+        render_data->vertex_infos.push_back(tmp);
+    }
+    
+    render_data->GenerateIndexBuffers(section_indices);
+    return render_data;
+}
+
+std::unique_ptr< MediumStaticVertexData> PostProcessRenderMesh::GenerateMediumStaticVertexData()
+{
+    std::unique_ptr<MediumStaticVertexData> render_data = std::make_unique<MediumStaticVertexData>();
+    return render_data;
+}
+
+void StaticVertexRenderData::GenerateIndexBuffers(const std::vector<std::vector<int>>& section_indices)
+{
+    int section_offset = 0;
+    if (position.size() > MAX_uint16)
+    {
+        use_32_indices = true;
+    }
+    else
+    {
+        use_32_indices = false;
+    }
+
+    int triangle_count = 0;
+    for (const std::vector<int>& indices_per_sec : section_indices)
+    {
+        triangle_count += indices_per_sec.size();
+    }
+    if (use_32_indices)
+    {
+        indices_32.reserve(triangle_count * 3);
+    }
+    else
+    {
+        indices_16.reserve(triangle_count * 3);
+    }
+    
+    sections.resize(section_indices.size());
+
+    for (int section_index = 0; section_index < section_indices.size(); ++section_index)
+    {
+        sections[section_index].offset = section_offset;
+        sections[section_index].triangle_count = section_indices[section_index].size() / 3;
+
+        for (int index : section_indices[section_index])
+        {
+            if (use_32_indices)
+            {
+                indices_32.push_back((uint32)index);
+            }
+            else
+            {
+                indices_16.push_back((uint16)index);
+            }
+            section_offset++;
+        }
+    }
+}
+
+uint32 StaticVertexRenderData::GetVertexInfoSize()
+{
+    return 0;
+}
+
+void* StaticVertexRenderData::GetVertexInfoData()
+{
+    return nullptr;
+}
+
+uint32 HiSttaticVertexData::GetVertexInfoSize()
+{
+    return sizeof(HiSttaticVertexData::HiVertexInfo) * vertex_infos.size();
+}
+
+void* HiSttaticVertexData::GetVertexInfoData()
+{
+    return vertex_infos.data();
+}
+
+uint32 MediumStaticVertexData::GetVertexInfoSize()
+{
+    return sizeof(MediumStaticVertexData::MediumVertexInfo) * vertex_infos.size();
+}
+
+void* MediumStaticVertexData::GetVertexInfoData()
+{
+    return vertex_infos.data();
+}

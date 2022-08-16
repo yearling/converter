@@ -154,12 +154,12 @@ bool GameApplication::Initial()
 
     static_modle_path = {
            "E:/fbx/static_mesh/plane/free-spaceship/source/Spaceship_05.fbx",    //very good
+           "E:/fbx/test_case/nija/mirror_nija_no_seam_small.fbx",    //测试 uv 镜像
            "E:/fbx/static_mesh/plane/free-spaceship/source/Spaceship_05.fbx",    //very good
+           "E:/fbx/test_case/head.obj",    //测试 uv seam
            "E:/fbx/test_case/nija/uv_mirror_plane.fbx",    //测试 uv 镜像
           "E:/fbx/test_case/nija/qq_plane_uv_mirror.fbx",    //测试 uv 镜像
-          "E:/fbx/test_case/nija/mirror_nija_no_seam_small.fbx"    //测试 uv 镜像
           "E:/fbx/static_mesh/plane/space-ship/source/space_ship.fbx",
-          "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog3.fbx", // good for degenerate triangle
           "E:/fbx/static_mesh/sword/dragon-sword/source/Dragon_Bone_Sword.fbx",
           "E:/fbx/static_mesh/bose/felstrider-mount/source/FelstriderAnimation.fbx", //multi mesh
           "E:/fbx/static_mesh/bose/imp/source/Imp_Posed.fbx",
@@ -171,6 +171,7 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/gun/hmg-379/source/ERifle.fbx",   // good,模型很干净，适合测试normal map
           "E:/fbx/static_mesh/plane/AH64A/AH64A.fbx",    //very good
           "E:/fbx/static_mesh/human/male-armour-4-game-ready/source/ManAr4.fbx",    //good armour
+          "E:/fbx/static_mesh/mask/Jonathan_BENAINOUS/source/sci-fi-helmet-blue-neon-jonathan-benainous.fbx",   //花钱买的
           "E:/fbx/static_mesh/human/alien-soldier/source/Alien.obj",   // good
           "E:/fbx/static_mesh/plane/buster-drone/source/BusterDrone.fbx",   // good
           "E:/fbx/static_mesh/funature/aging-paint-material/source/Scene_matman.fbx", // test for PBR
@@ -188,7 +189,6 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/car/honda-cb-750-f-super-sport-1970/source/Honda.obj",   // no materials ,good   
           "E:/fbx/static_mesh/car/hw7-details-2-xyz-draft-punk/source/2.obj",   // no materials ,good   
           "E:/fbx/static_mesh/car/mazda-rx-7/source/rx7.fbx",   //crash, good for testing soft edege, should scale 0.01 
-          "E:/fbx/static_mesh/mask/Jonathan_BENAINOUS/source/sci-fi-helmet-blue-neon-jonathan-benainous.fbx",   //花钱买的
           "E:/fbx/static_mesh/car/motorcycle-szh2i2-demo/source/SZH2I2HDAndLDExport.fbx",   // crash
           "E:/fbx/static_mesh/car/oshkosh-m-atv-reinvented/source/Model_1.fbx",   // good for test AA
           "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx",   // crash
@@ -199,8 +199,6 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/robot/industrial-robot/source/armLOW.fbx",    // very good   ,机械臂
           "E:/fbx/static_mesh/robot/blue-rig-procedural-reshade-version/source/Blue5.fbx",    // very good  ,机械人 
           "E:/fbx/static_mesh/robot/64-iron_man_mark_44_hulkbuster/Iron_Man_Mark_44_Hulkbuster_fbx.fbx",    // 反浩克装甲，已经修复
-          "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx",   // crash
-          "E:/fbx/static_mesh/cloth/haveto-red-mage-helmet-flow-ver-preview/source/RedMageHelmetFlowVer.fbx",   // good
           "E:/fbx/static_mesh/cloth/red-mage-mask-procedural-reshade-ver/source/RedMageMask.fbx",   // good
           "E:/fbx/static_mesh/gun/75-fbx/source/Handgun_fbx_7.4_binary.fbx",   // no detail
           "E:/fbx/static_mesh/gun/ar15-corrected/source/WPN_MK18.fbx",   // good
@@ -216,6 +214,9 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/architecture/abandoned-house/source/abandonhouse.fbx", // test for AO
           "E:/fbx/static_mesh/car/6e48z1kc7r40-bugatti/bugatti.obj",   // crash, no uv, no materials   
           "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog.fbx", // good for degenerate triangle
+          "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx",   // crash
+          "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog3.fbx", // good for degenerate triangle
+          "E:/fbx/static_mesh/cloth/haveto-red-mage-helmet-flow-ver-preview/source/RedMageHelmetFlowVer.fbx",   // good
     };
 
     std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
@@ -230,7 +231,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/bs/animation/man_talking.fbx";
     //const std::string file_path = "E:/fbx/bs/animation/female_talking2.fbx";
     //const std::string file_path = "E:/fbx/EpicCharacter_Run.fbx";
-    //const std::string file_path = "E:/fbx/test_case/two_uv_two_material/test_uv_set.fbx";
+    const std::string file_path = "E:/fbx/test_case/two_uv_two_material/test_uv_set.fbx";
 
     // static mesh
     //const std::string file_path = "E:/fbx/static_mesh/plane/free-spaceship/source/Spaceship_05.fbx";    //very good
@@ -289,7 +290,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/test_case/nija/uv_mirror_plane.fbx";    //测试 uv 镜像
     //const std::string file_path = "E:/fbx/test_case/nija/qq_plane_uv_mirror.fbx";    //测试 uv 镜像
     //const std::string file_path = "E:/fbx/test_case/nija/mirror_nija_no_seam_small.fbx";    //测试 uv 镜像
-    const std::string file_path = "E:/fbx/test_case/head.obj";    //测试 uv seam
+    //const std::string file_path = "E:/fbx/test_case/nija/mirror_nija_no_seam_small.fbx";    //测试 uv seam
     //const std::string file_path = "E:/fbx/test_case/uv_seam.fbx";    //测试 uv seam
 
 
@@ -382,8 +383,6 @@ bool GameApplication::Initial()
                 ERROR_INFO("parse file ", file_path, "failed!");
             }
         }
-
-
     }
     else
     {

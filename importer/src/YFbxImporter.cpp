@@ -134,6 +134,7 @@ bool YFbxImporter::ParseFile(const FbxImportParam& import_param, ConvertedResult
 	return true;
 }
 
+
 void YFbxImporter::RenameNodeName()
 {
 	std::set<std::string> node_names;
@@ -469,6 +470,7 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 		}
 	}
     BuildStaicMesh(raw_mesh, raw_meshes);
+    BuildStaicMeshRenderData(static_mesh.get(), raw_meshes);
 	return std::move(static_mesh);
 }
 

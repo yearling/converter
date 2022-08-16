@@ -9,6 +9,8 @@
 #include "Math/YBox.h"
 #include "YArchive.h"
 #include <set>
+#include "YPackedNormal.h"
+#include "Math/Vector2DHalf.h"
 
 const int INVALID_ID = -1;
 enum NormalCaculateMethod
@@ -141,8 +143,6 @@ struct YStaticMeshSection
 struct ImportedRawMesh
 {
 public:
-    ImportedRawMesh();
-
     int LOD_index;
     std::string name;
     // topo
@@ -154,8 +154,10 @@ public:
     std::vector<YMeshVertexWedge> wedges;
     //material
     std::vector<std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
-    
     YBox aabb;
+
+public:
+    ImportedRawMesh();
     int GetVertexPairEdge(int vertex_id0, int vertex_id1)const ;
     int CreateEdge(int vertex_id_0, int vertex_id_1);
     int CreatePolygon(int polygon_group_id, std::vector<int> in_wedges, std::vector<int>& out_edges);
@@ -186,6 +188,93 @@ protected:
     void ComputeTangentSpaceMikktMethod(bool ignore_degenerate_triangle = true);
 };
 
+
+struct StaticVertexRenderData
+{
+    struct IndexOffsetAndTriangleCount
+    {
+        uint32 offset = -1;
+        uint32 triangle_count = -1;
+    };
+    std::vector<YVector> position;
+    std::vector<uint32> indices_32;
+    std::vector<uint16> indices_16;
+    bool use_32_indices = true;
+    std::vector<IndexOffsetAndTriangleCount> sections;
+    void GenerateIndexBuffers(const std::vector<std::vector<int>>& section_indices);
+
+    enum VertexInfoType
+    {
+        Hi_precision,
+        Medium,
+        low
+    };
+    VertexInfoType vertex_info_type;
+    virtual uint32 GetVertexInfoSize();
+    virtual void* GetVertexInfoData();
+};
+struct HiSttaticVertexData:public StaticVertexRenderData
+{
+    HiSttaticVertexData()
+    {
+        vertex_info_type = StaticVertexRenderData::Hi_precision;
+    }
+    struct HiVertexInfo
+    {
+        YVector4 normal;
+        YVector4 tangent;
+        YVector2 uv0;
+        YVector2 uv1;
+        int color;
+    };
+    std::vector<HiVertexInfo> vertex_infos;
+    uint32 GetVertexInfoSize() override;
+    void* GetVertexInfoData() override;
+};
+
+struct MediumStaticVertexData :public StaticVertexRenderData
+{
+    MediumStaticVertexData()
+    {
+        vertex_info_type = StaticVertexRenderData::Medium;
+    }
+    struct MediumVertexInfo
+    {
+        YPackedNormal normal;
+        YPackedNormal tangent;
+        FVector2DHalf uv0;
+        FVector2DHalf uv1;
+    };
+    std::vector<MediumVertexInfo> vertex_infos;
+    uint32 GetVertexInfoSize() override;
+    void* GetVertexInfoData() override;
+};
+
+struct FullStaticVertexData
+{
+    YVector position;
+    YVector normal;
+    YVector4 tangent;
+    YVector2 uv0;
+    YVector2 uv1;
+    YVector4 color;
+};
+
+struct PostProcessRenderMesh
+{
+public:
+    PostProcessRenderMesh(ImportedRawMesh* raw_mesh);
+    //不在raw mesh中做是为了保存rawmesh的原始结构
+    void CompressVertex();
+    void OptimizeIndices();
+    std::unique_ptr< HiSttaticVertexData> GenerateHiStaticVertexData();
+    std::unique_ptr< MediumStaticVertexData> GenerateMediumStaticVertexData();
+protected:
+    ImportedRawMesh* raw_mesh_;
+    std::vector<FullStaticVertexData> vertex_data_cache;
+    std::vector<std::vector<int>>section_indices;
+
+};
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);
 
 YArchive& operator<<(YArchive& mem_file,  YRawMesh& raw_mesh);

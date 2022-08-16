@@ -10,6 +10,7 @@
 #include <fstream>
 #include <string>
 #include "Engine/YLog.h"
+#include "Utility/YStringFormat.h"
 
 class CShaderInclude : public ID3DInclude {
 public:
@@ -913,8 +914,13 @@ bool D3DVertexShader::CreateInputLayout(TComPtr<ID3DBlob> blob, IVertexFactory* 
 	// 反射出来的有可能比手动创建的D3D11_INPUT_ELEMENT_DESC少
 	for (int i = 0; i < reflected_input_layout_desc.size(); ++i) {
 		bool find_same_name = false;
-		for (int j = 0; j < vertex_stream_descs.size(); ++j) {
-			if (strcmp(vertex_stream_descs[j].name.c_str(), reflected_input_layout_desc[i].SemanticName) == 0)
+        for (int j = 0; j < vertex_stream_descs.size(); ++j) {
+            std::string reflected_sematic_name = reflected_input_layout_desc[i].SemanticName;
+            if (reflected_input_layout_desc[i].SemanticIndex != 0)
+            {
+                reflected_sematic_name = StringFormat("%s%d", reflected_sematic_name.c_str(), reflected_input_layout_desc[i].SemanticIndex);
+            }
+			if (vertex_stream_descs[j].name== reflected_sematic_name )
 			{
 				if (tell_desc_the_same(vertex_stream_descs[j], reflected_input_layout_desc[i])) {
 					find_same_name = true;

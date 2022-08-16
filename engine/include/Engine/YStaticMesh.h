@@ -18,6 +18,7 @@ public:
 
 	bool SaveV0(const std::string& dir);
 	bool LoadV0(const std::string& file_path);
+    std::vector<std::unique_ptr< StaticVertexRenderData>> lod_render_data_;
 public:
 	friend class YStaticMeshVertexFactory;
 	bool allocated_gpu_resource = false;

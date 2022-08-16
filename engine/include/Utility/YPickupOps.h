@@ -30,7 +30,7 @@ protected:
 	YVector last_v2 = YVector::zero_vector;
 	YVector last_hit_pos = YVector::zero_vector;
 	YVector last_hit_normal = YVector::zero_vector;
-	bool ray_cast_to_triangle = true;
+	bool ray_cast_to_triangle = false;
 	bool show_aabb_ = true;
     int select_triangle_id = -1;
     int select_wedge_id = -1;
