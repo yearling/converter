@@ -9,6 +9,7 @@
 #include "Math/NumericLimits.h"
 #include "Utility/mikktspace.h"
 #include "Math/YColor.h"
+#include "Utility/OverlappingCorners.h"
 YLODMesh::YLODMesh()
 {
 
@@ -309,7 +310,6 @@ void ImportedRawMesh::CompressControlPoint()
         for (int polygon_id : polygon_group.polygons)
         {
             const YMeshPolygon& polygon = polygons[polygon_id];
-            int tmp_control_points[3];
             for (int wedge_index = 0; wedge_index < 3; ++wedge_index)
             {
                 int wedge_id = polygon.wedge_ids[wedge_index];
@@ -873,6 +873,7 @@ bool ImportedRawMesh::IsUVSeam(int edge_index)
                 return wedge_id;
             }
         }
+        return -1;
     };
 
     int wedge_id_tri0_cp0 = contro_point_to_wedge_id(triangle_id0, cp_0);
@@ -1169,6 +1170,7 @@ PostProcessRenderMesh::PostProcessRenderMesh(ImportedRawMesh* raw_mesh)
 
 void PostProcessRenderMesh::CompressVertex()
 {
+    LOG_INFO("begin compress vertex");
     vertex_data_cache.reserve(raw_mesh_->wedges.size());
     section_indices.resize(raw_mesh_->polygon_groups.size());
     for (int golygon_group_index = 0; golygon_group_index < raw_mesh_->polygon_groups.size(); ++golygon_group_index)
@@ -1193,6 +1195,70 @@ void PostProcessRenderMesh::CompressVertex()
             }
         }
     }
+
+    std::vector< FullStaticVertexData> compressed_vertex_data;
+    compressed_vertex_data.reserve(vertex_data_cache.size());
+    std::vector<int> map_old_to_new;
+    map_old_to_new.resize(vertex_data_cache.size(), INDEX_NONE);
+
+    std::vector<YVector> position_to_compare;
+    position_to_compare.reserve(vertex_data_cache.size());
+    for (FullStaticVertexData& data : vertex_data_cache)
+    {
+        position_to_compare.push_back(data.position);
+    }
+
+    std::vector<uint32> indices_to_compare;
+    indices_to_compare.reserve(vertex_data_cache.size());
+    for (std::vector<int>& section : section_indices)
+    {
+        for (int index : section)
+        {
+            indices_to_compare.push_back(index);
+        }
+    }
+    YOverlappingCorners  acc_overlap_finding(position_to_compare, indices_to_compare, THRESH_POINTS_ARE_SAME);
+
+    for (int i = 0; i < (int)indices_to_compare.size(); ++i)
+    {
+        int vertex_index = indices_to_compare[i];
+        const FullStaticVertexData& data = vertex_data_cache[vertex_index];
+        //查找是不是处理过了
+        const std::vector<int>& result = acc_overlap_finding.FindIfOverlapping(i);
+        if (map_old_to_new[vertex_index] == INDEX_NONE)
+        {
+            //注意，不包含自己
+            int new_index = (int)compressed_vertex_data.size();
+            compressed_vertex_data.push_back(data);
+            for (int near_id : result)
+            {
+                int vertex_near_id = indices_to_compare[near_id];
+                const FullStaticVertexData& new_vertex_data = vertex_data_cache[vertex_near_id];
+                if (data == new_vertex_data)
+                {
+                    map_old_to_new[vertex_near_id] = new_index;
+                }
+            }
+            map_old_to_new[vertex_index] = new_index;
+        }
+
+    }
+
+    vertex_data_cache.swap(compressed_vertex_data);
+
+    std::vector<std::vector<int>> compressed_section_index;
+    compressed_section_index.resize(section_indices.size());
+    for (int section_index = 0; section_index < section_indices.size(); ++section_index)
+    {
+        for (int index : section_indices[section_index])
+        {
+            compressed_section_index[section_index].push_back(map_old_to_new[index]);
+        }
+    }
+    LOG_INFO("end compress vertex");
+    //test
+    section_indices.swap(compressed_section_index);
+    LOG_INFO("compress vertex before is ", compressed_vertex_data.size(), "  after is ", vertex_data_cache.size(), "  diff is ", compressed_vertex_data.size() - vertex_data_cache.size());
 }
 
 void PostProcessRenderMesh::OptimizeIndices()
@@ -1210,14 +1276,14 @@ std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVer
     {
         render_data->position.push_back(full_vertex_data.position);
         HiSttaticVertexData::HiVertexInfo tmp;
-        tmp.normal = YVector4(full_vertex_data.normal,0.0);
+        tmp.normal = YVector4(full_vertex_data.normal, 0.0);
         tmp.tangent = full_vertex_data.tangent;
         tmp.uv0 = full_vertex_data.uv0;
         tmp.uv1 = full_vertex_data.uv1;
         tmp.color = FLinearColor(full_vertex_data.color).ToFColor(false).AlignmentDummy;
         render_data->vertex_infos.push_back(tmp);
     }
-    
+
     render_data->GenerateIndexBuffers(section_indices);
     return render_data;
 }
@@ -1268,7 +1334,7 @@ void StaticVertexRenderData::GenerateIndexBuffers(const std::vector<std::vector<
     {
         indices_16.reserve(triangle_count * 3);
     }
-    
+
     sections.resize(section_indices.size());
 
     for (int section_index = 0; section_index < section_indices.size(); ++section_index)
@@ -1319,4 +1385,38 @@ uint32 MediumStaticVertexData::GetVertexInfoSize()
 void* MediumStaticVertexData::GetVertexInfoData()
 {
     return vertex_infos.data();
+}
+
+bool FullStaticVertexData::operator==(const FullStaticVertexData& other) const
+{
+    if (!position.Equals(other.position))
+    {
+        return false;
+    }
+    if (!normal.Equals(other.normal))
+    {
+        return false;
+    }
+
+    if (!tangent.Equals(other.tangent))
+    {
+        return false;
+    }
+
+    if (!uv0.Equals(other.uv0))
+    {
+        return false;
+    }
+
+    if (!uv1.Equals(other.uv1))
+    {
+        return false;
+    }
+
+    if (!color.Equals(other.color))
+    {
+        return false;
+    }
+
+    return true;
 }

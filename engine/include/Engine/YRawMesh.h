@@ -13,6 +13,44 @@
 #include "Math/Vector2DHalf.h"
 
 const int INVALID_ID = -1;
+
+/** Helper struct for building acceleration structures. */
+struct FIndexAndZ
+{
+    float Z;
+    int32 Index;
+
+    /** Default constructor. */
+    FIndexAndZ() {}
+
+    /** Initialization constructor. */
+    FIndexAndZ(int32 InIndex, YVector V)
+    {
+        Z = 0.30f * V.x + 0.33f * V.y + 0.37f * V.z;
+        Index = InIndex;
+    }
+};
+
+/** Sorting function for vertex Z/index pairs. */
+struct FCompareIndexAndZ
+{
+    FORCEINLINE bool operator()(FIndexAndZ const& A, FIndexAndZ const& B) const { return A.Z < B.Z; }
+};
+
+/**
+* Returns true if the specified points are about equal
+*/
+inline bool PointsEqual(const YVector& V1, const YVector& V2, float ComparisonThreshold)
+{
+    if (YMath::Abs(V1.x - V2.x) > ComparisonThreshold
+        || YMath::Abs(V1.y - V2.y) > ComparisonThreshold
+        || YMath::Abs(V1.z - V2.z) > ComparisonThreshold)
+    {
+        return false;
+    }
+    return true;
+}
+
 enum NormalCaculateMethod
 {
     ImportNormal = 0,
@@ -258,6 +296,7 @@ struct FullStaticVertexData
     YVector2 uv0;
     YVector2 uv1;
     YVector4 color;
+    bool operator ==(const FullStaticVertexData& other) const;
 };
 
 struct PostProcessRenderMesh

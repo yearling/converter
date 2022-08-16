@@ -281,7 +281,7 @@ void YStaticMesh::Render(RenderParam* render_param)
         }
     }
 
-    const bool draw_normal_tangent_bitangent = true;
+    const bool draw_normal_tangent_bitangent = false;
     if (draw_normal_tangent_bitangent)
     {
         for (YMeshPolygonGroup& polygon_group : lod_mesh.polygon_groups)
