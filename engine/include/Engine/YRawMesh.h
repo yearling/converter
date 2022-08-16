@@ -239,7 +239,7 @@ struct StaticVertexRenderData
     std::vector<uint16> indices_16;
     bool use_32_indices = true;
     std::vector<IndexOffsetAndTriangleCount> sections;
-    void GenerateIndexBuffers(const std::vector<std::vector<int>>& section_indices);
+    void GenerateIndexBuffers(const std::vector<std::vector<uint32>>& section_indices);
 
     enum VertexInfoType
     {
@@ -304,6 +304,7 @@ struct PostProcessRenderMesh
 public:
     PostProcessRenderMesh(ImportedRawMesh* raw_mesh);
     //不在raw mesh中做是为了保存rawmesh的原始结构
+    void PostProcessPipeline();
     void CompressVertex();
     void OptimizeIndices();
     std::unique_ptr< HiSttaticVertexData> GenerateHiStaticVertexData();
@@ -311,7 +312,7 @@ public:
 protected:
     ImportedRawMesh* raw_mesh_;
     std::vector<FullStaticVertexData> vertex_data_cache;
-    std::vector<std::vector<int>>section_indices;
+    std::vector<std::vector<uint32>>section_indices;
 
 };
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);

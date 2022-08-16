@@ -178,7 +178,7 @@ void YStaticMesh::Render(RenderParam* render_param)
     vertex_shader_->BindResource("g_world", render_param->local_to_world_);
     vertex_shader_->Update();
     if (render_param->dir_lights_proxy->size()) {
-        YVector dir_light = -(*render_param->dir_lights_proxy)[0].light_dir;
+        YVector dir_light = -(*render_param->dir_lights_proxy)[0].light_dir*2.0f;
         pixel_shader_->BindResource("light_dir", &dir_light.x, 3);
     }
     pixel_shader_->BindResource("show_normal", 1.0f);

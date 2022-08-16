@@ -10,6 +10,7 @@
 #include "Utility/mikktspace.h"
 #include "Math/YColor.h"
 #include "Utility/OverlappingCorners.h"
+#include "Utility/NvTriStrip.h"
 YLODMesh::YLODMesh()
 {
 
@@ -1168,6 +1169,12 @@ PostProcessRenderMesh::PostProcessRenderMesh(ImportedRawMesh* raw_mesh)
 
 }
 
+void PostProcessRenderMesh::PostProcessPipeline()
+{
+    CompressVertex();
+    OptimizeIndices();
+}
+
 void PostProcessRenderMesh::CompressVertex()
 {
     LOG_INFO("begin compress vertex");
@@ -1210,7 +1217,7 @@ void PostProcessRenderMesh::CompressVertex()
 
     std::vector<uint32> indices_to_compare;
     indices_to_compare.reserve(vertex_data_cache.size());
-    for (std::vector<int>& section : section_indices)
+    for (std::vector<uint32>& section : section_indices)
     {
         for (int index : section)
         {
@@ -1246,7 +1253,7 @@ void PostProcessRenderMesh::CompressVertex()
 
     vertex_data_cache.swap(compressed_vertex_data);
 
-    std::vector<std::vector<int>> compressed_section_index;
+    std::vector<std::vector<uint32>> compressed_section_index;
     compressed_section_index.resize(section_indices.size());
     for (int section_index = 0; section_index < section_indices.size(); ++section_index)
     {
@@ -1261,14 +1268,125 @@ void PostProcessRenderMesh::CompressVertex()
     LOG_INFO("compress vertex before is ", compressed_vertex_data.size(), "  after is ", vertex_data_cache.size(), "  diff is ", compressed_vertex_data.size() - vertex_data_cache.size());
 }
 
+namespace NvTriStripHelper
+{
+    /**
+    * Converts 16 bit indices to 32 bit prior to passing them into the real GenerateStrips util method
+    */
+    //void GenerateStrips(
+    //    const uint8* Indices,
+    //    bool Is32Bit,
+    //    const uint32 NumIndices,
+    //    PrimitiveGroup** PrimGroups,
+    //    uint32* NumGroups
+    //)
+    //{
+    //    if (Is32Bit)
+    //    {
+    //        GenerateStrips((uint32*)Indices, NumIndices, PrimGroups, NumGroups);
+    //    }
+    //    else
+    //    {
+    //        // convert to 32 bit
+    //        uint32 Idx;
+    //        TArray<uint32> NewIndices;
+    //        NewIndices.AddUninitialized(NumIndices);
+    //        for (Idx = 0; Idx < NumIndices; ++Idx)
+    //        {
+    //            NewIndices[Idx] = ((uint16*)Indices)[Idx];
+    //        }
+    //        GenerateStrips(NewIndices.GetData(), NumIndices, PrimGroups, NumGroups);
+    //    }
+
+    //}
+
+    /**
+    * Orders a triangle list for better vertex cache coherency.
+    *
+    * *** WARNING: This is safe to call for multiple threads IF AND ONLY IF all
+    * threads call SetListsOnly(true) and SetCacheSize(CACHESIZE_GEFORCE3). If
+    * NvTriStrip is ever used with different settings the library will need
+    * some modifications to be thread-safe. ***
+    */
+    void CacheOptimizeIndexBuffer(std::vector<uint32>& Indices)
+    {
+
+        PrimitiveGroup* PrimitiveGroups = NULL;
+        uint32			NumPrimitiveGroups = 0;
+        bool Is32Bit = true;
+
+        SetListsOnly(true);
+        SetCacheSize(CACHESIZE_GEFORCE3);
+    
+        GenerateStrips(Indices.data(), Indices.size(), &PrimitiveGroups, &NumPrimitiveGroups);
+
+        Indices.clear();
+        Indices.resize(PrimitiveGroups->numIndices,-1);
+
+        if (Is32Bit)
+        {
+            memcpy(Indices.data(), PrimitiveGroups->indices, Indices.size() * sizeof(uint32));
+        }
+        else
+        {
+            for (uint32 I = 0; I < PrimitiveGroups->numIndices; ++I)
+            {
+                Indices[I] = (uint16)PrimitiveGroups->indices[I];
+            }
+        }
+
+        delete[] PrimitiveGroups;
+    }
+}
 void PostProcessRenderMesh::OptimizeIndices()
 {
+    for (std::vector<uint32>& section_index : section_indices)
+    {
+        NvTriStripHelper::CacheOptimizeIndexBuffer(section_index);
+    }
 
+
+    //optimize vertex cache
+    std::vector<FullStaticVertexData> vertex_data_cache_old;
+    vertex_data_cache.swap(vertex_data_cache_old);
+    vertex_data_cache.reserve(vertex_data_cache_old.size());
+
+    int indices_count = 0;
+    for (std::vector<uint32>& per_section : section_indices)
+    {
+        indices_count += per_section.size();
+    }
+
+    std::vector<int> index_mapping_old_to_new;
+    index_mapping_old_to_new.resize(indices_count, INDEX_NONE);
+
+    for (int section_index = 0; section_index < section_indices.size(); ++section_index)
+    {
+        const std::vector<uint32>& per_section_index_old = section_indices[section_index];
+        for (int index_index_old = 0; index_index_old < per_section_index_old.size(); ++index_index_old)
+        {
+            uint32 index_old = per_section_index_old[index_index_old];
+            if (index_mapping_old_to_new[index_old] == INDEX_NONE)
+            {
+                int32 index_new = vertex_data_cache.size();
+                vertex_data_cache.push_back(vertex_data_cache_old[index_old]);
+                index_mapping_old_to_new[index_old] = index_new;
+            }
+        }
+    }
+
+    for (std::vector<uint32>& sectoin : section_indices)
+    {
+        for (uint32& index : sectoin)
+        {
+            index = index_mapping_old_to_new[index];
+        }
+    }
 }
 
 std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVertexData()
 {
-    CompressVertex();
+    PostProcessPipeline();
     std::unique_ptr<HiSttaticVertexData> render_data = std::make_unique<HiSttaticVertexData>();
     render_data->position.reserve(vertex_data_cache.size());
     render_data->vertex_infos.reserve(vertex_data_cache.size());
@@ -1290,8 +1408,8 @@ std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVer
 
 std::unique_ptr< MediumStaticVertexData> PostProcessRenderMesh::GenerateMediumStaticVertexData()
 {
+    PostProcessPipeline();
     std::unique_ptr<MediumStaticVertexData> render_data = std::make_unique<MediumStaticVertexData>();
-    CompressVertex();
     render_data->position.reserve(vertex_data_cache.size());
     render_data->vertex_infos.reserve(vertex_data_cache.size());
     for (FullStaticVertexData& full_vertex_data : vertex_data_cache)
@@ -1309,7 +1427,7 @@ std::unique_ptr< MediumStaticVertexData> PostProcessRenderMesh::GenerateMediumSt
     return render_data;
 }
 
-void StaticVertexRenderData::GenerateIndexBuffers(const std::vector<std::vector<int>>& section_indices)
+void StaticVertexRenderData::GenerateIndexBuffers(const std::vector<std::vector<uint32>>& section_indices)
 {
     int section_offset = 0;
     if (position.size() > MAX_uint16)
@@ -1322,7 +1440,7 @@ void StaticVertexRenderData::GenerateIndexBuffers(const std::vector<std::vector<
     }
 
     int triangle_count = 0;
-    for (const std::vector<int>& indices_per_sec : section_indices)
+    for (const std::vector<uint32>& indices_per_sec : section_indices)
     {
         triangle_count += indices_per_sec.size();
     }
