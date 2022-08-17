@@ -586,14 +586,14 @@ std::unique_ptr< StaticVertexRenderData>& lod_mesh_render_data = lod_render_data
 {
     if (lod_mesh_render_data->use_32_indices)
     {
-        if (!g_device->CreateIndexBuffer((unsigned int)lod_mesh_render_data->indices_32.size() * sizeof(uint32), lod_mesh_render_data->indices_32.data(), index_buffer_)) {
+        if (!g_device->CreateIndexBuffer((unsigned int)lod_mesh_render_data->indices_vertex_32.size() * sizeof(uint32), lod_mesh_render_data->indices_vertex_32.data(), index_buffer_)) {
             ERROR_INFO("Create index buffer failed!!");
             return false;
         }
     }
     else
     {
-        if (!g_device->CreateIndexBuffer((unsigned int)lod_mesh_render_data->indices_16.size() * sizeof(uint16), lod_mesh_render_data->indices_16.data(), index_buffer_)) {
+        if (!g_device->CreateIndexBuffer((unsigned int)lod_mesh_render_data->indices_vertex_16.size() * sizeof(uint16), lod_mesh_render_data->indices_vertex_16.data(), index_buffer_)) {
             ERROR_INFO("Create index buffer failed!!");
             return false;
         }

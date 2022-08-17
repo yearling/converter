@@ -1275,36 +1275,6 @@ void PostProcessRenderMesh::CompressVertex()
 namespace NvTriStripHelper
 {
     /**
-    * Converts 16 bit indices to 32 bit prior to passing them into the real GenerateStrips util method
-    */
-    //void GenerateStrips(
-    //    const uint8* Indices,
-    //    bool Is32Bit,
-    //    const uint32 NumIndices,
-    //    PrimitiveGroup** PrimGroups,
-    //    uint32* NumGroups
-    //)
-    //{
-    //    if (Is32Bit)
-    //    {
-    //        GenerateStrips((uint32*)Indices, NumIndices, PrimGroups, NumGroups);
-    //    }
-    //    else
-    //    {
-    //        // convert to 32 bit
-    //        uint32 Idx;
-    //        TArray<uint32> NewIndices;
-    //        NewIndices.AddUninitialized(NumIndices);
-    //        for (Idx = 0; Idx < NumIndices; ++Idx)
-    //        {
-    //            NewIndices[Idx] = ((uint16*)Indices)[Idx];
-    //        }
-    //        GenerateStrips(NewIndices.GetData(), NumIndices, PrimGroups, NumGroups);
-    //    }
-
-    //}
-
-    /**
     * Orders a triangle list for better vertex cache coherency.
     *
     * *** WARNING: This is safe to call for multiple threads IF AND ONLY IF all
@@ -1573,7 +1543,11 @@ std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVer
         render_data->vertex_infos.push_back(tmp);
     }
 
-    render_data->GenerateIndexBuffers(section_indices);
+    render_data->GenerateIndexBuffers(render_data->indices_vertex_32, render_data->indices_vertex_16, section_indices,true);
+    render_data->GenerateIndexBuffers(render_data->indices_vertex_reversed_32, render_data->indices_vertex_reversed_16, reversed_indices);
+    render_data->GenerateIndexBuffers(render_data->indices_depth_only_32, render_data->indices_depth_only_16, depth_only_indices);
+    render_data->GenerateIndexBuffers(render_data->indices_depth_only_reversed_32, render_data->indices_depth_only_reversed_16, depth_only_reversed_indices);
+    render_data->GenerateIndexBuffers(render_data->indices_adjacent_32, render_data->indices_adjacent_16, adjacency_section_indices);
     return render_data;
 }
 
@@ -1594,13 +1568,17 @@ std::unique_ptr< MediumStaticVertexData> PostProcessRenderMesh::GenerateMediumSt
         render_data->vertex_infos.push_back(tmp);
     }
 
-    render_data->GenerateIndexBuffers(section_indices);
+    render_data->GenerateIndexBuffers(render_data->indices_vertex_32, render_data->indices_vertex_16, section_indices, true);
+    render_data->GenerateIndexBuffers(render_data->indices_vertex_reversed_32, render_data->indices_vertex_reversed_16, reversed_indices);
+    render_data->GenerateIndexBuffers(render_data->indices_depth_only_32, render_data->indices_depth_only_16, depth_only_indices);
+    render_data->GenerateIndexBuffers(render_data->indices_depth_only_reversed_32, render_data->indices_depth_only_reversed_16, depth_only_reversed_indices);
+    render_data->GenerateIndexBuffers(render_data->indices_adjacent_32, render_data->indices_adjacent_16, adjacency_section_indices);
+
     return render_data;
 }
 
-void StaticVertexRenderData::GenerateIndexBuffers(const std::vector<std::vector<uint32>>& section_indices)
+void StaticVertexRenderData::GenerateIndexBuffers(std::vector<uint32>& indices_32, std::vector<uint16>& indices_16, const std::vector<std::vector<uint32>>& section_indices, bool genereate_section_info)
 {
-    int section_offset = 0;
     if (position.size() > MAX_uint16)
     {
         use_32_indices = true;
@@ -1624,13 +1602,10 @@ void StaticVertexRenderData::GenerateIndexBuffers(const std::vector<std::vector<
         indices_16.reserve(triangle_count * 3);
     }
 
-    sections.resize(section_indices.size());
-
+   
+    
     for (int section_index = 0; section_index < section_indices.size(); ++section_index)
     {
-        sections[section_index].offset = section_offset;
-        sections[section_index].triangle_count = section_indices[section_index].size() / 3;
-
         for (int index : section_indices[section_index])
         {
             if (use_32_indices)
@@ -1641,7 +1616,27 @@ void StaticVertexRenderData::GenerateIndexBuffers(const std::vector<std::vector<
             {
                 indices_16.push_back((uint16)index);
             }
-            section_offset++;
+        }
+    }
+
+    if (genereate_section_info)
+    {
+        int section_offset = 0;
+        sections.resize(section_indices.size());
+        for (int section_index = 0; section_index < section_indices.size(); ++section_index)
+        {
+            sections[section_index].offset = section_offset;
+            sections[section_index].triangle_count = section_indices[section_index].size() / 3;
+            int min_index = MAX_int32;
+            int max_index = MIN_int32;
+            for (int index : section_indices[section_index])
+            {
+                min_index = YMath::Min(min_index, index);
+                max_index = YMath::Max(max_index, index);
+            }
+            sections[section_index].min_vertex_index = min_index;
+            sections[section_index].max_vertex_index = max_index;
+            section_offset += section_indices[section_index].size();
         }
     }
 }

@@ -233,13 +233,24 @@ struct StaticVertexRenderData
     {
         uint32 offset = -1;
         uint32 triangle_count = -1;
+        uint32 min_vertex_index = -1;
+        uint32 max_vertex_index = -1;
     };
     std::vector<YVector> position;
-    std::vector<uint32> indices_32;
-    std::vector<uint16> indices_16;
+    std::vector<uint32> indices_vertex_32;
+    std::vector<uint32> indices_vertex_reversed_32;
+    std::vector<uint32> indices_depth_only_32;
+    std::vector<uint32> indices_depth_only_reversed_32;
+    std::vector<uint32> indices_adjacent_32;
+    std::vector<uint16> indices_vertex_16;
+    std::vector<uint16> indices_vertex_reversed_16;
+    std::vector<uint16> indices_depth_only_16;
+    std::vector<uint16> indices_depth_only_reversed_16;
+    std::vector<uint16> indices_adjacent_16;
     bool use_32_indices = true;
     std::vector<IndexOffsetAndTriangleCount> sections;
-    void GenerateIndexBuffers(const std::vector<std::vector<uint32>>& section_indices);
+    //void GenerateIndexBuffers(const std::vector<std::vector<uint32>>& section_indices);
+    void GenerateIndexBuffers(std::vector<uint32>& indices_32, std::vector<uint16>& indices_16, const std::vector<std::vector<uint32>>& section_indices,bool genereate_section_info = false);
 
     enum VertexInfoType
     {
@@ -318,10 +329,10 @@ protected:
     ImportedRawMesh* raw_mesh_;
     std::vector<FullStaticVertexData> vertex_data_cache;
     std::vector<std::vector<uint32>> section_indices;
-    std::vector<std::vector<uint32>> adjacency_section_indices;
+    std::vector<std::vector<uint32>> reversed_indices;
     std::vector<std::vector<uint32>> depth_only_indices;
     std::vector<std::vector<uint32>> depth_only_reversed_indices;
-    std::vector<std::vector<uint32>> reversed_indices;
+    std::vector<std::vector<uint32>> adjacency_section_indices;
 
 };
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);
