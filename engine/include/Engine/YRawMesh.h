@@ -307,12 +307,21 @@ public:
     void PostProcessPipeline();
     void CompressVertex();
     void OptimizeIndices();
+    void BuildStaticAdjacencyIndexBuffer();
+    void BuildInverseIndices();
+    void BuildDepthOnlyIndices();
+    void BuildDepthOnlyInverseIndices();
     std::unique_ptr< HiSttaticVertexData> GenerateHiStaticVertexData();
     std::unique_ptr< MediumStaticVertexData> GenerateMediumStaticVertexData();
 protected:
+    friend class FStaticMeshNvRenderBuffer;
     ImportedRawMesh* raw_mesh_;
     std::vector<FullStaticVertexData> vertex_data_cache;
-    std::vector<std::vector<uint32>>section_indices;
+    std::vector<std::vector<uint32>> section_indices;
+    std::vector<std::vector<uint32>> adjacency_section_indices;
+    std::vector<std::vector<uint32>> depth_only_indices;
+    std::vector<std::vector<uint32>> depth_only_reversed_indices;
+    std::vector<std::vector<uint32>> reversed_indices;
 
 };
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);

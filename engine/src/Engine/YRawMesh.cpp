@@ -11,6 +11,7 @@
 #include "Math/YColor.h"
 #include "Utility/OverlappingCorners.h"
 #include "Utility/NvTriStrip.h"
+#include "Utility/nvtess.h"
 YLODMesh::YLODMesh()
 {
 
@@ -1173,6 +1174,9 @@ void PostProcessRenderMesh::PostProcessPipeline()
 {
     CompressVertex();
     OptimizeIndices();
+    BuildStaticAdjacencyIndexBuffer();
+    BuildInverseIndices();
+    BuildDepthOnlyIndices();
 }
 
 void PostProcessRenderMesh::CompressVertex()
@@ -1380,6 +1384,173 @@ void PostProcessRenderMesh::OptimizeIndices()
         for (uint32& index : sectoin)
         {
             index = index_mapping_old_to_new[index];
+        }
+    }
+}
+
+
+class FStaticMeshNvRenderBuffer : public nv::RenderBuffer
+{
+public:
+    FStaticMeshNvRenderBuffer(PostProcessRenderMesh* in_post_process_render_mesh,int in_section_index);
+    /** Retrieve the position and first texture coordinate of the specified index. */
+    virtual nv::Vertex getVertex(unsigned int Index) const;
+
+private:
+    /** Copying is forbidden. */
+    FStaticMeshNvRenderBuffer(const FStaticMeshNvRenderBuffer&);
+    FStaticMeshNvRenderBuffer& operator=(const FStaticMeshNvRenderBuffer&);
+    PostProcessRenderMesh* post_process_render_mesh_;
+    int section_index_;
+};
+
+FStaticMeshNvRenderBuffer::FStaticMeshNvRenderBuffer(PostProcessRenderMesh* in_post_process_render_mesh,int in_secton_index)
+:post_process_render_mesh_(in_post_process_render_mesh), section_index_(in_secton_index){
+    std::vector<uint32>& index_ref = post_process_render_mesh_->section_indices[section_index_];
+    mIb = new nv::IndexBuffer((void*)index_ref.data(), nv::IBT_U32, index_ref.size(), false);
+}
+
+nv::Vertex FStaticMeshNvRenderBuffer::getVertex(unsigned int Index) const
+{
+    nv::Vertex Vertex;
+
+    //check(Index < PositionVertexBuffer.GetNumVertices());
+    assert(Index < post_process_render_mesh_->vertex_data_cache.size());
+
+    const YVector& Position = post_process_render_mesh_->vertex_data_cache[Index].position;
+    Vertex.pos.x = Position.x;
+    Vertex.pos.y = Position.y;
+    Vertex.pos.z = Position.z;
+
+    const YVector2 UV = post_process_render_mesh_->vertex_data_cache[Index].uv0;
+    Vertex.uv.x = UV.x;
+    Vertex.uv.y = UV.y;
+ 
+    return Vertex;
+}
+
+
+void PostProcessRenderMesh::BuildStaticAdjacencyIndexBuffer()
+{
+    adjacency_section_indices.clear();
+    for (int i = 0; i < section_indices.size(); ++i)
+    {
+        FStaticMeshNvRenderBuffer StaticMeshRenderBuffer(this, i);
+        nv::IndexBuffer* PnAENIndexBuffer = nv::tess::buildTessellationBuffer(&StaticMeshRenderBuffer, nv::DBM_PnAenDominantCorner, true);
+        check(PnAENIndexBuffer);
+        const int32 IndexCount = (int32)PnAENIndexBuffer->getLength();
+        std::vector<uint32> new_adj_indices;
+        new_adj_indices.resize(IndexCount);
+        for (int32 Index = 0; Index < IndexCount; ++Index)
+        {
+            new_adj_indices[Index] = (*PnAENIndexBuffer)[Index];
+        }
+        delete PnAENIndexBuffer;
+        adjacency_section_indices.emplace_back(std::move(new_adj_indices));
+    }
+}
+
+
+void PostProcessRenderMesh::BuildInverseIndices()
+{
+    reversed_indices.clear();
+    reversed_indices.resize(section_indices.size());
+    for (int i = 0; i < section_indices.size(); ++i)
+    {
+        std::vector<uint32>& per_sec = section_indices[i];
+        for (int j = 0; j < per_sec.size() / 3; ++j)
+        {
+            reversed_indices[i].push_back(per_sec[j * 3 + 2]);
+            reversed_indices[i].push_back(per_sec[j * 3 + 1]);
+            reversed_indices[i].push_back(per_sec[j * 3 + 0]);
+        }
+    }
+}
+
+void PostProcessRenderMesh::BuildDepthOnlyIndices()
+{
+    std::vector<int> map_old_to_new;
+    map_old_to_new.resize(vertex_data_cache.size(), INDEX_NONE);
+
+    std::vector<YVector> position_to_compare;
+    position_to_compare.reserve(vertex_data_cache.size());
+    for (FullStaticVertexData& data : vertex_data_cache)
+    {
+        position_to_compare.push_back(data.position);
+    }
+
+    std::vector<uint32> indices_to_compare;
+    indices_to_compare.reserve(vertex_data_cache.size());
+    for (std::vector<uint32>& section : section_indices)
+    {
+        for (int index : section)
+        {
+            indices_to_compare.push_back(index);
+        }
+    }
+    YOverlappingCorners  acc_overlap_finding(position_to_compare, indices_to_compare, THRESH_POINTS_ARE_SAME*4.0);
+
+    for (int i = 0; i < (int)indices_to_compare.size(); ++i)
+    {
+        int vertex_index = indices_to_compare[i];
+        const FullStaticVertexData& data = vertex_data_cache[vertex_index];
+        //查找是不是处理过了
+        const std::vector<int>& result = acc_overlap_finding.FindIfOverlapping(i);
+        if (map_old_to_new[vertex_index] == INDEX_NONE)
+        {
+            //注意，不包含自己
+            std::vector<int> connected_corner;
+            for (int near_id : result)
+            {
+                int vertex_near_id = indices_to_compare[near_id];
+                const FullStaticVertexData& new_vertex_data = vertex_data_cache[vertex_near_id];
+                if (data.position.Equals(new_vertex_data.position,THRESH_POINTS_ARE_SAME))
+                {
+                    connected_corner.push_back(vertex_near_id);
+                }
+            }
+            connected_corner.push_back(vertex_index);
+            std::sort(connected_corner.begin(), connected_corner.end());
+            int small_index = connected_corner[0];
+            for (int index_near : connected_corner)
+            {
+                map_old_to_new[index_near] = small_index;
+            }
+        }
+    }
+
+
+    depth_only_indices.clear();
+    depth_only_indices.resize(section_indices.size());
+    for (int section_index = 0; section_index < section_indices.size(); ++section_index)
+    {
+        for (int index : section_indices[section_index])
+        {
+            depth_only_indices[section_index].push_back(map_old_to_new[index]);
+        }
+    }
+    
+    if (indices_to_compare.size() < 50000 * 3)
+    {
+        for (std::vector<uint32>& section_index : section_indices)
+        {
+            NvTriStripHelper::CacheOptimizeIndexBuffer(section_index);
+        }
+    }
+}
+
+void PostProcessRenderMesh::BuildDepthOnlyInverseIndices()
+{
+    depth_only_reversed_indices.clear();
+    depth_only_reversed_indices.resize(depth_only_indices.size());
+    for (int i = 0; i < depth_only_indices.size(); ++i)
+    {
+        std::vector<uint32>& per_sec = depth_only_indices[i];
+        for (int j = 0; j < per_sec.size() / 3; ++j)
+        {
+            reversed_indices[i].push_back(per_sec[j * 3 + 2]);
+            reversed_indices[i].push_back(per_sec[j * 3 + 1]);
+            reversed_indices[i].push_back(per_sec[j * 3 + 0]);
         }
     }
 }
