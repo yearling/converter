@@ -554,7 +554,7 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
     LOG_INFO("End merge scene");
     //new_copyed_mesh->ComputeTriangleNormalAndTangent(Caculate, Mikkt);
     new_copyed_mesh->ComputeWedgeNormalAndTangent(ImportNormal, Mikkt, import_param_->remove_degenerate_triangles);
-   
+    new_copyed_mesh->GenerateLightMapUV();
     raw_mesh->vertex_position = new_copyed_mesh->control_points;
     raw_mesh->vertex_instances = new_copyed_mesh->wedges;
     raw_mesh->polygons = new_copyed_mesh->polygons;

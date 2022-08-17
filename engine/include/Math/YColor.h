@@ -56,7 +56,10 @@ struct FLinearColor
 	explicit FLinearColor(const YVector4& Vector);
 
 	explicit FLinearColor(const FFloat16Color& C);
-
+    inline operator YVector4()
+    {
+        return YVector4(R, G, B, A);
+    }
 	// Serializer.
 
 	//friend FArchive& operator<<(FArchive& Ar,FLinearColor& Color)

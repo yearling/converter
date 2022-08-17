@@ -1,3 +1,4 @@
+#pragma once
 #include "Engine/YCommonHeader.h"
 #include <vector>
 #include "Math/YVector.h"

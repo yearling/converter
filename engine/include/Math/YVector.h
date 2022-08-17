@@ -15,12 +15,18 @@ public:
 	bool operator==(const YVector2& v) const;
 	bool operator!=(const YVector2& v) const;
 	YVector2 operator*(float mul)const;
+	YVector2 operator*(const YVector2& v)const;
 	YVector2 operator-(const YVector2& v) const;
 	YVector2 operator+(const YVector2& v) const;
+	YVector2 operator+(float f) const;
+	YVector2 operator/(float f) const;
+    float& operator[](int index);
+    float operator[](int index)const;
     bool Equals(const YVector2& v, float Tolerance = SMALL_NUMBER) const;
+    bool IsNearlyZero(float Tolerance = SMALL_NUMBER) const;
 	static const YVector2 zero_vector;
 };
-
+YVector2 operator *(float f, const YVector2& v);
 struct YVector
 {
 public:

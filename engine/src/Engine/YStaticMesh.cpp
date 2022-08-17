@@ -323,6 +323,71 @@ void YStaticMesh::Render(RenderParam* render_param)
             }
         }
     }
+
+    const bool drawUV = true;
+    if (drawUV)
+    {
+        std::vector<YVector4> uv_colors =
+        {
+            YVector4(1.0,0.0,0.0,1.0),
+            YVector4(0.0,1.0,0.0,1.0),
+            YVector4(0.0,0.0,1.0,1.0),
+            YVector4(1.0,1.0,0.0,1.0),
+            YVector4(0.0,1.0,1.0,1.0),
+            YVector4(1.0,0.0,1.0,1.0),
+            YVector4(1.0,1.0,1.0,1.0)
+        };
+        int color_index = 0;
+        for (int uv_index = 0; uv_index < 2; ++uv_index)
+        {
+            for (YMeshPolygonGroup& polygon_group : lod_mesh.polygon_groups)
+            {
+                for (int polygon_index : polygon_group.polygons)
+                {
+                    YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
+                    YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
+                    YMeshVertexWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
+                    YMeshVertexWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+                    YVector2 uv0 = vertex_ins_0.uvs[uv_index];
+                    YVector2 uv1 = vertex_ins_1.uvs[uv_index];
+                    YVector2 uv2 = vertex_ins_2.uvs[uv_index];
+                    float aspect = render_param->camera_proxy->aspect_;
+                    uv0.x /= aspect;
+                    uv1.x /= aspect;
+                    uv2.x /= aspect;
+                    uv0.y = 1.0f - uv0.y;
+                    uv1.y = 1.0f - uv1.y;
+                    uv2.y = 1.0f - uv2.y;
+                    if (uv_index == 1)
+                    {
+                        uv0.y -= 1.0f;
+                        uv1.y -= 1.0f;
+                        uv2.y -= 1.0f;
+                    }
+                    YVector4 vu0_in_clip_space = YVector4(uv0.x, uv0.y, 0.01, 1.0);
+                    YMatrix  inv_vp = render_param->camera_proxy->inv_view_proj_matrix_;
+                    YVector4 uv0_in_world_space_affine = inv_vp.TransformVector4(vu0_in_clip_space);
+                    YVector vu0_in_world = uv0_in_world_space_affine.AffineTransform();
+
+                    YVector4 vu1_in_clip_space = YVector4(uv1.x, uv1.y, 0.01, 1.0);
+                    YVector4 uv1_in_world_space_affine = inv_vp.TransformVector4(vu1_in_clip_space);
+                    YVector vu1_in_world = uv1_in_world_space_affine.AffineTransform();
+
+                    YVector4 vu2_in_clip_space = YVector4(uv2.x, uv2.y, 0.01, 1.0);
+                    YVector4 uv2_in_world_space_affine = inv_vp.TransformVector4(vu2_in_clip_space);
+                    YVector vu2_in_world = uv2_in_world_space_affine.AffineTransform();
+
+                    int color_set_size = uv_colors.size();
+                    YVector4 uv_color = uv_colors[color_index % color_set_size];
+                    g_Canvas->DrawLine(vu0_in_world, vu1_in_world, uv_color, false);
+                    g_Canvas->DrawLine(vu1_in_world, vu2_in_world, uv_color, false);
+                    g_Canvas->DrawLine(vu2_in_world, vu0_in_world, uv_color, false);
+                }
+                color_index++;
+            }
+        }
+    }
+
 }
 
 YStaticMesh::YStaticMesh()

@@ -145,7 +145,34 @@ struct FMD5Hash
 
 	const uint8_t* GetBytes() const { return Bytes; }
 	const int32_t GetSize() const { return sizeof(Bytes); }
+    friend bool operator<(const FMD5Hash& LHS, const FMD5Hash& RHS)
+    {
+        union IntValue
+        {
+            uint8_t  bytes[8];
+            uint64_t int_value;
+        };
 
+        IntValue value_lhs0;
+        value_lhs0.bytes[0] = LHS.Bytes[0];
+        value_lhs0.bytes[1] = LHS.Bytes[1];
+        value_lhs0.bytes[2] = LHS.Bytes[2];
+        value_lhs0.bytes[3] = LHS.Bytes[3];
+        value_lhs0.bytes[4] = LHS.Bytes[4];
+        value_lhs0.bytes[5] = LHS.Bytes[5];
+        value_lhs0.bytes[6] = LHS.Bytes[6];
+        value_lhs0.bytes[7] = LHS.Bytes[7];
+        IntValue value_lhs1;
+        value_lhs1.bytes[0] = RHS.Bytes[0];
+        value_lhs1.bytes[1] = RHS.Bytes[1];
+        value_lhs1.bytes[2] = RHS.Bytes[2];
+        value_lhs1.bytes[3] = RHS.Bytes[3];
+        value_lhs1.bytes[4] = RHS.Bytes[4];
+        value_lhs1.bytes[5] = RHS.Bytes[5];
+        value_lhs1.bytes[6] = RHS.Bytes[6];
+        value_lhs1.bytes[7] = RHS.Bytes[7];
+        return value_lhs0.int_value < value_lhs1.int_value;
+    }
 private:
 	/** Whether this hash is valid or not */
 	bool bIsValid;

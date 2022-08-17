@@ -105,6 +105,20 @@ struct YMath
 		return (A <= B) ? A : B;
 	}
 
+    /** Returns highest of 3 values */
+    template< class T >
+    static FORCEINLINE T Max3(const T A, const T B, const T C)
+    {
+        return Max(Max(A, B), C);
+    }
+
+    /** Returns lowest of 3 values */
+    template< class T >
+    static FORCEINLINE T Min3(const T A, const T B, const T C)
+    {
+        return Min(Min(A, B), C);
+    }
+
 	template<>
 	static   float Abs(const float A)
 	{

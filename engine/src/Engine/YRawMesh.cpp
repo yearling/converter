@@ -12,6 +12,7 @@
 #include "Utility/OverlappingCorners.h"
 #include "Utility/NvTriStrip.h"
 #include "Utility/nvtess.h"
+#include "Utility/LayoutUV.h"
 YLODMesh::YLODMesh()
 {
 
@@ -689,6 +690,87 @@ void ImportedRawMesh::CompressMaterials()
     polygon_group_to_material.swap(new_polygon_group_to_material);
 }
 
+struct FLayoutUVRawMeshView final : FLayoutUV::IMeshView
+{
+    ImportedRawMesh* RawMesh;
+    const uint32 SrcChannel;
+    const uint32 DstChannel;
+    const bool bNormalsValid;
+
+    FLayoutUVRawMeshView(ImportedRawMesh* InRawMesh, uint32 InSrcChannel, uint32 InDstChannel)
+        : RawMesh(InRawMesh)
+        , SrcChannel(InSrcChannel)
+        , DstChannel(InDstChannel)   //, bNormalsValid(InRawMesh.WedgeTangentZ.Num() == InRawMesh.WedgeTexCoords[InSrcChannel].Num())
+        , bNormalsValid(true)
+    {
+    }
+
+    uint32     GetNumIndices() const override
+    {
+        return RawMesh->wedges.size();
+    }
+    YVector    GetPosition(uint32 Index) const override
+    {
+        return RawMesh->wedges[Index].position;
+    }
+    YVector    GetNormal(uint32 Index) const override 
+    { 
+        return RawMesh->wedges[Index].normal;
+    }
+    YVector2  GetInputTexcoord(uint32 Index) const override { 
+        return RawMesh->wedges[Index].uvs[SrcChannel];
+    }
+
+    void      InitOutputTexcoords(uint32 Num) override { 
+        //RawMesh.WedgeTexCoords[DstChannel].SetNumUninitialized(Num); 
+        for (YMeshVertexWedge& wedge : RawMesh->wedges)
+        {
+            wedge.uvs.push_back(YVector2());
+        }
+    }
+    void      SetOutputTexcoord(uint32 Index, const YVector2& Value) override 
+    { 
+        RawMesh->wedges[Index].uvs[DstChannel]=Value;
+    }
+};
+
+void ImportedRawMesh::GenerateLightMapUV()
+{
+    FLayoutUVRawMeshView RawMeshView(this, 0, 1);
+    FLayoutUV Packer(RawMeshView);
+    Packer.SetVersion(ELightmapUVVersion::OptimalSurfaceArea);
+    std::vector<YVector> position_to_compare;
+    position_to_compare.reserve(wedges.size());
+    std::vector<uint32> indices_to_compare;
+    indices_to_compare.reserve(wedges.size());
+    //for (YMeshVertexWedge& data : wedges)
+    for(int wedge_index=0;wedge_index<wedges.size();++wedge_index)
+    {
+        YMeshVertexWedge& data = wedges[wedge_index];
+        position_to_compare.push_back(data.position);
+        indices_to_compare.push_back(wedge_index);
+    }
+
+    YOverlappingCorners  OverlappingCorners(position_to_compare, indices_to_compare, THRESH_POINTS_ARE_SAME);
+    Packer.FindCharts(OverlappingCorners);
+
+
+    int32 EffectiveMinLightmapResolution = 2048-2;
+    /* if (LightmapUVVersion >= ELightmapUVVersion::ConsiderLightmapPadding)
+     {
+         if (GLightmassDebugOptions.bPadMappings)
+         {
+             EffectiveMinLightmapResolution -= 2;
+         }
+     }*/
+
+    bool bPackSuccess = Packer.FindBestPacking(EffectiveMinLightmapResolution);
+    if (bPackSuccess)
+    {
+        Packer.CommitPackedUVs();
+    }
+}
+
 void ImportedRawMesh::RecursiveFindGroup(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids, bool split_uv_seam)
 {
     if (around_triangle_ids[triangle_id].visited)
@@ -1175,7 +1257,7 @@ void PostProcessRenderMesh::PostProcessPipeline()
     CompressVertex();
     OptimizeIndices();
     BuildStaticAdjacencyIndexBuffer();
-    BuildInverseIndices();
+    BuildReverseIndices();
     BuildDepthOnlyIndices();
 }
 
@@ -1314,6 +1396,7 @@ namespace NvTriStripHelper
 }
 void PostProcessRenderMesh::OptimizeIndices()
 {
+    LOG_INFO("begin optimize indices");
     for (std::vector<uint32>& section_index : section_indices)
     {
         NvTriStripHelper::CacheOptimizeIndexBuffer(section_index);
@@ -1356,6 +1439,7 @@ void PostProcessRenderMesh::OptimizeIndices()
             index = index_mapping_old_to_new[index];
         }
     }
+    LOG_INFO("end optimize indices");
 }
 
 
@@ -1402,6 +1486,7 @@ nv::Vertex FStaticMeshNvRenderBuffer::getVertex(unsigned int Index) const
 
 void PostProcessRenderMesh::BuildStaticAdjacencyIndexBuffer()
 {
+    LOG_INFO("begin build adjacency index");
     adjacency_section_indices.clear();
     for (int i = 0; i < section_indices.size(); ++i)
     {
@@ -1418,11 +1503,13 @@ void PostProcessRenderMesh::BuildStaticAdjacencyIndexBuffer()
         delete PnAENIndexBuffer;
         adjacency_section_indices.emplace_back(std::move(new_adj_indices));
     }
+    LOG_INFO("end build adjacency index");
 }
 
 
-void PostProcessRenderMesh::BuildInverseIndices()
+void PostProcessRenderMesh::BuildReverseIndices()
 {
+    LOG_INFO("begin build reversed index");
     reversed_indices.clear();
     reversed_indices.resize(section_indices.size());
     for (int i = 0; i < section_indices.size(); ++i)
@@ -1435,10 +1522,12 @@ void PostProcessRenderMesh::BuildInverseIndices()
             reversed_indices[i].push_back(per_sec[j * 3 + 0]);
         }
     }
+    LOG_INFO("end build reversed index");
 }
 
 void PostProcessRenderMesh::BuildDepthOnlyIndices()
 {
+    LOG_INFO("begin build depth only index");
     std::vector<int> map_old_to_new;
     map_old_to_new.resize(vertex_data_cache.size(), INDEX_NONE);
 
@@ -1458,7 +1547,7 @@ void PostProcessRenderMesh::BuildDepthOnlyIndices()
             indices_to_compare.push_back(index);
         }
     }
-    YOverlappingCorners  acc_overlap_finding(position_to_compare, indices_to_compare, THRESH_POINTS_ARE_SAME*4.0);
+    YOverlappingCorners  acc_overlap_finding(position_to_compare, indices_to_compare, THRESH_POINTS_ARE_SAME);
 
     for (int i = 0; i < (int)indices_to_compare.size(); ++i)
     {
@@ -1500,17 +1589,19 @@ void PostProcessRenderMesh::BuildDepthOnlyIndices()
         }
     }
     
-    if (indices_to_compare.size() < 50000 * 3)
+    if (indices_to_compare.size() < 50000 *3 )
     {
         for (std::vector<uint32>& section_index : section_indices)
         {
             NvTriStripHelper::CacheOptimizeIndexBuffer(section_index);
         }
     }
+    LOG_INFO("end build depth only index");
 }
 
 void PostProcessRenderMesh::BuildDepthOnlyInverseIndices()
 {
+    LOG_INFO("begin build depth only reversed index");
     depth_only_reversed_indices.clear();
     depth_only_reversed_indices.resize(depth_only_indices.size());
     for (int i = 0; i < depth_only_indices.size(); ++i)
@@ -1523,6 +1614,7 @@ void PostProcessRenderMesh::BuildDepthOnlyInverseIndices()
             reversed_indices[i].push_back(per_sec[j * 3 + 0]);
         }
     }
+    LOG_INFO("end build depth only reversed index");
 }
 
 std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVertexData()

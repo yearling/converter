@@ -172,7 +172,6 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/plane/AH64A/AH64A.fbx",    //very good
           "E:/fbx/static_mesh/human/male-armour-4-game-ready/source/ManAr4.fbx",    //good armour
           "E:/fbx/static_mesh/mask/Jonathan_BENAINOUS/source/sci-fi-helmet-blue-neon-jonathan-benainous.fbx",   //花钱买的
-          "E:/fbx/static_mesh/human/alien-soldier/source/Alien.obj",   // good
           "E:/fbx/static_mesh/plane/buster-drone/source/BusterDrone.fbx",   // good
           "E:/fbx/static_mesh/funature/aging-paint-material/source/Scene_matman.fbx", // test for PBR
           "E:/fbx/static_mesh/bose/anthro-shark/source/SHARK FULL ARMOR.obj", // test for PBR
@@ -217,6 +216,7 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx",   // crash
           "E:/fbx/static_mesh/animal/sci-fi-dog/source/dog3.fbx", // good for degenerate triangle
           "E:/fbx/static_mesh/cloth/haveto-red-mage-helmet-flow-ver-preview/source/RedMageHelmetFlowVer.fbx",   // good
+          "E:/fbx/static_mesh/human/alien-soldier/source/Alien.obj",   // good, 100m vertex 
     };
 
     std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
@@ -231,7 +231,8 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/bs/animation/man_talking.fbx";
     //const std::string file_path = "E:/fbx/bs/animation/female_talking2.fbx";
     //const std::string file_path = "E:/fbx/EpicCharacter_Run.fbx";
-    const std::string file_path = "E:/fbx/test_case/two_uv_two_material/test_uv_set.fbx";
+    const std::string file_path = "E:/fbx/test_case/nija/qq_plane_uv_mirror.fbx";
+    //const std::string file_path = "E:/fbx/static_mesh/large/Set_02.fbx";
 
     // static mesh
     //const std::string file_path = "E:/fbx/static_mesh/plane/free-spaceship/source/Spaceship_05.fbx";    //very good
@@ -271,7 +272,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/plane/AH64A/AH64A.fbx";    //very good
     //const std::string file_path = "E:/fbx/static_mesh/plane/ornithopter-dune-2021-se-build-by-zeo/source/Ornithopter_v011_Wings_Spread.obj";    // 沙丘 扑翼机
     //const std::string file_path = "E:/fbx/static_mesh/human/male-armour-4-game-ready/source/ManAr4.fbx";    //good armour
-    //const std::string file_path = "E:/fbx/static_mesh/human/alien-soldier/source/Alien.obj";   // good
+    //const std::string file_path = "E:/fbx/static_mesh/car/buggy-2/source/VHC_SC_Buggy_01.fbx";   // good
     //const std::string file_path = "E:/fbx/static_mesh/plane/buster-drone/source/BusterDrone.fbx";   // good
     //const std::string file_path = "E:/fbx/static_mesh/architecture/abandoned-house/source/abandonhouse.fbx"; // test for AO
     //const std::string file_path = "E:/fbx/static_mesh/funature/aging-paint-material/source/Scene_matman.fbx"; // test for PBR

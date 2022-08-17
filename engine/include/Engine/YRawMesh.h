@@ -208,6 +208,7 @@ public:
     void ComputeTriangleNormalAndTangent(NormalCaculateMethod normal_method, TangentMethod tangent_method);
     void ComputeUVSeam();
     void CompressMaterials();
+    void GenerateLightMapUV();
 protected:
     friend struct MikktHelper;
     std::set<int> GetSplitTriangleGroupBySoftEdge( int wedge_index, bool split_uv_seam );
@@ -319,7 +320,7 @@ public:
     void CompressVertex();
     void OptimizeIndices();
     void BuildStaticAdjacencyIndexBuffer();
-    void BuildInverseIndices();
+    void BuildReverseIndices();
     void BuildDepthOnlyIndices();
     void BuildDepthOnlyInverseIndices();
     std::unique_ptr< HiSttaticVertexData> GenerateHiStaticVertexData();

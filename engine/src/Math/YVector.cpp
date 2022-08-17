@@ -11,6 +11,11 @@ YVector2 YVector2::operator*(float mul) const
 	return YVector2(x * mul, y * mul);
 }
 
+YVector2 YVector2::operator*(const YVector2& v) const
+{
+    return YVector2(x * v.x, y * v.y);
+}
+
 YVector2 YVector2::operator-(const YVector2& v) const
 {
 	return YVector2(x - v.x, y - v.y);
@@ -21,9 +26,48 @@ YVector2 YVector2::operator+(const YVector2& v) const
 	return YVector2(x + v.x, y + v.y);
 }
 
+YVector2 YVector2::operator+(float f) const
+{
+    return *this + YVector2(f, f);
+}
+
+YVector2 YVector2::operator/(float f) const
+{
+    return YVector2(x / f, y / f);
+}
+
+float& YVector2::operator[](int index)
+{
+    if (index == 0)
+    {
+        return x;
+    }
+    else if (index == 1)
+    {
+        return y;
+    }
+}
+
+float YVector2::operator[](int index) const
+{
+    if (index == 0)
+    {
+        return x;
+    }
+    else if (index == 1)
+    {
+        return y;
+    }
+}
+
 bool YVector2::Equals(const YVector2& v, float Tolerance /*= SMALL_NUMBER*/) const
 {
     return YMath::Abs(x - v.x) <= Tolerance && YMath::Abs(y - v.y) <= Tolerance;
+}
+
+bool YVector2::IsNearlyZero(float Tolerance /*= SMALL_NUMBER*/) const
+{
+    return Equals(YVector2(0.0f, 0.0f), Tolerance);
 }
 
 const YVector2 YVector2::zero_vector = YVector2(0.0,0.0);
@@ -306,3 +350,8 @@ bool YVector4::Equals(const YVector4& v, float Tolerance /*= SMALL_NUMBER*/) con
 }
 
 const YVector4 YVector4::zero_vector = YVector4(0.f, 0.f, 0.f, 0.f);
+
+YVector2 operator*(float f, const YVector2& v)
+{
+    return v * f;
+}
