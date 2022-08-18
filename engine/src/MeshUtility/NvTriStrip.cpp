@@ -1,8 +1,8 @@
 
 #pragma warning(disable : 4018)		// warning C4018: '<' : signed/unsigned mismatch
 
-#include "Utility/NvTriStripObjects.h"
-#include "Utility/NvTriStrip.h"
+#include "MeshUtility/NvTriStripObjects.h"
+#include "MeshUtility/NvTriStrip.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //private data

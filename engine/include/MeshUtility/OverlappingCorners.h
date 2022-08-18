@@ -1,8 +1,35 @@
 #pragma once
-#include "Engine/YCommonHeader.h"
 #include <vector>
-#include "Math/YVector.h"
 #include <unordered_set>
+#include "Engine/YCommonHeader.h"
+#include "Math/YVector.h"
+#include "Math/YMath.h"
+#include "Math/NumericLimits.h"
+
+/** Helper struct for building acceleration structures. */
+struct FIndexAndZ
+{
+    float Z = -MIN_flt;
+    int32 Index = INVALID_ID;
+
+    /** Default constructor. */
+    FIndexAndZ() {}
+
+    /** Initialization constructor. */
+    FIndexAndZ(int32 InIndex, YVector V)
+    {
+        Z = 0.30f * V.x + 0.33f * V.y + 0.37f * V.z;
+        Index = InIndex;
+    }
+};
+
+/** Sorting function for vertex Z/index pairs. */
+struct FCompareIndexAndZ
+{
+    FORCEINLINE bool operator()(FIndexAndZ const& A, FIndexAndZ const& B) const { return A.Z < B.Z; }
+};
+
+
 /**
 * Container to hold overlapping corners. For a vertex, lists all the overlapping vertices
 */

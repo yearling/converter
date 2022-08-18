@@ -28,7 +28,7 @@
 #include <float.h>
 #include <stdlib.h>
 
-#include "Utility/mikktspace.h"
+#include "MeshUtility/mikktspace.h"
 
 #define TFALSE		0
 #define TTRUE		1

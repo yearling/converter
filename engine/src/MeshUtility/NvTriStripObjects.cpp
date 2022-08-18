@@ -4,9 +4,9 @@
 
 #include <assert.h>
 #include <set>
-#include "Utility/NvTriStripObjects.h"
-#include "Utility/VertexCache.h"
 #include <algorithm>
+#include "MeshUtility/NvTriStripObjects.h"
+#include "MeshUtility/VertexCache.h"
 
 #define CACHE_INEFFICIENCY 6
 

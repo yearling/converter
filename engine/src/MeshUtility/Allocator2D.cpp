@@ -1,12 +1,10 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Utility/Allocator2D.h"
-
+#include "MeshUtility/Allocator2D.h"
 #include "Utility/SecureHash.h"
 #include "Math/YMath.h"
 #include <algorithm>
 #include "Math/NumericLimits.h"
-//#include "ProfilingDebugging/MiscTrace.h"
 
 FAllocator2D::FAllocator2D( FAllocator2D::EMode InMode, uint32 InWidth, uint32 InHeight, ELightmapUVVersion InLayoutVersion)
 	: Mode( InMode )

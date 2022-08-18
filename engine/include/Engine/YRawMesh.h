@@ -3,39 +3,16 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <set>
 #include "YMath.h"
 #include "math/YVector.h"
 #include "YFile.h"
 #include "Math/YBox.h"
 #include "YArchive.h"
-#include <set>
 #include "YPackedNormal.h"
 #include "Math/Vector2DHalf.h"
 
-const int INVALID_ID = -1;
 
-/** Helper struct for building acceleration structures. */
-struct FIndexAndZ
-{
-    float Z;
-    int32 Index;
-
-    /** Default constructor. */
-    FIndexAndZ() {}
-
-    /** Initialization constructor. */
-    FIndexAndZ(int32 InIndex, YVector V)
-    {
-        Z = 0.30f * V.x + 0.33f * V.y + 0.37f * V.z;
-        Index = InIndex;
-    }
-};
-
-/** Sorting function for vertex Z/index pairs. */
-struct FCompareIndexAndZ
-{
-    FORCEINLINE bool operator()(FIndexAndZ const& A, FIndexAndZ const& B) const { return A.Z < B.Z; }
-};
 
 /**
 * Returns true if the specified points are about equal
@@ -157,7 +134,6 @@ public:
 	int LOD_index;
 	std::vector<YRawMesh> sub_meshes;
 	std::vector<YMeshControlPoint> vertex_position;
-	//std::vector<YMeshVertex> vertices;
 	std::vector<YMeshVertexWedge> vertex_instances;
 	std::vector< YMeshPolygon> polygons;
 	std::vector< YMeshEdge> edges;

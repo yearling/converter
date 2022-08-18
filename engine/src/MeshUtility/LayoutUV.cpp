@@ -1,20 +1,18 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "Utility/LayoutUV.h"
-//#include "Algo/IntroSort.h"
-//#include "Async/Async.h"
-#include "Utility/DisjointSet.h"
-#include "Utility/OverlappingCorners.h"
-//#include "HAL/PlatformTime.h"
-//#include "Misc/App.h"
-#include "Utility/SecureHash.h"
+
 #include <atomic>
-#include "Utility/OverlappingCorners.h"
 #include <algorithm>
 #include <unordered_map>
 #include <future>
 #include <xatomic.h>
 #include <map>
+#include "MeshUtility/LayoutUV.h"
+#include "MeshUtility/DisjointSet.h"
+#include "MeshUtility/OverlappingCorners.h"
+#include "MeshUtility/OverlappingCorners.h"
+#include "Utility/SecureHash.h"
+#include "MeshUtility/Allocator2D.h"
 //#include "Modules/ModuleManager.h"
 
 //IMPLEMENT_MODULE(FDefaultModuleImpl, MeshUtilitiesCommon)

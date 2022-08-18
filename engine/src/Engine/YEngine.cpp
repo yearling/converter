@@ -4,7 +4,7 @@
 #include "Platform/Windows/YWindows.h"
 #include "Engine/YLog.h"
 #include "Engine/YCanvas.h"
-#include "Utility/YPickupOps.h"
+#include "MeshUtility/YPickupOps.h"
 #include "Render/YForwardRenderer.h"
 #include "SObject/SWorld.h"
 #include "SObject/SObjectManager.h"
@@ -439,7 +439,7 @@ void YEngine::Update()
 			first_frame = false;
 		}
 	}
-	//LOG_INFO("fps: ", fps.Average());
+	LOG_INFO("fps: ", fps.Average());
 	//FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	//static int reentry = 1;
 	//if (reentry == 1)

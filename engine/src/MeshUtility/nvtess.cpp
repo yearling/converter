@@ -1,7 +1,7 @@
 // nvtess.cpp : Defines the exported functions for the DLL application.
 //
 
-#include "Utility/nvtess.h"
+#include "MeshUtility/nvtess.h"
 #include <assert.h>
 #include <algorithm>
 

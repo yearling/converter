@@ -1,7 +1,7 @@
 #include "Platform/Windows/YWindows.h"
 #include "RHI/DirectX11/D3D11Device.h"
 #include "Engine/YCameraController.h"
-#include "Utility/YPickupOps.h"
+#include "MeshUtility/YPickupOps.h"
 #include <chrono>
 #include "Render/YRenderInterface.h"
 #include "Utility/YAverageSmooth.h"

@@ -7,12 +7,12 @@
 #include "Utility/YStringFormat.h"
 #include <set>
 #include "Math/NumericLimits.h"
-#include "Utility/mikktspace.h"
+#include "MeshUtility/mikktspace.h"
 #include "Math/YColor.h"
-#include "Utility/OverlappingCorners.h"
-#include "Utility/NvTriStrip.h"
-#include "Utility/nvtess.h"
-#include "Utility/LayoutUV.h"
+#include "MeshUtility/OverlappingCorners.h"
+#include "MeshUtility/NvTriStrip.h"
+#include "MeshUtility/nvtess.h"
+#include "MeshUtility/LayoutUV.h"
 YLODMesh::YLODMesh()
 {
 
@@ -700,7 +700,7 @@ struct FLayoutUVRawMeshView final : FLayoutUV::IMeshView
     FLayoutUVRawMeshView(ImportedRawMesh* InRawMesh, uint32 InSrcChannel, uint32 InDstChannel)
         : RawMesh(InRawMesh)
         , SrcChannel(InSrcChannel)
-        , DstChannel(InDstChannel)   //, bNormalsValid(InRawMesh.WedgeTangentZ.Num() == InRawMesh.WedgeTexCoords[InSrcChannel].Num())
+        , DstChannel(InDstChannel)   
         , bNormalsValid(true)
     {
     }
@@ -722,7 +722,6 @@ struct FLayoutUVRawMeshView final : FLayoutUV::IMeshView
     }
 
     void      InitOutputTexcoords(uint32 Num) override { 
-        //RawMesh.WedgeTexCoords[DstChannel].SetNumUninitialized(Num); 
         for (YMeshVertexWedge& wedge : RawMesh->wedges)
         {
             wedge.uvs.push_back(YVector2());
@@ -736,38 +735,28 @@ struct FLayoutUVRawMeshView final : FLayoutUV::IMeshView
 
 void ImportedRawMesh::GenerateLightMapUV()
 {
-    FLayoutUVRawMeshView RawMeshView(this, 0, 1);
-    FLayoutUV Packer(RawMeshView);
-    Packer.SetVersion(ELightmapUVVersion::OptimalSurfaceArea);
+    FLayoutUVRawMeshView raw_mesh_view(this, 0, 1);
+    FLayoutUV packer(raw_mesh_view);
+    packer.SetVersion(ELightmapUVVersion::OptimalSurfaceArea);
     std::vector<YVector> position_to_compare;
     position_to_compare.reserve(wedges.size());
     std::vector<uint32> indices_to_compare;
     indices_to_compare.reserve(wedges.size());
-    //for (YMeshVertexWedge& data : wedges)
     for(int wedge_index=0;wedge_index<wedges.size();++wedge_index)
     {
         YMeshVertexWedge& data = wedges[wedge_index];
         position_to_compare.push_back(data.position);
         indices_to_compare.push_back(wedge_index);
     }
-
-    YOverlappingCorners  OverlappingCorners(position_to_compare, indices_to_compare, THRESH_POINTS_ARE_SAME);
-    Packer.FindCharts(OverlappingCorners);
-
-
-    int32 EffectiveMinLightmapResolution = 2048-2;
-    /* if (LightmapUVVersion >= ELightmapUVVersion::ConsiderLightmapPadding)
-     {
-         if (GLightmassDebugOptions.bPadMappings)
-         {
-             EffectiveMinLightmapResolution -= 2;
-         }
-     }*/
-
-    bool bPackSuccess = Packer.FindBestPacking(EffectiveMinLightmapResolution);
-    if (bPackSuccess)
+    YOverlappingCorners  overlapping_corners(position_to_compare, indices_to_compare, THRESH_POINTS_ARE_SAME);
+    packer.FindCharts(overlapping_corners);
+    int32 effective_min_lightmap_resolution = 1024;
+    const int32 light_padding = 2;
+    effective_min_lightmap_resolution -= light_padding;
+    bool pack_success = packer.FindBestPacking(effective_min_lightmap_resolution);
+    if (pack_success)
     {
-        Packer.CommitPackedUVs();
+        packer.CommitPackedUVs();
     }
 }
 

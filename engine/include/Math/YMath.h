@@ -39,7 +39,6 @@ struct YBox;
  * to assure that dot products with normalized vectors don't overflow).
  */
 #define FLOAT_NORMAL_THRESH				(0.0001f)
-
  //
  // Magic numbers for numerical precision.
  //
@@ -68,6 +67,7 @@ enum EForceInit
 	ForceInitToZero
 };
 enum { INDEX_NONE = -1 };
+const int INVALID_ID = -1;
 struct YMath
 {
 	template< class T >

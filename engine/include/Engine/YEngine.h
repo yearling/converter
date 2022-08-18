@@ -4,7 +4,7 @@
 #include "RHI/DirectX11/D3D11Device.h"
 #include "YCameraController.h"
 #include "Render/YRenderInterface.h"
-#include "Utility/YPickupOps.h"
+#include "MeshUtility/YPickupOps.h"
 #include "Utility/YAverageSmooth.h"
 #include "TaskGraphInterfaces.h"
 #include "Render/YRenderThread.h"
