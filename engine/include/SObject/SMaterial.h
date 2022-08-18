@@ -32,6 +32,7 @@ protected:
 	void SetShader(const std::string& shader_path);
 protected:
 	friend class SDynamicMaterial;
+    friend class YFbxImporter;
 	std::unordered_map<std::string, MaterialParam> parameters_;
 	SRenderState render_state_;
 	std::string shader_path_;

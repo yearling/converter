@@ -11,6 +11,8 @@
 #include "Engine/YLog.h"
 #include "YFbxImporter.h"
 #include "SObject/STexture.h"
+#include <shellapi.h>
+
 
 GameApplication::GameApplication()
 {
@@ -126,6 +128,23 @@ LRESULT GameApplication::MyProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             return 0;
         break;
     }
+    case WM_DROPFILES:
+    {
+        HDROP h_drop = (HDROP)wParam;
+        UINT file_num = DragQueryFile(h_drop, 0xFFFFFFFF, NULL, 0);
+        std::vector<std::string> file_pathes;
+        char strFileName[MAX_PATH];
+        for (int i = 0; i <(int) file_num; i++)
+        {
+            DragQueryFile(h_drop, i, strFileName, MAX_PATH);
+        }
+        std::string file_name = strFileName;
+        LOG_INFO("drop file: ", file_name);
+        file_pathes.push_back(file_name);
+        DragFinish(h_drop);
+        ConverteModel(file_pathes);
+        break;
+    }
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
@@ -140,6 +159,8 @@ bool GameApplication::Initial()
     windows_x = 2560;
     windows_y = 1440;
     WindowCreate(windows_x, windows_y);
+    HWND current_window = windows_[0]->GetHWND();
+    DragAcceptFiles(current_window, TRUE);
     //create engine
     YEngine* engine = YEngine::GetEngine();
     engine->SetApplication(this);
@@ -447,7 +468,6 @@ void GameApplication::OnKeyDown(char c)
 
 void GameApplication::SwitchModel()
 {
-
     std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
     std::string file_path = static_modle_path[current_index];
     if (static_mesh_importer->ImportFile(file_path))
@@ -520,6 +540,84 @@ void GameApplication::SwitchModel()
         ERROR_INFO("open file ", file_path, "failed!");
     }
 
+}
+
+void GameApplication::ConverteModel(const std::vector<std::string>& file_pathes)
+{
+    for (int i = 0; i < (int)file_pathes.size(); ++i)
+    {
+        std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
+        std::string file_path = file_pathes[i];
+        if (static_mesh_importer->ImportFile(file_path))
+        {
+            FbxImportParam importer_param;
+            const FbxImportSceneInfo* scene_info = static_mesh_importer->GetImportedSceneInfo();
+            importer_param.model_name = scene_info->model_name;
+            importer_param.transform_vertex_to_absolute = true;
+            importer_param.import_scaling = YVector(1.0, 1.0, 1.0);
+            if (scene_info->has_skin)
+            {
+                importer_param.import_as_skelton = true;
+                ConvertedResult result;
+                if (static_mesh_importer->ParseFile(importer_param, result))
+                {
+                    //auto& converted_static_mesh_vec = result.static_meshes;
+                    //for (auto& mesh : converted_static_mesh_vec)
+                    //{
+                        //mesh->SaveV0("head");
+                    //}
+                    YEngine* engine = YEngine::GetEngine();
+                    engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
+                    SWorld::GetWorld()->GetMainScene()->skeleton_meshes_.push_back(engine->skeleton_mesh_.get());
+
+                }
+                else
+                {
+                    ERROR_INFO("parse file ", file_path, "failed!");
+                }
+            }
+            else
+            {
+                importer_param.import_as_skelton = false;
+                ConvertedResult result;
+                if (static_mesh_importer->ParseFile(importer_param, result))
+                {
+                    YEngine* engine = YEngine::GetEngine();
+                    auto& converted_static_mesh_vec = result.static_meshes;
+                    for (auto& mesh : converted_static_mesh_vec)
+                    {
+                        //mesh->SaveV0("head");
+                        mesh->AllocGpuResource();
+                        engine->static_mesh_ = std::move(mesh);
+                        /*std::string test_pic = "/textures/uv.png";
+                        TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
+                        if (texture)
+                        {
+                            texture->UploadGPUBuffer();
+                        }*/
+                        std::string test_pic = "/textures/uv4096.png";
+                        TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
+                        if (texture)
+                        {
+                            texture->UploadGPUBuffer();
+                        }
+                        engine->static_mesh_->diffuse_tex_ = texture;
+
+                    }
+                    SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
+                    SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_.get());
+                }
+                else
+                {
+                    ERROR_INFO("parse file ", file_path, "failed!");
+                }
+            }
+        }
+        else
+        {
+            ERROR_INFO("open file ", file_path, "failed!");
+        }
+    }
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int cmdShow)

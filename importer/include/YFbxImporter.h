@@ -12,6 +12,7 @@
 #include "Engine/YMaterial.h"
 #include "Engine/YStaticMesh.h"
 #include "Engine/YSkeletonMesh.h"
+#include "SObject/SStaticMesh.h"
 
 
 
@@ -28,6 +29,11 @@ struct FbxImportParam
     bool remove_degenerate_triangles = true;
     int max_bone_per_section = 64;
     bool import_morph = true;
+    bool generate_lighmap_uv = true;
+    bool generate_reverse_indices = true;
+    bool generate_depth_only_indices = true;
+    bool generate_reverse_depth_only_indices = true;
+    bool generate_adjacency_indices = true;
 };
 
 struct FbxMeshInfo
@@ -101,6 +107,7 @@ protected:
 protected:
     //static mesh
     std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index = 0);
+    TRefCountPtr<SStaticMesh> ImportStaticMeshAsSingle2(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index = 0);
     bool ImportFbxMeshToRawMesh(FbxNode* node, ImportedRawMesh& raw_mesh);
     bool BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes);
 
@@ -129,6 +136,7 @@ protected:
     void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YImportedMaterial>>& out_materials, std::vector<std::string>& us_sets);
     std::shared_ptr<YImportedMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
     std::shared_ptr<YImportedMaterial> GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set);
+    void ConvertYImportedMaterialToSSMaterial(const std::vector<std::shared_ptr<YImportedMaterial>>& imported_materials, std::vector<TRefCountPtr<SMaterial>> out_materials);
 
 
 

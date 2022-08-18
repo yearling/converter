@@ -69,7 +69,7 @@ bool YApplication::WindowCreate(int width, int height)
 	}
 	DWORD WindowsWithTitleAndBoderStyle = WS_POPUP | WS_MINIMIZEBOX ;
 	DWORD WindowsPOPStyle = WS_POPUP;
-	HWND hwnd = CreateWindow("D3D11Demo", "SolidAngleEngine", WindowsWithTitleAndBoderStyle, CW_USEDEFAULT, CW_USEDEFAULT,
+	HWND hwnd = CreateWindowEx(WS_EX_ACCEPTFILES,"D3D11Demo", "SolidAngleEngine", WindowsWithTitleAndBoderStyle, CW_USEDEFAULT, CW_USEDEFAULT,
         width, height,
 		nullptr,
 		nullptr,

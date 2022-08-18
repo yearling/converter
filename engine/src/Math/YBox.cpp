@@ -120,3 +120,10 @@ YBox YBox::Overlap(const YBox& other) const
 	return YBox(min_vector, max_vector);
 }
 
+YArchive& operator<<(YArchive& mem_file, YBox& box)
+{
+    mem_file << box.min_;
+    mem_file << box.max_;
+    mem_file << box.is_valid_;
+    return mem_file;
+}

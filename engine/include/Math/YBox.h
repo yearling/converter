@@ -5,6 +5,7 @@
 #include "Engine/YLog.h"
 #include "Math/YTransform.h"
 #include "Math/YMatrix.h"
+#include "Engine/YArchive.h"
 struct YBox
 {
 public:
@@ -91,7 +92,7 @@ public:
 	// return the overlap YBox of two box
 	YBox Overlap(const YBox& other)const;
 };
-
+YArchive& operator<<(YArchive& mem_file, YBox& );
 namespace std
 {
 	template<>

@@ -10,8 +10,6 @@
 #include "MeshUtility/mikktspace.h"
 #include "Math/YColor.h"
 #include "MeshUtility/OverlappingCorners.h"
-#include "MeshUtility/NvTriStrip.h"
-#include "MeshUtility/nvtess.h"
 #include "MeshUtility/LayoutUV.h"
 #include "Math/YMath.h"
 
@@ -194,50 +192,12 @@ YArchive& operator<<(YArchive& mem_file, YRawMesh& raw_mesh)
     return mem_file;
 }
 
-YArchive& operator<<(YArchive& mem_file, YMeshEdge& mesh_edge)
-{
-    mem_file << mesh_edge.control_points_ids[0];
-    mem_file << mesh_edge.control_points_ids[1];
-    mem_file << mesh_edge.connected_triangles;
-    mem_file << mesh_edge.edge_hardness;
-    mem_file << mesh_edge.edge_crease_sharpness;
 
-    return mem_file;
-}
 
-YArchive& operator<<(YArchive& mem_file, YMeshPolygonGroup& mesh_polygon_group)
-{
-    mem_file << mesh_polygon_group.polygons;
-    return mem_file;
-}
 
-YArchive& operator<<(YArchive& mem_file, YMeshPolygon& mesh_polygon)
-{
-    mem_file << mesh_polygon.polygon_group_id;
-    mem_file << mesh_polygon.wedge_ids;
-    return mem_file;
-}
 
-YArchive& operator<<(YArchive& mem_file, YMeshWedge& mesh_vertex_instance)
-{
-    mem_file << mesh_vertex_instance.control_point_id;
-    mem_file << mesh_vertex_instance.connected_triangles;
-    mem_file << mesh_vertex_instance.normal;
-    mem_file << mesh_vertex_instance.tangent;
-    mem_file << mesh_vertex_instance.binormal_sign;
-    mem_file << mesh_vertex_instance.color;
-    mem_file << mesh_vertex_instance.uvs;
 
-    return mem_file;
-}
 
-YArchive& operator<<(YArchive& mem_file, YMeshControlPoint& mesh_vertex)
-{
-    mem_file << mesh_vertex.wedge_ids;
-    mem_file << mesh_vertex.edge_ids;
-    mem_file << mesh_vertex.position;
-    return mem_file;
-}
 
 
 ImportedRawMesh::ImportedRawMesh()
@@ -1353,5 +1313,73 @@ void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_m
             cur_wedge.bitangent = YVector::CrossProduct(cur_wedge.normal, cur_wedge.tangent).GetSafeNormal() * cur_wedge.binormal_sign;
         }
     }
+}
+const int ImportedRawMesh::version = 1;
+YArchive& operator<<(YArchive& mem_file, ImportedRawMesh& imported_raw_mesh)
+{
+    int version_value = ImportedRawMesh::version;
+    mem_file << version_value;
+    mem_file << imported_raw_mesh.LOD_index;
+    mem_file << imported_raw_mesh.name;
+    mem_file << imported_raw_mesh.control_points;
+    mem_file << imported_raw_mesh.edges;
+    mem_file << imported_raw_mesh.polygons;
+    mem_file << imported_raw_mesh.polygon_groups;
+    mem_file << imported_raw_mesh.aabb;
+    return mem_file;
+}
+
+YArchive& operator<<(YArchive& mem_file, YMeshControlPoint& control_point)
+{
+    mem_file << control_point.position;
+    mem_file << control_point.wedge_ids;
+    mem_file << control_point.edge_ids;
+    return mem_file;
+}
+
+YArchive& operator<<(YArchive& mem_file, YMeshEdge& mesh_edge)
+{
+    mem_file << mesh_edge.control_points_ids[0];
+    mem_file << mesh_edge.control_points_ids[1];
+    mem_file << mesh_edge.connected_triangles;
+    mem_file << mesh_edge.edge_hardness;
+    mem_file << mesh_edge.edge_crease_sharpness;
+    mem_file << mesh_edge.is_uv_seam;
+
+    return mem_file;
+}
+
+YArchive& operator<<(YArchive& mem_file, YMeshPolygon& mesh_polygon)
+{
+    mem_file << mesh_polygon.polygon_group_id;
+    mem_file << mesh_polygon.wedge_ids;
+    mem_file << mesh_polygon.face_normal;
+    mem_file << mesh_polygon.face_tangent;
+    mem_file << mesh_polygon.face_bitangent;
+    mem_file << mesh_polygon.face_bitanget_sign;
+    mem_file << mesh_polygon.face_aera;
+    return mem_file;
+}
+
+YArchive& operator<<(YArchive& mem_file, YMeshPolygonGroup& mesh_polygon_group)
+{
+    mem_file << mesh_polygon_group.polygons;
+    return mem_file;
+}
+
+YArchive& operator<<(YArchive& mem_file, YMeshWedge& wedge)
+{
+    mem_file << wedge.control_point_id;
+    mem_file << wedge.position;
+    mem_file << wedge.normal;
+    mem_file << wedge.tangent;
+    mem_file << wedge.bitangent;
+    mem_file << wedge.binormal_sign;
+    mem_file << wedge.color;
+    mem_file << wedge.uvs;
+    mem_file << wedge.corner_angle;
+    mem_file << wedge.connected_triangles;
+
+    return mem_file;
 }
 

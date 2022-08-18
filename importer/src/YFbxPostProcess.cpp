@@ -5,22 +5,43 @@
 #include <algorithm>
 #include "Math/YColor.h"
 
-PostProcessRenderMesh::PostProcessRenderMesh(ImportedRawMesh* raw_mesh)
-    :raw_mesh_(raw_mesh)
-{
+PostProcessRenderMesh::PostProcessRenderMesh(ImportedRawMesh* raw_mesh, FbxImportParam* in_fbx_import_param)
+    :raw_mesh_(raw_mesh){
     int wedege_count = (int)raw_mesh_->wedges.size();
     vertex_data_cache.reserve(wedege_count);
     section_indices.reserve(wedege_count);
-
+    generate_reverse_index = in_fbx_import_param->generate_reverse_indices;
+    generate_depth_only_index = in_fbx_import_param->generate_depth_only_indices;
+    generate_reverse_depth_only_index = in_fbx_import_param->generate_reverse_depth_only_indices;
+    generate_adjacent_index = in_fbx_import_param->generate_adjacency_indices;
 }
 
 void PostProcessRenderMesh::PostProcessPipeline()
 {
     CompressVertex();
     OptimizeIndices();
-    BuildStaticAdjacencyIndexBuffer();
-    BuildReverseIndices();
-    BuildDepthOnlyIndices();
+    if (generate_adjacent_index)
+    {
+        BuildStaticAdjacencyIndexBuffer();
+    }
+    if (generate_reverse_index)
+    {
+        BuildReverseIndices();
+    }
+
+    if (generate_depth_only_index)
+    {
+        BuildDepthOnlyIndices();
+        if (generate_reverse_depth_only_index)
+        {
+            BuildDepthOnlyInverseIndices();
+        }
+    }
+    else if (generate_reverse_depth_only_index)
+    {
+        BuildDepthOnlyIndices();
+        BuildDepthOnlyInverseIndices();
+    }
 }
 
 namespace NvTriStripHelper
@@ -375,16 +396,16 @@ void PostProcessRenderMesh::BuildDepthOnlyInverseIndices()
     LOG_INFO("end build depth only reversed index");
 }
 
-std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVertexData()
+std::unique_ptr< HiStaticVertexData> PostProcessRenderMesh::GenerateHiStaticVertexData()
 {
     PostProcessPipeline();
-    std::unique_ptr<HiSttaticVertexData> render_data = std::make_unique<HiSttaticVertexData>();
+    std::unique_ptr<HiStaticVertexData> render_data = std::make_unique<HiStaticVertexData>();
     render_data->position.reserve(vertex_data_cache.size());
     render_data->vertex_infos.reserve(vertex_data_cache.size());
     for (FullStaticVertexData& full_vertex_data : vertex_data_cache)
     {
         render_data->position.push_back(full_vertex_data.position);
-        HiSttaticVertexData::HiVertexInfo tmp;
+        HiStaticVertexData::HiVertexInfo tmp;
         tmp.normal = YVector4(full_vertex_data.normal, 0.0);
         tmp.tangent = full_vertex_data.tangent;
         tmp.uv0 = full_vertex_data.uv0;
@@ -394,23 +415,43 @@ std::unique_ptr< HiSttaticVertexData> PostProcessRenderMesh::GenerateHiStaticVer
     }
 
     render_data->GenerateIndexBuffers(render_data->indices_vertex_32, render_data->indices_vertex_16, section_indices, true);
-    render_data->GenerateIndexBuffers(render_data->indices_vertex_reversed_32, render_data->indices_vertex_reversed_16, reversed_indices);
-    render_data->GenerateIndexBuffers(render_data->indices_depth_only_32, render_data->indices_depth_only_16, depth_only_indices);
-    render_data->GenerateIndexBuffers(render_data->indices_depth_only_reversed_32, render_data->indices_depth_only_reversed_16, depth_only_reversed_indices);
-    render_data->GenerateIndexBuffers(render_data->indices_adjacent_32, render_data->indices_adjacent_16, adjacency_section_indices);
+    if (generate_reverse_index)
+    {
+        render_data->GenerateIndexBuffers(render_data->indices_vertex_reversed_32, render_data->indices_vertex_reversed_16, reversed_indices);
+        render_data->has_reverse_index = true;
+    }
+
+    if (generate_depth_only_index)
+    {
+        render_data->GenerateIndexBuffers(render_data->indices_depth_only_32, render_data->indices_depth_only_16, depth_only_indices);
+        render_data->has_depth_only_index = true;
+    }
+
+    if (generate_reverse_depth_only_index)
+    {
+        render_data->GenerateIndexBuffers(render_data->indices_depth_only_reversed_32, render_data->indices_depth_only_reversed_16, depth_only_reversed_indices);
+        render_data->has_reverse_depth_only_index = true;
+    }
+
+    if (generate_adjacent_index)
+    {
+        render_data->GenerateIndexBuffers(render_data->indices_adjacent_32, render_data->indices_adjacent_16, adjacency_section_indices);
+        render_data->has_adjacent_index = true;
+    }
+    render_data->aabb = raw_mesh_->aabb;
     return render_data;
 }
 
-std::unique_ptr< MediumStaticVertexData> PostProcessRenderMesh::GenerateMediumStaticVertexData()
+std::unique_ptr< DefaultStaticVertexData> PostProcessRenderMesh::GenerateMediumStaticVertexData()
 {
     PostProcessPipeline();
-    std::unique_ptr<MediumStaticVertexData> render_data = std::make_unique<MediumStaticVertexData>();
+    std::unique_ptr<DefaultStaticVertexData> render_data = std::make_unique<DefaultStaticVertexData>();
     render_data->position.reserve(vertex_data_cache.size());
     render_data->vertex_infos.reserve(vertex_data_cache.size());
     for (FullStaticVertexData& full_vertex_data : vertex_data_cache)
     {
         render_data->position.push_back(full_vertex_data.position);
-        MediumStaticVertexData::MediumVertexInfo tmp;
+        DefaultStaticVertexData::DefaultVertexInfo tmp;
         tmp.normal = YVector4(full_vertex_data.normal, 0.0);
         tmp.tangent = full_vertex_data.tangent;
         tmp.uv0 = full_vertex_data.uv0;
@@ -419,11 +460,30 @@ std::unique_ptr< MediumStaticVertexData> PostProcessRenderMesh::GenerateMediumSt
     }
 
     render_data->GenerateIndexBuffers(render_data->indices_vertex_32, render_data->indices_vertex_16, section_indices, true);
-    render_data->GenerateIndexBuffers(render_data->indices_vertex_reversed_32, render_data->indices_vertex_reversed_16, reversed_indices);
-    render_data->GenerateIndexBuffers(render_data->indices_depth_only_32, render_data->indices_depth_only_16, depth_only_indices);
-    render_data->GenerateIndexBuffers(render_data->indices_depth_only_reversed_32, render_data->indices_depth_only_reversed_16, depth_only_reversed_indices);
-    render_data->GenerateIndexBuffers(render_data->indices_adjacent_32, render_data->indices_adjacent_16, adjacency_section_indices);
+    if (generate_reverse_index)
+    {
+        render_data->GenerateIndexBuffers(render_data->indices_vertex_reversed_32, render_data->indices_vertex_reversed_16, reversed_indices);
+        render_data->has_reverse_index = true;
+    }
 
+    if (generate_depth_only_index)
+    {
+        render_data->GenerateIndexBuffers(render_data->indices_depth_only_32, render_data->indices_depth_only_16, depth_only_indices);
+        render_data->has_depth_only_index = true;
+    }
+
+    if (generate_reverse_depth_only_index)
+    {
+        render_data->GenerateIndexBuffers(render_data->indices_depth_only_reversed_32, render_data->indices_depth_only_reversed_16, depth_only_reversed_indices);
+        render_data->has_reverse_depth_only_index = true;
+    }
+
+    if (generate_adjacent_index)
+    {
+        render_data->GenerateIndexBuffers(render_data->indices_adjacent_32, render_data->indices_adjacent_16, adjacency_section_indices);
+        render_data->has_adjacent_index = true;
+    }
+    render_data->aabb = raw_mesh_->aabb;
     return render_data;
 }
 
@@ -501,22 +561,22 @@ void* StaticVertexRenderData::GetVertexInfoData()
     return nullptr;
 }
 
-uint32 HiSttaticVertexData::GetVertexInfoSize()
+uint32 HiStaticVertexData::GetVertexInfoSize()
 {
-    return sizeof(HiSttaticVertexData::HiVertexInfo) * vertex_infos.size();
+    return sizeof(HiStaticVertexData::HiVertexInfo) * vertex_infos.size();
 }
 
-void* HiSttaticVertexData::GetVertexInfoData()
+void* HiStaticVertexData::GetVertexInfoData()
 {
     return vertex_infos.data();
 }
 
-uint32 MediumStaticVertexData::GetVertexInfoSize()
+uint32 DefaultStaticVertexData::GetVertexInfoSize()
 {
-    return sizeof(MediumStaticVertexData::MediumVertexInfo) * vertex_infos.size();
+    return sizeof(DefaultStaticVertexData::DefaultVertexInfo) * vertex_infos.size();
 }
 
-void* MediumStaticVertexData::GetVertexInfoData()
+void* DefaultStaticVertexData::GetVertexInfoData()
 {
     return vertex_infos.data();
 }

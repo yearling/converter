@@ -439,7 +439,7 @@ void YEngine::Update()
 			first_frame = false;
 		}
 	}
-	LOG_INFO("fps: ", fps.Average());
+	//LOG_INFO("fps: ", fps.Average());
 	//FTaskGraphInterface::Get().ProcessThreadUntilIdle(ENamedThreads::GameThread);
 	//static int reentry = 1;
 	//if (reentry == 1)

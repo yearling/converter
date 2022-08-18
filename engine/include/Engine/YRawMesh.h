@@ -189,21 +189,18 @@ protected:
    // 为了生成压缩后的vb来使用。
     void CompressWedges();
     bool TellLightMapUVExist(int uv_light_map_index = 1)const;
+    static const int version;
+    friend  YArchive& operator<<(YArchive& mem_file, ImportedRawMesh& imported_raw_mesh);
 };
 
-
 YArchive& operator<<(YArchive& mem_file, YLODMesh& lod_mesh);
-
 YArchive& operator<<(YArchive& mem_file, YRawMesh& raw_mesh);
 
+YArchive& operator<<(YArchive& mem_file, ImportedRawMesh& imported_raw_mesh);
+YArchive& operator<<(YArchive& mem_file, YMeshControlPoint& control_point);
 YArchive& operator<<(YArchive& mem_file, YMeshEdge& mesh_edge);
-
-YArchive& operator<<(YArchive& mem_file, YMeshPolygonGroup& mesh_polygon_group);
-
 YArchive& operator<<(YArchive& mem_file, YMeshPolygon& mesh_polygon);
-
-YArchive& operator<<(YArchive& mem_file, YMeshWedge& mesh_vertex_instance);
-
-YArchive& operator<<(YArchive& mem_file, YMeshControlPoint& mesh_vertex);
+YArchive& operator<<(YArchive& mem_file, YMeshPolygonGroup& mesh_polygon_group);
+YArchive& operator<<(YArchive& mem_file, YMeshWedge& wedge);
 
 

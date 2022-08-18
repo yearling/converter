@@ -57,11 +57,11 @@ public:
         vertex_descriptions_.clear();
         
         VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32, DXGI_FORMAT_R32G32B32_FLOAT, 0, 3, 0, -1, sizeof(YVector), 0, false, false, false);
-        VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 4, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 0, false, false, false);
-        VertexStreamDescription tanget_desc(VertexAttribute::VA_TANGENT, "tangent", DataType::Float32, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 4, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 16, false, false, false);
-        VertexStreamDescription uv0_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, DXGI_FORMAT_R32G32_FLOAT,1, 2, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 32, false, false, false);
-        VertexStreamDescription uv1_desc(VertexAttribute::VA_UV1, "uv1", DataType::Float32, DXGI_FORMAT_R32G32_FLOAT, 1, 2, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 40, false, false, false);
-        VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Uint8, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 4, 0, -1, sizeof(HiSttaticVertexData::HiVertexInfo), 48,false, false, false);
+        VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Float32, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 4, 0, -1, sizeof(HiStaticVertexData::HiVertexInfo), 0, false, false, false);
+        VertexStreamDescription tanget_desc(VertexAttribute::VA_TANGENT, "tangent", DataType::Float32, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 4, 0, -1, sizeof(HiStaticVertexData::HiVertexInfo), 16, false, false, false);
+        VertexStreamDescription uv0_desc(VertexAttribute::VA_UV0, "uv", DataType::Float32, DXGI_FORMAT_R32G32_FLOAT,1, 2, 0, -1, sizeof(HiStaticVertexData::HiVertexInfo), 32, false, false, false);
+        VertexStreamDescription uv1_desc(VertexAttribute::VA_UV1, "uv1", DataType::Float32, DXGI_FORMAT_R32G32_FLOAT, 1, 2, 0, -1, sizeof(HiStaticVertexData::HiVertexInfo), 40, false, false, false);
+        VertexStreamDescription color_desc(VertexAttribute::VA_COLOR, "color", DataType::Uint8, DXGI_FORMAT_R8G8B8A8_UNORM, 1, 4, 0, -1, sizeof(HiStaticVertexData::HiVertexInfo), 48,false, false, false);
         vertex_descriptions_.push_back(postion_desc);
         vertex_descriptions_.push_back(normal_desc);
         vertex_descriptions_.push_back(tanget_desc);
@@ -90,10 +90,10 @@ void DXVertexFactory::SetupStreamsWithBuffer(const std::vector<TComPtr<ID3D11Buf
         }
     }
 }
-class YMediumStaticMeshVertexFactory :public DXVertexFactory
+class YDefaultStaticMeshVertexFactory :public DXVertexFactory
 {
 public:
-    YMediumStaticMeshVertexFactory(YStaticMesh* mesh)
+    YDefaultStaticMeshVertexFactory(YStaticMesh* mesh)
         :mesh_(mesh)
     {
 
@@ -107,10 +107,10 @@ public:
         vertex_descriptions_.clear();
 
         VertexStreamDescription postion_desc(VertexAttribute::VA_POSITION, "position", DataType::Float32,DXGI_FORMAT_R32G32B32_FLOAT, 0, 3, 0, -1, sizeof(YVector), 0, false, false, false);
-        VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Uint8, DXGI_FORMAT_R8G8B8A8_SNORM,1, 4, 0, -1, sizeof(MediumStaticVertexData::MediumVertexInfo), 0, false, false, false);
-        VertexStreamDescription tanget_desc(VertexAttribute::VA_TANGENT, "tangent", DataType::Uint8, DXGI_FORMAT_R8G8B8A8_SNORM, 1, 4, 0, -1, sizeof(MediumStaticVertexData::MediumVertexInfo), 4, false, false, false);
-        VertexStreamDescription uv0_desc(VertexAttribute::VA_UV0, "uv", DataType::Float16, DXGI_FORMAT_R16G16_FLOAT,1, 2, 0, -1, sizeof(MediumStaticVertexData::MediumVertexInfo), 8, false, false, false);
-        VertexStreamDescription uv1_desc(VertexAttribute::VA_UV1, "uv1", DataType::Float16, DXGI_FORMAT_R16G16_FLOAT, 1, 2, 0, -1, sizeof(MediumStaticVertexData::MediumVertexInfo), 12, false, false, false);
+        VertexStreamDescription normal_desc(VertexAttribute::VA_NORMAL, "normal", DataType::Uint8, DXGI_FORMAT_R8G8B8A8_SNORM,1, 4, 0, -1, sizeof(DefaultStaticVertexData::DefaultVertexInfo), 0, false, false, false);
+        VertexStreamDescription tanget_desc(VertexAttribute::VA_TANGENT, "tangent", DataType::Uint8, DXGI_FORMAT_R8G8B8A8_SNORM, 1, 4, 0, -1, sizeof(DefaultStaticVertexData::DefaultVertexInfo), 4, false, false, false);
+        VertexStreamDescription uv0_desc(VertexAttribute::VA_UV0, "uv", DataType::Float16, DXGI_FORMAT_R16G16_FLOAT,1, 2, 0, -1, sizeof(DefaultStaticVertexData::DefaultVertexInfo), 8, false, false, false);
+        VertexStreamDescription uv1_desc(VertexAttribute::VA_UV1, "uv1", DataType::Float16, DXGI_FORMAT_R16G16_FLOAT, 1, 2, 0, -1, sizeof(DefaultStaticVertexData::DefaultVertexInfo), 12, false, false, false);
         vertex_descriptions_.push_back(postion_desc);
         vertex_descriptions_.push_back(normal_desc);
         vertex_descriptions_.push_back(tanget_desc);
@@ -120,6 +120,97 @@ public:
 protected:
     YStaticMesh* mesh_ = nullptr;
 };
+
+YArchive& operator<<(YArchive& mem_file, HiStaticVertexData& hi_static_vertex_data)
+{
+    StaticVertexRenderData& base_data = hi_static_vertex_data;
+    mem_file << base_data;
+    mem_file << hi_static_vertex_data.vertex_infos;
+    return mem_file;
+}
+
+YArchive& operator<<(YArchive& mem_file, DefaultStaticVertexData& defualt_static_vertex_data)
+{
+    StaticVertexRenderData& base_data = defualt_static_vertex_data;
+    mem_file << base_data;
+    mem_file << defualt_static_vertex_data.vertex_infos;
+    return mem_file;
+}
+
+
+YArchive& operator<<(YArchive& mem_file, StaticVertexRenderData::IndexOffsetAndTriangleCount& index_info)
+{
+    mem_file << index_info.offset;
+    mem_file << index_info.triangle_count;
+    mem_file << index_info.min_vertex_index;
+    mem_file << index_info.max_vertex_index;
+    return mem_file;
+}
+
+YArchive& operator<<(YArchive& mem_file, StaticVertexRenderData& static_vertex_render_data)
+{
+    mem_file << static_vertex_render_data.vertex_info_type;
+    mem_file << static_vertex_render_data.position;
+    mem_file << static_vertex_render_data.use_32_indices;
+    if (static_vertex_render_data.use_32_indices)
+    {
+        mem_file << static_vertex_render_data.indices_vertex_32;
+        mem_file << static_vertex_render_data.has_reverse_index;
+        if (static_vertex_render_data.has_reverse_index)
+        {
+            mem_file << static_vertex_render_data.indices_vertex_reversed_32;
+        }
+
+        mem_file << static_vertex_render_data.has_depth_only_index;
+        if (static_vertex_render_data.has_depth_only_index)
+        {
+            mem_file << static_vertex_render_data.indices_depth_only_32;
+        }
+
+        mem_file << static_vertex_render_data.has_reverse_depth_only_index;
+        if (static_vertex_render_data.has_reverse_depth_only_index)
+        {
+            mem_file << static_vertex_render_data.indices_depth_only_reversed_32;
+        }
+
+        mem_file << static_vertex_render_data.has_adjacent_index;
+        if (static_vertex_render_data.has_adjacent_index)
+        {
+            mem_file << static_vertex_render_data.indices_adjacent_32;
+        }
+    }
+    else
+    {
+        mem_file << static_vertex_render_data.indices_vertex_16;
+        mem_file << static_vertex_render_data.has_reverse_index;
+        if (static_vertex_render_data.has_reverse_index)
+        {
+            mem_file << static_vertex_render_data.indices_vertex_reversed_16;
+        }
+
+        mem_file << static_vertex_render_data.has_depth_only_index;
+        if (static_vertex_render_data.has_depth_only_index)
+        {
+            mem_file << static_vertex_render_data.indices_depth_only_16;
+        }
+
+        mem_file << static_vertex_render_data.has_reverse_depth_only_index;
+        if (static_vertex_render_data.has_reverse_depth_only_index)
+        {
+            mem_file << static_vertex_render_data.indices_depth_only_reversed_16;
+        }
+
+        mem_file << static_vertex_render_data.has_adjacent_index;
+        if (static_vertex_render_data.has_adjacent_index)
+        {
+            mem_file << static_vertex_render_data.indices_adjacent_16;
+        }
+    }
+
+    mem_file << static_vertex_render_data.aabb;
+    return mem_file;
+}
+
 void YStaticMesh::Render(CameraBase* camera)
 {
     ID3D11Device* device = g_device->GetDevice();
@@ -625,7 +716,7 @@ std::unique_ptr< StaticVertexRenderData>& lod_mesh_render_data = lod_render_data
 #endif
 
 #if 1
-std::unique_ptr< YMediumStaticMeshVertexFactory > static_mesh_vertex_factory = std::make_unique<YMediumStaticMeshVertexFactory>(this);
+std::unique_ptr< YDefaultStaticMeshVertexFactory > static_mesh_vertex_factory = std::make_unique<YDefaultStaticMeshVertexFactory>(this);
 static_mesh_vertex_factory->SetupVertexDescriptionPolicy();
 std::unique_ptr< StaticVertexRenderData>& lod_mesh_render_data = lod_render_data_[0];
 //vb
@@ -750,6 +841,7 @@ bool YStaticMesh::SaveV0(const std::string& dir)
         ERROR_INFO("static mesh ", model_name, " save failed!");
         return false;
     }
+    //model_name.json infoÎÄ¼þ
     return true;
 }
 

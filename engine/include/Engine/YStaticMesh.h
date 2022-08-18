@@ -9,6 +9,14 @@
 
 struct StaticVertexRenderData
 {
+    enum VertexInfoType
+    {
+        Hi_precision,
+        Default,
+        low
+    };
+    TEnumAsByte<VertexInfoType> vertex_info_type;
+
     struct IndexOffsetAndTriangleCount
     {
         uint32 offset = -1;
@@ -17,6 +25,11 @@ struct StaticVertexRenderData
         uint32 max_vertex_index = -1;
     };
     std::vector<YVector> position;
+    bool use_32_indices = true;
+    bool has_reverse_index = false;
+    bool has_depth_only_index = false;
+    bool has_reverse_depth_only_index = false;
+    bool has_adjacent_index = false;
     std::vector<uint32> indices_vertex_32;
     std::vector<uint32> indices_vertex_reversed_32;
     std::vector<uint32> indices_depth_only_32;
@@ -27,24 +40,22 @@ struct StaticVertexRenderData
     std::vector<uint16> indices_depth_only_16;
     std::vector<uint16> indices_depth_only_reversed_16;
     std::vector<uint16> indices_adjacent_16;
-    bool use_32_indices = true;
     std::vector<IndexOffsetAndTriangleCount> sections;
-    //void GenerateIndexBuffers(const std::vector<std::vector<uint32>>& section_indices);
+
+    YBox aabb;
     void GenerateIndexBuffers(std::vector<uint32>& indices_32, std::vector<uint16>& indices_16, const std::vector<std::vector<uint32>>& section_indices, bool genereate_section_info = false);
 
-    enum VertexInfoType
-    {
-        Hi_precision,
-        Medium,
-        low
-    };
-    VertexInfoType vertex_info_type;
+  
     virtual uint32 GetVertexInfoSize();
     virtual void* GetVertexInfoData();
 };
-struct HiSttaticVertexData :public StaticVertexRenderData
+
+YArchive& operator<<(YArchive& mem_file, StaticVertexRenderData::IndexOffsetAndTriangleCount& index_info);
+YArchive& operator<<(YArchive& mem_file, StaticVertexRenderData& static_vertex_render_data);
+
+struct HiStaticVertexData :public StaticVertexRenderData
 {
-    HiSttaticVertexData()
+    HiStaticVertexData()
     {
         vertex_info_type = StaticVertexRenderData::Hi_precision;
     }
@@ -60,24 +71,42 @@ struct HiSttaticVertexData :public StaticVertexRenderData
     uint32 GetVertexInfoSize() override;
     void* GetVertexInfoData() override;
 };
-
-struct MediumStaticVertexData :public StaticVertexRenderData
+namespace std
 {
-    MediumStaticVertexData()
+    template<>
+    struct is_pod<HiStaticVertexData::HiVertexInfo>
     {
-        vertex_info_type = StaticVertexRenderData::Medium;
+        static constexpr bool  value = true;
+    };
+}
+YArchive& operator<<(YArchive& mem_file, HiStaticVertexData& imported_raw_mesh);
+
+struct DefaultStaticVertexData :public StaticVertexRenderData
+{
+    DefaultStaticVertexData()
+    {
+        vertex_info_type = StaticVertexRenderData::Default;
     }
-    struct MediumVertexInfo
+    struct DefaultVertexInfo
     {
         YPackedNormal normal;
         YPackedNormal tangent;
         FVector2DHalf uv0;
         FVector2DHalf uv1;
     };
-    std::vector<MediumVertexInfo> vertex_infos;
+    std::vector<DefaultVertexInfo> vertex_infos;
     uint32 GetVertexInfoSize() override;
     void* GetVertexInfoData() override;
 };
+namespace std
+{
+    template<>
+    struct is_pod<DefaultStaticVertexData::DefaultVertexInfo>
+    {
+        static constexpr bool  value = true;
+    };
+}
+YArchive& operator<<(YArchive& mem_file, DefaultStaticVertexData& imported_raw_mesh);
 
 class YStaticMesh
 {
@@ -87,10 +116,10 @@ public:
     void ReleaseGPUReosurce();
     void	Render(CameraBase* camera);
     void Render(class RenderParam* render_param);
-    std::vector<YLODMesh> raw_meshes;
 
     bool SaveV0(const std::string& dir);
     bool LoadV0(const std::string& file_path);
+    std::vector<YLODMesh> raw_meshes;
     std::vector<std::unique_ptr< StaticVertexRenderData>> lod_render_data_;
 public:
     friend class YStaticMeshVertexFactory;
@@ -107,4 +136,5 @@ public:
     std::unique_ptr<DXVertexFactory> vertex_factory_;
     std::string model_name;
     TRefCountPtr<STexture> diffuse_tex_;
+    std::vector<std::shared_ptr<YImportedMaterial>> imported_materials_;
 };

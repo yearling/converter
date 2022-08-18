@@ -19,6 +19,8 @@ public:
 
 	virtual void Update(double deta_time) override;
 	YStaticMesh* GetStaticMesh() const;
+    
+    friend class YFbxImporter;
 protected:
 	std::unique_ptr<YStaticMesh> static_mesh_;
 	std::vector<TRefCountPtr<SMaterial>> materials_;

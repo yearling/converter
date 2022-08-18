@@ -516,7 +516,7 @@ bool YFbxImporter::ImportFbxMeshToRawMesh(FbxNode* node, ImportedRawMesh& raw_me
     return bIsValidMesh;
 }
 
-bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes)
+bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes )
 {
     if (raw_meshes.empty())
     {
@@ -556,9 +556,12 @@ bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vecto
     new_copyed_mesh->ComputeWedgeNormalAndTangent(ImportNormal, Mikkt, import_param_->remove_degenerate_triangles);
     new_copyed_mesh->GenerateLightMapUV();
 
-    PostProcessRenderMesh process(new_copyed_mesh.get());
+    static_mesh->imported_materials_ = new_copyed_mesh->polygon_group_to_material;
+
+    PostProcessRenderMesh process(new_copyed_mesh.get(),import_param_.get());
     //static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
     static_mesh->lod_render_data_.push_back(process.GenerateMediumStaticVertexData());
+
     YLODMesh& raw_mesh = static_mesh->raw_meshes[0];
     raw_mesh.vertex_position = new_copyed_mesh->control_points;
     raw_mesh.vertex_instances = new_copyed_mesh->wedges;
