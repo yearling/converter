@@ -438,7 +438,7 @@ void GameApplication::OnKeyDown(char c)
         current_index++;
         if (current_index > static_modle_path.size())
         {
-            current_index = static_modle_path.size() - 1;
+            current_index = (int)static_modle_path.size() - 1;
         }
         SwitchModel();
     }

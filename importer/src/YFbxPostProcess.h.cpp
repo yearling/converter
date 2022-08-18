@@ -169,7 +169,7 @@ void PostProcessRenderMesh::OptimizeIndices()
 
     for (std::vector<uint32>& per_section : section_indices)
     {
-        indices_count += per_section.size();
+        indices_count += (int)per_section.size();
     }
     std::vector<int> index_mapping_old_to_new;
     index_mapping_old_to_new.resize(indices_count, INDEX_NONE);
@@ -182,7 +182,7 @@ void PostProcessRenderMesh::OptimizeIndices()
             uint32 index_old = per_section_index_old[index_index_old];
             if (index_mapping_old_to_new[index_old] == INDEX_NONE)
             {
-                int32 index_new = vertex_data_cache.size();
+                int32 index_new = (int)vertex_data_cache.size();
                 vertex_data_cache.push_back(vertex_data_cache_old[index_old]);
                 index_mapping_old_to_new[index_old] = index_new;
             }
@@ -441,7 +441,7 @@ void StaticVertexRenderData::GenerateIndexBuffers(std::vector<uint32>& indices_3
     int triangle_count = 0;
     for (const std::vector<uint32>& indices_per_sec : section_indices)
     {
-        triangle_count += indices_per_sec.size();
+        triangle_count += (int)indices_per_sec.size();
     }
     if (use_32_indices)
     {

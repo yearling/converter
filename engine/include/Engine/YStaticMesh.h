@@ -82,29 +82,29 @@ struct MediumStaticVertexData :public StaticVertexRenderData
 class YStaticMesh
 {
 public:
-	YStaticMesh();
-	bool AllocGpuResource();
-	void ReleaseGPUReosurce();
-	void	Render(CameraBase* camera);
-	void Render(class RenderParam* render_param);
-	std::vector<YLODMesh> raw_meshes;
+    YStaticMesh();
+    bool AllocGpuResource();
+    void ReleaseGPUReosurce();
+    void	Render(CameraBase* camera);
+    void Render(class RenderParam* render_param);
+    std::vector<YLODMesh> raw_meshes;
 
-	bool SaveV0(const std::string& dir);
-	bool LoadV0(const std::string& file_path);
+    bool SaveV0(const std::string& dir);
+    bool LoadV0(const std::string& file_path);
     std::vector<std::unique_ptr< StaticVertexRenderData>> lod_render_data_;
 public:
-	friend class YStaticMeshVertexFactory;
-	bool allocated_gpu_resource = false;
-	std::vector<TComPtr<ID3D11Buffer>> vertex_buffers_;
-	TComPtr<ID3D11Buffer> index_buffer_;
-	TComPtr<ID3D11BlendState> bs_;
-	TComPtr<ID3D11DepthStencilState> ds_;
-	TComPtr<ID3D11RasterizerState> rs_;
-	D3DTextureSampler* sampler_state_ = { nullptr };
-	std::vector<int> polygon_group_offsets;
-	std::unique_ptr<D3DVertexShader> vertex_shader_;
-	std::unique_ptr<D3DPixelShader> pixel_shader_;
-	std::unique_ptr<DXVertexFactory> vertex_factory_;
-	std::string model_name;
+    friend class YStaticMeshVertexFactory;
+    bool allocated_gpu_resource = false;
+    std::vector<TComPtr<ID3D11Buffer>> vertex_buffers_;
+    TComPtr<ID3D11Buffer> index_buffer_;
+    TComPtr<ID3D11BlendState> bs_;
+    TComPtr<ID3D11DepthStencilState> ds_;
+    TComPtr<ID3D11RasterizerState> rs_;
+    D3DTextureSampler* sampler_state_ = { nullptr };
+    std::vector<int> polygon_group_offsets;
+    std::unique_ptr<D3DVertexShader> vertex_shader_;
+    std::unique_ptr<D3DPixelShader> pixel_shader_;
+    std::unique_ptr<DXVertexFactory> vertex_factory_;
+    std::string model_name;
     TRefCountPtr<STexture> diffuse_tex_;
 };

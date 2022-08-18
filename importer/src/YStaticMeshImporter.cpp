@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include "YFbxPostProcess.h"
 
-bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& raw_mesh)
+bool YFbxImporter::ImportFbxMeshToRawMesh(FbxNode* node, ImportedRawMesh& raw_mesh)
 {
     FbxMesh* fbx_mesh = node->GetMesh();
     std::string node_name = node->GetName();
@@ -93,7 +93,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
             is_smoothing_avaliable = true;
         }
 
-        
+
         smoothing_mapping_mode = layer_element_smoothing->GetMappingMode();
         smoothing_reference_mode = layer_element_smoothing->GetReferenceMode();
     }
@@ -182,7 +182,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
 
     const int vertex_count = fbx_mesh->GetControlPointsCount();
     const bool odd_negative_scale = IsOddNegativeScale(total_matrix);
-    
+
     //保存contorl points
     for (int vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
     {
@@ -282,7 +282,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 int odd_neative_sacle_mapping[3] = { 2, 1, 0 };
                 int polygon_vertex_index = skipped_wedges + current_wedge_index;
                 int correct_triangle_cornor_index = triangle_cornor_index_0_1_2;
-                if (odd_negative_scale) 
+                if (odd_negative_scale)
                 {
                     if (triangle_cornor_index_0_1_2 == 0)
                     {
@@ -293,7 +293,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                         polygon_vertex_index -= 2;
                     }
                     correct_triangle_cornor_index = odd_neative_sacle_mapping[triangle_cornor_index_0_1_2];
-                    
+
                 }
 
                 wedges[triangle_cornor_index_0_1_2] = current_wedge_index;
@@ -312,7 +312,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 YMeshWedge& wedge = raw_mesh.wedges[current_wedge_index];
 
                 //uv
-                wedge.uvs.resize(fbx_uvs.unique_count, YVector2(0,0));
+                wedge.uvs.resize(fbx_uvs.unique_count, YVector2(0, 0));
                 for (int uv_layer_index = 0; uv_layer_index < fbx_uvs.unique_count; ++uv_layer_index)
                 {
                     YVector2 final_uv_vector(0.0, 0.0);
@@ -373,7 +373,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                     }
                 }
             }
-           
+
             //material index
             int material_index = 0;
             if (material_count > 0)
@@ -409,7 +409,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 YMeshPolygonGroup tmp_group;
                 int new_polygon_group_id = (int)raw_mesh.polygon_groups.size();
                 raw_mesh.polygon_groups.push_back(tmp_group);
-                raw_mesh.polygon_group_to_material.push_back( material);
+                raw_mesh.polygon_group_to_material.push_back(material);
                 material_to_polygon_group[material_index] = new_polygon_group_id;
             }
             int polygon_group_id = material_to_polygon_group[material_index];
@@ -465,7 +465,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                     }
                     if (fbx_edge_index == INVALID_ID)
                     {
-                        
+
                     }
                     float edge_crease = (float)fbx_mesh->GetEdgeCreaseInfo(fbx_edge_index);
                     YMeshEdge& cur_edge = raw_mesh.edges[match_edge_id];
@@ -507,7 +507,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
     if (has_degenerated_polygons)
     {
         WARNING_INFO(fbx_mesh->GetName(), "has degenerate triangle");
-        
+
     }
 
     raw_mesh.CompressMaterials();
@@ -516,7 +516,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
     return bIsValidMesh;
 }
 
-bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes)
+bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes)
 {
     if (raw_meshes.empty())
     {
@@ -553,114 +553,18 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
         new_copyed_mesh->Merge(*raw_meshes[mesh_index]);
     }
     LOG_INFO("End merge scene");
-    //new_copyed_mesh->ComputeTriangleNormalAndTangent(Caculate, Mikkt);
     new_copyed_mesh->ComputeWedgeNormalAndTangent(ImportNormal, Mikkt, import_param_->remove_degenerate_triangles);
     new_copyed_mesh->GenerateLightMapUV();
-    raw_mesh->vertex_position = new_copyed_mesh->control_points;
-    raw_mesh->vertex_instances = new_copyed_mesh->wedges;
-    raw_mesh->polygons = new_copyed_mesh->polygons;
-    raw_mesh->edges = new_copyed_mesh->edges;
-    raw_mesh->polygon_groups = new_copyed_mesh->polygon_groups;
-    //raw_mesh->polygon_group_to_material = new_copyed_mesh->polygon_group_to_material;
-#if 0
-    raw_mesh->vertex_position = raw_meshes[0]->control_points;
-    raw_mesh->vertex_instances = raw_meshes[0]->wedges;
-    raw_mesh->polygons = raw_meshes[0]->polygons;
-    raw_mesh->edges = raw_meshes[0]->edges;
-    raw_mesh->polygon_groups = raw_meshes[0]->polygon_groups;
-    raw_mesh->polygon_group_to_material = raw_meshes[0]->polygon_group_to_material;
 
-    for (int mesh_index = 1; mesh_index < (int)raw_meshes.size(); ++mesh_index)
-    {
-       int  control_points_size = (int)raw_mesh->vertex_position.size();
-       int wedge_size = (int)raw_mesh->vertex_instances.size();
-       int pogygone_size = (int)raw_mesh->polygons.size();
-       int polygon_group_size = raw_mesh->polygon_groups.size();
-        
-       ImportedRawMesh& import_raw_mesh = *raw_meshes[mesh_index];
-       raw_mesh->vertex_position.insert(raw_mesh->vertex_position.end(),import_raw_mesh.control_points.begin(), import_raw_mesh.control_points.end());
-       for (YMeshVertexWedge& wedge : import_raw_mesh.wedges)
-       {
-           wedge.control_point_id += control_points_size;
-       }
-       raw_mesh->vertex_instances.insert(raw_mesh->vertex_instances.end(), import_raw_mesh.wedges.begin(), import_raw_mesh.wedges.end());
-       
-       for (YMeshPolygon& polygon : import_raw_mesh.polygons)
-       {
-           polygon.wedge_ids[0] += wedge_size;
-           polygon.wedge_ids[1] += wedge_size;
-           polygon.wedge_ids[2] += wedge_size;
-       }
-       raw_mesh->polygons.insert(raw_mesh->polygons.end(), import_raw_mesh.polygons.begin(), import_raw_mesh.polygons.end());
-
-       for (YMeshPolygonGroup& group : import_raw_mesh.polygon_groups)
-       {
-           for (int& polygon_index : group.polygons)
-           {
-               polygon_index += pogygone_size;
-            }
-       }
-
-       raw_mesh->polygon_groups.insert(raw_mesh->polygon_groups.end(), import_raw_mesh.polygon_groups.begin(), import_raw_mesh.polygon_groups.end());
-    }
-   /* return true;
-
-
-    std::vector<std::shared_ptr<YImportedMaterial>> all_materials;
-    for (int mesh_index = 0; mesh_index < (int)raw_meshes.size(); ++mesh_index)
-    {
-        const ImportedRawMesh& raw_mesh = *raw_meshes[mesh_index];
-        for (auto& item : raw_mesh.polygon_group_to_material)
-        {
-            std::shared_ptr<YImportedMaterial> material = item.second;
-        }
-    }*/
-#endif
-    return true;
-}
-
-bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes)
-{
-    if (raw_meshes.empty())
-    {
-        return false;
-    }
-    std::shared_ptr<ImportedRawMesh> new_copyed_mesh = std::make_shared<ImportedRawMesh>();
-    *new_copyed_mesh = *raw_meshes[0];
-    LOG_INFO("Bengin merge scene");
-    int all_control_point_size = 0;
-    int all_wedge_size = 0;
-    int all_polygon_size = 0;
-    int all_edge_size = 0;
-    int all_polygon_group_size = 0;
-
-    for (std::shared_ptr<ImportedRawMesh>& impored_raw_mesh : raw_meshes)
-    {
-        all_control_point_size += impored_raw_mesh->control_points.size();
-        all_wedge_size += impored_raw_mesh->wedges.size();
-        all_polygon_size += impored_raw_mesh->polygons.size();
-        all_edge_size += impored_raw_mesh->edges.size();
-        all_polygon_group_size += impored_raw_mesh->polygon_groups.size();
-    }
-
-    new_copyed_mesh->control_points.reserve(all_control_point_size);
-    new_copyed_mesh->wedges.reserve(all_wedge_size);
-    new_copyed_mesh->polygons.reserve(all_polygon_size);
-    new_copyed_mesh->edges.reserve(all_edge_size);
-    new_copyed_mesh->polygon_groups.reserve(all_polygon_group_size);
-    new_copyed_mesh->polygon_group_to_material.reserve(all_polygon_group_size);
-
-
-    for (int mesh_index = 1; mesh_index < (int)raw_meshes.size(); ++mesh_index)
-    {
-        new_copyed_mesh->Merge(*raw_meshes[mesh_index]);
-    }
-    LOG_INFO("End merge scene");
-    new_copyed_mesh->ComputeWedgeNormalAndTangent(ImportNormal, Mikkt, import_param_->remove_degenerate_triangles);
-    
     PostProcessRenderMesh process(new_copyed_mesh.get());
     //static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
     static_mesh->lod_render_data_.push_back(process.GenerateMediumStaticVertexData());
+    YLODMesh& raw_mesh = static_mesh->raw_meshes[0];
+    raw_mesh.vertex_position = new_copyed_mesh->control_points;
+    raw_mesh.vertex_instances = new_copyed_mesh->wedges;
+    raw_mesh.polygons = new_copyed_mesh->polygons;
+    raw_mesh.edges = new_copyed_mesh->edges;
+    raw_mesh.polygon_groups = new_copyed_mesh->polygon_groups;
     return true;
 }
 

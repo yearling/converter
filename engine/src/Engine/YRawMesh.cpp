@@ -13,6 +13,7 @@
 #include "MeshUtility/NvTriStrip.h"
 #include "MeshUtility/nvtess.h"
 #include "MeshUtility/LayoutUV.h"
+#include "Math/YMath.h"
 
 YLODMesh::YLODMesh()
 {
@@ -97,14 +98,6 @@ void YLODMesh::ComputeAABB()
     }
 }
 
-YMeshEdge::YMeshEdge()
-{
-    control_points_ids[0] = INVALID_ID;
-    control_points_ids[1] = INVALID_ID;
-    edge_hardness = false;
-    edge_crease_sharpness = 0.0;
-}
-
 void YMeshEdge::AddTriangleID(int triangle_id)
 {
     auto find_reuslt = std::find(connected_triangles.begin(), connected_triangles.end(), triangle_id);
@@ -119,6 +112,50 @@ YMeshWedge::YMeshWedge()
     uvs.resize(MAX_MESH_TEXTURE_COORDS, YVector2(0.0, 0.0));
 }
 
+bool YMeshWedge::operator==(const YMeshWedge& rhs)const
+{
+    if (control_point_id != rhs.control_point_id)
+    {
+        return false;
+    }
+
+    if (!position.Equals(rhs.position))
+    {
+        return false;
+    }
+    if (!normal.Equals(rhs.normal))
+    {
+        return false;
+    }
+
+    if (!tangent.Equals(rhs.tangent))
+    {
+        return false;
+    }
+
+    if (!bitangent.Equals(rhs.bitangent))
+    {
+        return false;
+    }
+
+    if (!YMath::IsNearlyEqual(binormal_sign, rhs.binormal_sign))
+    {
+        return false;
+    }
+
+    if (!color.Equals(rhs.color))
+    {
+        return false;
+    }
+
+    for (int i = 0; i < MAX_MESH_TEXTURE_COORDS; ++i)
+    {
+        if (!uvs[i].Equals(rhs.uvs[i]))
+        {
+            return false;
+        }
+    }
+}
 void YMeshWedge::AddTriangleID(int triangle_id)
 {
     auto find_reuslt = std::find(connected_triangles.begin(), connected_triangles.end(), triangle_id);
@@ -699,7 +736,7 @@ struct FLayoutUVRawMeshView final : FLayoutUV::IMeshView
     FLayoutUVRawMeshView(ImportedRawMesh* InRawMesh, uint32 InSrcChannel, uint32 InDstChannel)
         : RawMesh(InRawMesh)
         , SrcChannel(InSrcChannel)
-        , DstChannel(InDstChannel)   
+        , DstChannel(InDstChannel)
         , bNormalsValid(true)
     {
     }
@@ -712,28 +749,35 @@ struct FLayoutUVRawMeshView final : FLayoutUV::IMeshView
     {
         return RawMesh->wedges[Index].position;
     }
-    YVector    GetNormal(uint32 Index) const override 
-    { 
+    YVector    GetNormal(uint32 Index) const override
+    {
         return RawMesh->wedges[Index].normal;
     }
-    YVector2  GetInputTexcoord(uint32 Index) const override { 
+    YVector2  GetInputTexcoord(uint32 Index) const override {
         return RawMesh->wedges[Index].uvs[SrcChannel];
     }
 
-    void      InitOutputTexcoords(uint32 Num) override { 
+    void      InitOutputTexcoords(uint32 Num) override {
         for (YMeshWedge& wedge : RawMesh->wedges)
         {
             wedge.uvs.push_back(YVector2());
         }
     }
-    void      SetOutputTexcoord(uint32 Index, const YVector2& Value) override 
-    { 
-        RawMesh->wedges[Index].uvs[DstChannel]=Value;
+    void      SetOutputTexcoord(uint32 Index, const YVector2& Value) override
+    {
+        RawMesh->wedges[Index].uvs[DstChannel] = Value;
     }
 };
 
 void ImportedRawMesh::GenerateLightMapUV()
 {
+    LOG_INFO("Begin Generate light map uv");
+    if (TellLightMapUVExist())
+    {
+        return;
+    }
+    LOG_INFO("mesh has second uv, generate light map uv exit");
+
     FLayoutUVRawMeshView raw_mesh_view(this, 0, 1);
     FLayoutUV packer(raw_mesh_view);
     packer.SetVersion(ELightmapUVVersion::OptimalSurfaceArea);
@@ -741,7 +785,7 @@ void ImportedRawMesh::GenerateLightMapUV()
     position_to_compare.reserve(wedges.size());
     std::vector<uint32> indices_to_compare;
     indices_to_compare.reserve(wedges.size());
-    for(int wedge_index=0;wedge_index<wedges.size();++wedge_index)
+    for (int wedge_index = 0; wedge_index < wedges.size(); ++wedge_index)
     {
         YMeshWedge& data = wedges[wedge_index];
         position_to_compare.push_back(data.position);
@@ -757,14 +801,89 @@ void ImportedRawMesh::GenerateLightMapUV()
     {
         packer.CommitPackedUVs();
     }
+    LOG_INFO("End Generate light map uv");
 }
 
 void ImportedRawMesh::CompressWedges()
 {
+    std::vector<int> map_old_to_new;
+    map_old_to_new.resize(wedges.size(), INDEX_NONE);
+
+    std::vector<YVector> position_to_compare;
+    position_to_compare.reserve(wedges.size());
+    for (YMeshWedge& wedge : wedges)
+    {
+        position_to_compare.push_back(wedge.position);
+    }
+
+    std::vector<uint32> indices_to_compare;
+    indices_to_compare.reserve(wedges.size());
+    for (YMeshPolygonGroup& group : polygon_groups)
+    {
+        for (int polygon_index : group.polygons)
+        {
+            YMeshPolygon& polygon = polygons[polygon_index];
+            indices_to_compare.push_back(polygon.wedge_ids[0]);
+            indices_to_compare.push_back(polygon.wedge_ids[1]);
+            indices_to_compare.push_back(polygon.wedge_ids[2]);
+        }
+    }
+    YOverlappingCorners  acc_overlap_finding(position_to_compare, indices_to_compare, THRESH_POINTS_ARE_SAME);
+    std::vector<YMeshWedge> compressed_wedges;
+    compressed_wedges.reserve(wedges.size());
+    for (int i = 0; i < (int)indices_to_compare.size(); ++i)
+    {
+        int wedge_index = indices_to_compare[i];
+        const YMeshWedge& wedge = wedges[wedge_index];
+        //查找是不是处理过了
+        const std::vector<int>& result = acc_overlap_finding.FindIfOverlapping(i);
+        if (map_old_to_new[wedge_index] == INDEX_NONE)
+        {
+            //注意，不包含自己
+            int new_index = (int)compressed_wedges.size();
+            compressed_wedges.push_back(wedge);
+            for (int near_id : result)
+            {
+                int vertex_near_id = indices_to_compare[near_id];
+                const YMeshWedge& same_compare_wedge = wedges[vertex_near_id];
+                if (wedge == same_compare_wedge)
+                {
+                    map_old_to_new[vertex_near_id] = new_index;
+                }
+            }
+            map_old_to_new[wedge_index] = new_index;
+        }
+    }
+    wedges.swap(compressed_wedges);
+    for (YMeshPolygonGroup& group : polygon_groups)
+    {
+        for (int polygon_index : group.polygons)
+        {
+            YMeshPolygon& polygon = polygons[polygon_index];
+            polygon.wedge_ids[0] = map_old_to_new[polygon.wedge_ids[0]];
+            polygon.wedge_ids[1] = map_old_to_new[polygon.wedge_ids[1]];
+            polygon.wedge_ids[2] = map_old_to_new[polygon.wedge_ids[2]];
+        }
+    }
 
 }
 
-void ImportedRawMesh::RecursiveFindGroup(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids, bool split_uv_seam)
+bool ImportedRawMesh::TellLightMapUVExist(int uv_light_map_index /*= 1*/) const
+{
+    for (const YMeshWedge& wedge : wedges)
+    {
+        for( int i=1;i< MAX_MESH_TEXTURE_COORDS;++i)
+        {
+            if(!wedge.uvs[i].IsNearlyZero())
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+void ImportedRawMesh::RecursiveGetTriangleGroupBySoftEdge(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids, bool split_uv_seam) const
 {
     if (around_triangle_ids[triangle_id].visited)
     {
@@ -773,7 +892,7 @@ void ImportedRawMesh::RecursiveFindGroup(int triangle_id, std::set<int>& out_tri
     around_triangle_ids[triangle_id].visited = true;
     out_triangle_group.insert(triangle_id);
     int cur_wedge_index = around_triangle_ids[triangle_id].wedge_id;
-    YMeshPolygon& polygon = polygons[triangle_id];
+    const YMeshPolygon& polygon = polygons[triangle_id];
     int last_id[2] = { -1,-1 };
     if (polygon.wedge_ids[0] == cur_wedge_index)
     {
@@ -785,18 +904,18 @@ void ImportedRawMesh::RecursiveFindGroup(int triangle_id, std::set<int>& out_tri
         last_id[0] = polygon.wedge_ids[0];
         last_id[1] = polygon.wedge_ids[2];
     }
-    else if (polygon.wedge_ids[2] = cur_wedge_index)
+    else if (polygon.wedge_ids[2] == cur_wedge_index)
     {
         last_id[0] = polygon.wedge_ids[0];
         last_id[1] = polygon.wedge_ids[1];
     }
 
-    YMeshWedge& cur_wedge = wedges[cur_wedge_index];
-    YMeshWedge& wedge1 = wedges[last_id[0]];
-    YMeshWedge& wedge2 = wedges[last_id[1]];
+    const YMeshWedge& cur_wedge = wedges[cur_wedge_index];
+    const YMeshWedge& wedge1 = wedges[last_id[0]];
+    const YMeshWedge& wedge2 = wedges[last_id[1]];
     int edge_id01 = GetVertexPairEdge(cur_wedge.control_point_id, wedge1.control_point_id);
     assert(edge_id01 != -1);
-    YMeshEdge& edge_01 = edges[edge_id01];
+    const YMeshEdge& edge_01 = edges[edge_id01];
     bool edge_01_soft = !edge_01.edge_hardness;
     if (split_uv_seam)
     {
@@ -815,7 +934,7 @@ void ImportedRawMesh::RecursiveFindGroup(int triangle_id, std::set<int>& out_tri
             }
             else
             {
-                RecursiveFindGroup(triangle_same_edege, out_triangle_group, around_triangle_ids, split_uv_seam);
+                RecursiveGetTriangleGroupBySoftEdge(triangle_same_edege, out_triangle_group, around_triangle_ids, split_uv_seam);
             }
         }
     }
@@ -823,7 +942,7 @@ void ImportedRawMesh::RecursiveFindGroup(int triangle_id, std::set<int>& out_tri
 
     int edge_id02 = GetVertexPairEdge(cur_wedge.control_point_id, wedge2.control_point_id);
     assert(edge_id02 != -1);
-    YMeshEdge& edge_02 = edges[edge_id02];
+    const YMeshEdge& edge_02 = edges[edge_id02];
     bool edge_02_soft = !edge_02.edge_hardness;
     if (split_uv_seam)
     {
@@ -841,16 +960,16 @@ void ImportedRawMesh::RecursiveFindGroup(int triangle_id, std::set<int>& out_tri
             }
             else
             {
-                RecursiveFindGroup(triangle_same_edege, out_triangle_group, around_triangle_ids, split_uv_seam);
+                RecursiveGetTriangleGroupBySoftEdge(triangle_same_edege, out_triangle_group, around_triangle_ids, split_uv_seam);
             }
         }
     }
 }
 
-void ImportedRawMesh::RemoveNearHaredEdge(int triangle_id, std::set<int>& out_triangle_group, const std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids)
+void ImportedRawMesh::RemoveNearHaredEdge(int triangle_id, std::set<int>& out_triangle_group, const std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids) const
 {
     int cur_wedge_index = around_triangle_ids.at(triangle_id).wedge_id;
-    YMeshPolygon& polygon = polygons[triangle_id];
+    const YMeshPolygon& polygon = polygons[triangle_id];
     int last_id[2] = { -1,-1 };
     if (polygon.wedge_ids[0] == cur_wedge_index)
     {
@@ -862,18 +981,18 @@ void ImportedRawMesh::RemoveNearHaredEdge(int triangle_id, std::set<int>& out_tr
         last_id[0] = polygon.wedge_ids[0];
         last_id[1] = polygon.wedge_ids[2];
     }
-    else if (polygon.wedge_ids[2] = cur_wedge_index)
+    else if (polygon.wedge_ids[2] == cur_wedge_index)
     {
         last_id[0] = polygon.wedge_ids[0];
         last_id[1] = polygon.wedge_ids[1];
     }
 
-    YMeshWedge& cur_wedge = wedges[cur_wedge_index];
-    YMeshWedge& wedge1 = wedges[last_id[0]];
-    YMeshWedge& wedge2 = wedges[last_id[1]];
+    const YMeshWedge& cur_wedge = wedges[cur_wedge_index];
+    const YMeshWedge& wedge1 = wedges[last_id[0]];
+    const YMeshWedge& wedge2 = wedges[last_id[1]];
     int edge_id01 = GetVertexPairEdge(cur_wedge.control_point_id, wedge1.control_point_id);
     assert(edge_id01 != -1);
-    YMeshEdge& edge_01 = edges[edge_id01];
+    const YMeshEdge& edge_01 = edges[edge_id01];
     if (edge_01.edge_hardness)
     {
         //有可能在边界
@@ -897,7 +1016,7 @@ void ImportedRawMesh::RemoveNearHaredEdge(int triangle_id, std::set<int>& out_tr
 
     int edge_id02 = GetVertexPairEdge(cur_wedge.control_point_id, wedge2.control_point_id);
     assert(edge_id02 != -1);
-    YMeshEdge& edge_02 = edges[edge_id02];
+    const YMeshEdge& edge_02 = edges[edge_id02];
     if (edge_02.edge_hardness)
     {
         //有可能在边界
@@ -919,7 +1038,7 @@ void ImportedRawMesh::RemoveNearHaredEdge(int triangle_id, std::set<int>& out_tr
     }
 }
 
-bool ImportedRawMesh::IsUVSeam(int edge_index)
+bool ImportedRawMesh::IsUVSeam(int edge_index) const
 {
     if (edges.empty() || edge_index<0 || edge_index > edges.size())
     {
@@ -927,7 +1046,7 @@ bool ImportedRawMesh::IsUVSeam(int edge_index)
         return false;
     }
 
-    YMeshEdge& edge = edges[edge_index];
+    const YMeshEdge& edge = edges[edge_index];
     int cp_0 = edge.control_points_ids[0];
     int cp_1 = edge.control_points_ids[1];
 
@@ -941,10 +1060,10 @@ bool ImportedRawMesh::IsUVSeam(int edge_index)
 
     auto contro_point_to_wedge_id = [this](int triangle_id, int control_point_id)
     {
-        YMeshPolygon& triangle = polygons[triangle_id];
+        const YMeshPolygon& triangle = polygons[triangle_id];
         for (int wedge_id : triangle.wedge_ids)
         {
-            YMeshWedge& wedge = wedges[wedge_id];
+            const YMeshWedge& wedge = wedges[wedge_id];
             if (wedge.control_point_id == control_point_id)
             {
                 return wedge_id;
@@ -1058,13 +1177,13 @@ void ImportedRawMesh::ComputeTangentSpaceMikktMethod(bool ignore_degenerate_tria
     genTangSpaceDefault(&MikkTContext);
 }
 
-std::set<int> ImportedRawMesh::GetSplitTriangleGroupBySoftEdge(int wedge_index, bool split_uv_seam)
+std::set<int> ImportedRawMesh::GetTriangleGroupBySoftEdge(int wedge_index, bool split_uv_seam) const
 {
-    YMeshWedge& wedge = wedges[wedge_index];
+    const YMeshWedge& wedge = wedges[wedge_index];
     int triangle_id = wedge.connected_triangles[0];
-    YMeshPolygon& start_triangle = polygons[triangle_id];
+    const YMeshPolygon& start_triangle = polygons[triangle_id];
 
-    YMeshControlPoint& control_point_search = control_points[wedge.control_point_id];
+    const YMeshControlPoint& control_point_search = control_points[wedge.control_point_id];
     std::unordered_map<int, FlowFlagRawMesh> around_triangle_ids;
     for (int wedge_id : control_point_search.wedge_ids)
     {
@@ -1075,14 +1194,14 @@ std::set<int> ImportedRawMesh::GetSplitTriangleGroupBySoftEdge(int wedge_index, 
         around_triangle_ids[tmp_flag.triangle_id] = tmp_flag;
     }
     std::set<int> first_group;
-    RecursiveFindGroup(triangle_id, first_group, around_triangle_ids, split_uv_seam);
+    RecursiveGetTriangleGroupBySoftEdge(triangle_id, first_group, around_triangle_ids, split_uv_seam);
     RemoveNearHaredEdge(triangle_id, first_group, around_triangle_ids);
     return first_group;
 
 }
 
 
-std::set<int> ImportedRawMesh::GetSplitTriangleGroupBySoftEdgeSameTangentSign(int wedge_index, const std::set<int>& connected_triangles)
+std::set<int> ImportedRawMesh::FilterTriangleGroupBySameTangentSign(int wedge_index, const std::set<int>& connected_triangles)
 {
     YMeshWedge& wedge = wedges[wedge_index];
     int triangle_id = wedge.connected_triangles[0];
@@ -1155,9 +1274,9 @@ void ImportedRawMesh::ComputeWedgeNormalAndTangent(NormalCaculateMethod normal_m
     for (int wedge_index = 0; wedge_index < wedges.size(); ++wedge_index)
     {
         YMeshWedge& cur_wedge = wedges[wedge_index];
-        std::set<int> connect_normal_triangles = GetSplitTriangleGroupBySoftEdge(wedge_index, false);
-        std::set<int> connect_tangent_triangle = GetSplitTriangleGroupBySoftEdge(wedge_index, true);
-        connect_tangent_triangle = GetSplitTriangleGroupBySoftEdgeSameTangentSign(wedge_index, connect_tangent_triangle);
+        std::set<int> connect_normal_triangles = GetTriangleGroupBySoftEdge(wedge_index, false);
+        std::set<int> connect_tangent_triangle = GetTriangleGroupBySoftEdge(wedge_index, true);
+        connect_tangent_triangle = FilterTriangleGroupBySameTangentSign(wedge_index, connect_tangent_triangle);
         YVector normal = YVector::zero_vector;
         YVector tangent = YVector::zero_vector;
         YVector bitangent = YVector::zero_vector;

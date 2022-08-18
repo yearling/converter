@@ -74,6 +74,10 @@ public:
 	{
 		return (x == v.x) && (y == v.y) && (z == v.z);
 	}
+    inline bool operator!=(const YVector& v) const
+    {
+        return !(*this == v);
+    }
 	float GetMin() const;
 	float GetMax() const;
 	/** zero vector (0,0,0) */
@@ -106,6 +110,14 @@ public:
 	YVector4(float in_x, float in_y, float in_z, float in_w);
 	YVector AffineTransform()const;
     bool Equals(const YVector4& v, float Tolerance = SMALL_NUMBER) const;
+    inline bool operator==(const YVector4& v) const
+    {
+        return (x == v.x) && (y == v.y) && (z == v.z) && (w == v.w);
+    }
+    inline bool operator!=(const YVector4& v) const
+    {
+        return !(*this == v);
+    }
 	// (0.f,0.f,0.f,0.f)
 	static const YVector4 zero_vector;
 };

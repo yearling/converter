@@ -618,7 +618,7 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
     }
     // debug section color
     int section_count =(int) section_start.size();
-    float section_color_channel = 1.0 / (float)section_count * 3.0;
+    float section_color_channel = 1.0f / (float)section_count * 3.0f;
     int section_per_color = YMath::Max(section_count / 3, 1);
     int current_section_index = 0;
     index = 0;
@@ -641,7 +641,7 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
             {
                 current_color = YVector4(0.0, 0.0, section_color_channel * current_section_index, 1.0);
             }
-            int triange_conunt_section = slit_mesh_by_bone.wedges.size() / 3;
+            int triange_conunt_section =(int) slit_mesh_by_bone.wedges.size() / 3;
             for (int i = 0; i < triange_conunt_section * 3; ++i)
             {
                 vertex_wedge_all[index++].color = current_color;
@@ -649,7 +649,7 @@ static std::unique_ptr<RenderData> GenerateRenderData(const std::vector< SplitMe
             current_section_index++;
         }
     }//
-    const int vertex_count = vertex_wedge_all.size();
+    const int vertex_count = (int) vertex_wedge_all.size();
     render_data->position.resize(vertex_count);
     render_data->normal.resize(vertex_count);
     render_data->uv.resize(vertex_count);
