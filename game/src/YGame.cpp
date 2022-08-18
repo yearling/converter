@@ -349,68 +349,8 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/human/samurai-girl/source/Samurai_Girl.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/silk-shirt-suit-retopo-for-ray-ii/source/SilkShirtSuitRetopoForRayII.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/subsurface-scattering-sss-demo-lara/source/sss.fbx";    //skin error
-
-    if (static_mesh_importer->ImportFile(file_path))
-    {
-        FbxImportParam importer_param;
-        const FbxImportSceneInfo* scene_info = static_mesh_importer->GetImportedSceneInfo();
-        importer_param.model_name = scene_info->model_name;
-        importer_param.transform_vertex_to_absolute = true;
-        importer_param.import_scaling = YVector(1.0, 1.0, 1.0);
-        if (scene_info->has_skin)
-        {
-            importer_param.import_as_skelton = true;
-            ConvertedResult result;
-            if (static_mesh_importer->ParseFile(importer_param, result))
-            {
-                //auto& converted_static_mesh_vec = result.static_meshes;
-                //for (auto& mesh : converted_static_mesh_vec)
-                //{
-                    //mesh->SaveV0("head");
-                //}
-                YEngine* engine = YEngine::GetEngine();
-                engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
-                SWorld::GetWorld()->GetMainScene()->skeleton_meshes_.push_back(engine->skeleton_mesh_.get());
-            }
-            else
-            {
-                ERROR_INFO("parse file ", file_path, "failed!");
-            }
-        }
-        else
-        {
-            importer_param.import_as_skelton = false;
-            ConvertedResult result;
-            if (static_mesh_importer->ParseFile(importer_param, result))
-            {
-                YEngine* engine = YEngine::GetEngine();
-                auto& converted_static_mesh_vec = result.static_meshes;
-                for (auto& mesh : converted_static_mesh_vec)
-                {
-                    //mesh->SaveV0("head");
-                    mesh->AllocGpuResource();
-                    engine->static_mesh_ = std::move(mesh);
-                    std::string test_pic = "/textures/uv4096.png";
-                    TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
-                    if (texture)
-                    {
-                        texture->UploadGPUBuffer();
-                    }
-                    engine->static_mesh_->diffuse_tex_ = texture;
-                }
-                SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_.get());
-            }
-            else
-            {
-                ERROR_INFO("parse file ", file_path, "failed!");
-            }
-        }
-    }
-    else
-    {
-        ERROR_INFO("open file ", file_path, "failed!");
-    }
-
+    ConverteModel(std::vector<std::string>{file_path});
+    
     return true;
 }
 
@@ -468,78 +408,8 @@ void GameApplication::OnKeyDown(char c)
 
 void GameApplication::SwitchModel()
 {
-    std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
     std::string file_path = static_modle_path[current_index];
-    if (static_mesh_importer->ImportFile(file_path))
-    {
-        FbxImportParam importer_param;
-        const FbxImportSceneInfo* scene_info = static_mesh_importer->GetImportedSceneInfo();
-        importer_param.model_name = scene_info->model_name;
-        importer_param.transform_vertex_to_absolute = true;
-        importer_param.import_scaling = YVector(1.0, 1.0, 1.0);
-        if (scene_info->has_skin)
-        {
-            importer_param.import_as_skelton = true;
-            ConvertedResult result;
-            if (static_mesh_importer->ParseFile(importer_param, result))
-            {
-                //auto& converted_static_mesh_vec = result.static_meshes;
-                //for (auto& mesh : converted_static_mesh_vec)
-                //{
-                    //mesh->SaveV0("head");
-                //}
-                YEngine* engine = YEngine::GetEngine();
-                engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
-                SWorld::GetWorld()->GetMainScene()->skeleton_meshes_.push_back(engine->skeleton_mesh_.get());
-              
-            }
-            else
-            {
-                ERROR_INFO("parse file ", file_path, "failed!");
-            }
-        }
-        else
-        {
-            importer_param.import_as_skelton = false;
-            ConvertedResult result;
-            if (static_mesh_importer->ParseFile(importer_param, result))
-            {
-                YEngine* engine = YEngine::GetEngine();
-                auto& converted_static_mesh_vec = result.static_meshes;
-                for (auto& mesh : converted_static_mesh_vec)
-                {
-                    //mesh->SaveV0("head");
-                    mesh->AllocGpuResource();
-                    engine->static_mesh_ = std::move(mesh);
-                    /*std::string test_pic = "/textures/uv.png";
-                    TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
-                    if (texture)
-                    {
-                        texture->UploadGPUBuffer();
-                    }*/
-                    std::string test_pic = "/textures/uv4096.png";
-                    TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
-                    if (texture)
-                    {
-                        texture->UploadGPUBuffer();
-                    }
-                    engine->static_mesh_->diffuse_tex_ = texture;
-                   
-                }
-                SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
-                SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_.get());
-            }
-            else
-            {
-                ERROR_INFO("parse file ", file_path, "failed!");
-            }
-        }
-    }
-    else
-    {
-        ERROR_INFO("open file ", file_path, "failed!");
-    }
-
+    ConverteModel(std::vector<std::string>{file_path});
 }
 
 void GameApplication::ConverteModel(const std::vector<std::string>& file_pathes)
@@ -586,26 +456,20 @@ void GameApplication::ConverteModel(const std::vector<std::string>& file_pathes)
                     auto& converted_static_mesh_vec = result.static_meshes;
                     for (auto& mesh : converted_static_mesh_vec)
                     {
-                        //mesh->SaveV0("head");
-                        mesh->AllocGpuResource();
-                        engine->static_mesh_ = std::move(mesh);
-                        /*std::string test_pic = "/textures/uv.png";
-                        TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
-                        if (texture)
-                        {
-                            texture->UploadGPUBuffer();
-                        }*/
+                        //mesh->SaveToPackage()
+                        mesh->GetStaticMesh()->AllocGpuResource();
+                        engine->static_mesh_ = mesh; //hold life
                         std::string test_pic = "/textures/uv4096.png";
                         TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
                         if (texture)
                         {
                             texture->UploadGPUBuffer();
                         }
-                        engine->static_mesh_->diffuse_tex_ = texture;
-
+                        engine->static_mesh_->GetStaticMesh()->diffuse_tex_ = texture;
                     }
                     SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
-                    SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_.get());
+                    SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());
+
                 }
                 else
                 {

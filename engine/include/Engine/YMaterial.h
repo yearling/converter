@@ -49,7 +49,7 @@ struct SRenderState
 };
 
 
-typedef std::variant<float, YVector4, YVector2, YVector, std::string, YMatrix> MaterialParam;
+typedef std::variant<float, int, YVector , YVector4, YVector2, std::string> MaterialParam;
 struct YMaterial
 {
 public:

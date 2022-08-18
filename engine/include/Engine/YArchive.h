@@ -6,10 +6,10 @@
 #include "Math/YMatrix.h"
 #include "Math/YRotator.h"
 #include "Math/YQuaterion.h"
-#include "EnumAsByte.h"
 #include <vector>
 #include <unordered_map>
 
+template<class TEnum> class TEnumAsByte;
 
 class YArchive
 {
@@ -94,6 +94,18 @@ public:
 		ar.ByteOrderSerialize(&value, sizeof(bool));
 		return ar;
 	}
+
+    /*  FORCEINLINE	friend	YArchive& operator<<(YArchive& ar, uint8& value)
+      {
+          ar.ByteOrderSerialize(&value, sizeof(uint8));
+          return ar;
+      }
+
+      FORCEINLINE	friend	YArchive& operator<<(YArchive& ar, int8& value)
+      {
+          ar.ByteOrderSerialize(&value, sizeof(int8));
+          return ar;
+      }*/
 	FORCEINLINE	friend	YArchive& operator<<(YArchive& ar, int32& value)
 	{
 		ar.ByteOrderSerialize(&value, sizeof(int32));
@@ -138,21 +150,20 @@ public:
 		return ar;
 	}
 
-	template<class TEnum>
-	FORCEINLINE friend YArchive& operator<<(YArchive& Ar, TEnumAsByte<TEnum>& Value)
-	{
-			Ar.Serialize(&Value, 1);
-		return Ar;
-	}
-
-	template <
-		typename EnumType,
-		typename = typename std::enable_if<std::is_enum<EnumType>::value, EnumType>::type
-	>
-	FORCEINLINE friend YArchive& operator<<(YArchive& Ar, EnumType& Value)
-	{
-		return Ar << (std::underlying_type<EnumType>&)Value;
-	}
+    template<class TEnum>
+    FORCEINLINE friend YArchive& operator<<(YArchive& Ar, TEnumAsByte<TEnum>& Value)
+    {
+        Ar.Serialize(&Value, 1);
+        return Ar;
+    }
+	//template <
+	//	typename EnumType,
+	//	typename = typename std::enable_if<std::is_enum<EnumType>::value, EnumType>::type
+	//>
+	//FORCEINLINE friend YArchive& operator<<(YArchive& Ar, EnumType& Value)
+	//{
+	//	return Ar << (std::underlying_type<EnumType>&)Value;
+	//}
 	friend YArchive& operator<<(YArchive& ar, std::string& value);
 	friend YArchive& operator<<(YArchive& ar, YVector2& value);
 	friend YArchive& operator<<(YArchive& ar, YVector& value);

@@ -2,6 +2,7 @@
 #include "Engine/YFile.h"
 #include <memory>
 #include "Engine/YLog.h"
+#include "Engine/YArchive.h"
 bool YJsonHelper::ConvertJsonToVector2(const Json::Value& value, YVector2& v)
 {
 	if (value.isArray() && value.size() == 2)
@@ -50,6 +51,42 @@ bool YJsonHelper::ConvertJsonToRotator(const Json::Value& value, YRotator& v)
 	return false;
 }
 
+Json::Value YJsonHelper::ConvertVector2ToJson(const YVector2& v)
+{
+    Json::Value value;
+    value.append(v.x);
+    value.append(v.y);
+    return value;
+}
+
+Json::Value YJsonHelper::ConvertVectorToJson(const YVector& v)
+{
+    Json::Value value;
+    value.append(v.x);
+    value.append(v.y);
+    value.append(v.z);
+    return value;
+}
+
+Json::Value YJsonHelper::ConvertVector4ToJson(const YVector4& v)
+{
+    Json::Value value;
+    value.append(v.x);
+    value.append(v.y);
+    value.append(v.z);
+    value.append(v.w);
+    return value;
+}
+
+Json::Value YJsonHelper::ConvertRotatorToJson(const YRotator& v)
+{
+    Json::Value value;
+    value.append(v.pitch);
+    value.append(v.yaw);
+    value.append(v.roll);
+    return value;
+}
+
 bool YJsonHelper::LoadJsonFromFile(const std::string& path, Json::Value& root)
 {
 	YFile json_file(path, YFile::FileType(YFile::FT_TXT | YFile::FT_Read));
@@ -66,5 +103,19 @@ bool YJsonHelper::LoadJsonFromFile(const std::string& path, Json::Value& root)
 		return false;
 	}
 	return true;
+}
+
+bool YJsonHelper::SaveJsonToFile(const std::string& path, Json::Value& root)
+{
+    YFile file_to_write(path, YFile::FileType(YFile::FT_TXT | YFile::FT_Write));
+    MemoryFile mem_file(MemoryFile::FT_Write);
+    std::string style_string = root.toStyledString();
+    mem_file << style_string;
+    if (!file_to_write.WriteFile(&mem_file, true))
+    {
+        ERROR_INFO("save json ", path , " failed!");
+        return false;
+    }
+    return true;
 }
 

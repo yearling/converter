@@ -237,7 +237,7 @@ void STexture::Update(double deta_time)
 {
 }
 
-bool STexture::LoadFromMemoryFile(std::unique_ptr<MemoryFile> mem_file)
+bool STexture::LoadFromMemoryFile(MemoryFile* mem_file)
 {
 	FIMEMORY* memory = FreeImage_OpenMemory(mem_file->GetData(), mem_file->GetSize());
 	// get the file type
@@ -313,7 +313,7 @@ bool STexture::LoadFromPackage(const std::string& path)
 			ERROR_INFO("load binary package ", path, "failed!, read file error");
 			return false;
 		}
-		if (!LoadFromMemoryFile(std::move(mem_file)))
+		if (!LoadFromMemoryFile(mem_file.get()))
 		{
 			ERROR_INFO("load binary package ", path, "failed!, read file error");
 			return false;

@@ -389,96 +389,7 @@ void YFbxImporter::GetMeshArray(FbxNode* root, std::vector<FbxNode*>& fbx_mesh_n
     }
 }
 
-std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index /*= 0*/)
-{
-    if (mesh_nodes.empty())
-    {
-        return nullptr;
-    }
-
-    int num_vertes = 0;
-    for (int mesh_index = 0; mesh_index < mesh_nodes.size(); ++mesh_index)
-    {
-        FbxNode* node = mesh_nodes[mesh_index];
-        FbxMesh* fbx_mesh = node->GetMesh();
-        if (fbx_mesh)
-        {
-            num_vertes += fbx_mesh->GetControlPointsCount();
-            if (!import_param_->combine_mesh)
-            {
-                num_vertes = 0;
-            }
-        }
-    }
-    CheckSmoothingInfo(mesh_nodes[0]->GetMesh());
-
-    std::unique_ptr<YStaticMesh> static_mesh = std::make_unique<YStaticMesh>();
-    static_mesh->model_name = mesh_name;
-    if (static_mesh->raw_meshes.size() <= lod_index)
-    {
-        for (int i = 0; i <= lod_index; ++i)
-        {
-            if (static_mesh->raw_meshes.size() <= i)
-            {
-                static_mesh->raw_meshes.push_back(YLODMesh());
-                static_mesh->raw_meshes.back().LOD_index = i;
-            }
-            else
-            {
-                //if (!static_mesh->raw_meshes[i])
-                {
-                    static_mesh->raw_meshes.push_back(YLODMesh());
-                    static_mesh->raw_meshes.back().LOD_index = i;
-                }
-            }
-        }
-    }
-    YLODMesh* raw_mesh = &static_mesh->raw_meshes[lod_index];
-    std::vector<std::shared_ptr<YImportedMaterial>> mesh_materials;
-    int node_fail_count = 0;
-    bool is_all_degenerated = true;
-    float SqrBoundingBoxThreshold = THRESH_POINTS_ARE_NEAR * THRESH_POINTS_ARE_NEAR;
-    std::vector<std::shared_ptr<ImportedRawMesh>> raw_meshes;
-    raw_meshes.reserve(mesh_nodes.size());
-    for (int mesh_index = 0; mesh_index < mesh_nodes.size(); ++mesh_index)
-    {
-        FbxNode* node = mesh_nodes[mesh_index];
-        FbxMesh* fbx_mesh = node->GetMesh();
-        if (fbx_mesh)
-        {
-            fbx_mesh->ComputeBBox();
-            FbxVector4 global_scale = node->EvaluateGlobalTransform().GetS();
-            FbxVector4 bbox_max = FbxVector4(fbx_mesh->BBoxMax.Get()) * global_scale;
-            FbxVector4 bbox_min = FbxVector4(fbx_mesh->BBoxMin.Get()) * global_scale;
-            FbxVector4 bbox_extent = bbox_max - bbox_min;
-            double sqr_size = bbox_extent.SquareLength();
-            if (sqr_size > SqrBoundingBoxThreshold)
-            {
-                is_all_degenerated = false;
-                LOG_INFO("Importing static mesh gemometry ", mesh_index, " of ", mesh_nodes.size());
-                //BuildStaticMeshFromGeometry(node, raw_mesh, mesh_materials);
-                std::shared_ptr<ImportedRawMesh> raw_mesh = std::make_shared<ImportedRawMesh>();
-                if (ImportFbxMeshToRawMesh(node, *raw_mesh))
-                {
-                    raw_meshes.push_back(raw_mesh);
-                }
-                else
-                {
-                    WARNING_INFO("node ", node->GetName(), " import mesh failed!");
-                }
-            }
-        }
-    }
-    if (raw_meshes.empty())
-    {
-        WARNING_INFO("no mesh imported, import mesh failed!");
-        return nullptr;
-    }
-    BuildStaicMeshRenderData(static_mesh.get(), raw_meshes);
-    return std::move(static_mesh);
-}
-
-TRefCountPtr<SStaticMesh> YFbxImporter::ImportStaticMeshAsSingle2(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index /*= 0*/)
+TRefCountPtr<SStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index /*= 0*/)
 {
     if (mesh_nodes.empty())
     {
@@ -768,7 +679,7 @@ std::shared_ptr<YImportedMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSu
     return material;
 }
 
-void YFbxImporter::ConvertYImportedMaterialToSSMaterial(const std::vector<std::shared_ptr<YImportedMaterial>>& imported_materials, std::vector<TRefCountPtr<SMaterial>> out_materials)
+void YFbxImporter::ConvertYImportedMaterialToSSMaterial(const std::vector<std::shared_ptr<YImportedMaterial>>& imported_materials, std::vector<TRefCountPtr<SMaterial>>& out_materials)
 {
     out_materials.reserve(imported_materials.size());
     for (std::shared_ptr<YImportedMaterial> imported_material : imported_materials)

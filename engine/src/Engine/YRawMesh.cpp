@@ -153,6 +153,7 @@ bool YMeshWedge::operator==(const YMeshWedge& rhs)const
             return false;
         }
     }
+    return true;
 }
 void YMeshWedge::AddTriangleID(int triangle_id)
 {
@@ -832,15 +833,15 @@ bool ImportedRawMesh::TellLightMapUVExist(int uv_light_map_index /*= 1*/) const
 {
     for (const YMeshWedge& wedge : wedges)
     {
-        for( int i=1;i< MAX_MESH_TEXTURE_COORDS;++i)
+        for( int i=1;i< wedge.uvs.size();++i)
         {
             if(!wedge.uvs[i].IsNearlyZero())
             {
-                return false;
+                return true;
             }
         }
     }
-    return true;
+    return false;
 }
 
 void ImportedRawMesh::RecursiveGetTriangleGroupBySoftEdge(int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlagRawMesh>& around_triangle_ids, bool split_uv_seam) const
@@ -1325,7 +1326,6 @@ YArchive& operator<<(YArchive& mem_file, ImportedRawMesh& imported_raw_mesh)
     mem_file << imported_raw_mesh.edges;
     mem_file << imported_raw_mesh.polygons;
     mem_file << imported_raw_mesh.polygon_groups;
-    mem_file << imported_raw_mesh.aabb;
     return mem_file;
 }
 
@@ -1377,7 +1377,6 @@ YArchive& operator<<(YArchive& mem_file, YMeshWedge& wedge)
     mem_file << wedge.binormal_sign;
     mem_file << wedge.color;
     mem_file << wedge.uvs;
-    mem_file << wedge.corner_angle;
     mem_file << wedge.connected_triangles;
 
     return mem_file;

@@ -39,7 +39,7 @@ bool SObject::LoadFromPackage(const std::string& path)
 			return false;
 		}
 		// todo reflection
-		if (!LoadFromMemoryFile(std::move(mem_file)))
+		if (!LoadFromMemoryFile(mem_file.get()))
 		{
 			ERROR_INFO("load binary package ", name_, "failed!, serialize failed!");
 			return false;
@@ -141,7 +141,17 @@ void SObject::SetParent(SObject* parent)
 	parent_ = parent;
 }
 
-bool SObject::LoadFromMemoryFile(std::unique_ptr<MemoryFile> mem_file)
+bool SObject::LoadFromMemoryFile(MemoryFile* mem_file)
 {
 	return false;
+}
+
+bool SObject::SaveToJson(Json::Value& root_json)
+{
+    return false;
+}
+
+bool SObject::SaveToMemoryFile(MemoryFile* mem_file)
+{
+    return false;
 }

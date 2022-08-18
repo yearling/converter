@@ -9,13 +9,11 @@ public:
 	SStaticMesh(SObject* parent);
 	~SStaticMesh() override;
 	static constexpr  bool IsInstance() { return false; };
-	virtual bool LoadFromJson(const Json::Value& RootJson) override;
+	bool LoadFromJson(const Json::Value& RootJson) override;
 
-	virtual void SaveToPackage(const std::string& Path) override;
-
-
-	virtual bool PostLoadOp() override;
-
+	//void SaveToPackage(const std::string& Path) override;
+    bool SaveToJson(Json::Value& root_json)override;
+	bool PostLoadOp() override;
 
 	virtual void Update(double deta_time) override;
 	YStaticMesh* GetStaticMesh() const;

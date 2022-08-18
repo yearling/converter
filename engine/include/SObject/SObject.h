@@ -13,8 +13,13 @@ public:
 	SObject(SObject&&) = default;
 	SObject& operator=(const SObject&) = delete;
 	SObject& operator=(SObject&&) = default;
+
+	virtual bool LoadFromPackage(const std::string& path);
 	virtual bool LoadFromJson(const Json::Value& RootJson);
-	virtual bool LoadFromMemoryFile(std::unique_ptr<MemoryFile> mem_file);
+	virtual bool LoadFromMemoryFile(MemoryFile* mem_file);
+
+    virtual bool SaveToJson(Json::Value& root_json);
+    virtual bool SaveToMemoryFile(MemoryFile* mem_file);
 	virtual void SaveToPackage(const std::string& Path);
 	virtual bool PostLoadOp();
 	virtual void Update(double deta_time);
@@ -29,7 +34,6 @@ public:
 protected:
 	SObject();
 	explicit SObject(SObject* parent);
-	virtual bool LoadFromPackage(const std::string& path);
 	std::string GetAbsoluteCurDir() const;
 	std::string name_;
 	SObject* parent_ = nullptr;

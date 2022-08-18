@@ -62,7 +62,8 @@ struct FbxImportSceneInfo
 struct ConvertedResult
 {
     ConvertedResult();
-    std::vector<std::unique_ptr<YStaticMesh>> static_meshes;
+    //std::vector<std::unique_ptr<YStaticMesh>> static_meshes;
+    std::vector<TRefCountPtr<SStaticMesh>> static_meshes;
     std::unique_ptr<YSkeletonMesh> skeleton_mesh;
 };
 
@@ -106,8 +107,7 @@ protected:
 
 protected:
     //static mesh
-    std::unique_ptr<YStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index = 0);
-    TRefCountPtr<SStaticMesh> ImportStaticMeshAsSingle2(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index = 0);
+    TRefCountPtr<SStaticMesh> ImportStaticMeshAsSingle(std::vector<FbxNode*>& mesh_nodes, const std::string& mesh_name, int lod_index = 0);
     bool ImportFbxMeshToRawMesh(FbxNode* node, ImportedRawMesh& raw_mesh);
     bool BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vector<std::shared_ptr< ImportedRawMesh>>& raw_meshes);
 
@@ -136,7 +136,7 @@ protected:
     void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YImportedMaterial>>& out_materials, std::vector<std::string>& us_sets);
     std::shared_ptr<YImportedMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
     std::shared_ptr<YImportedMaterial> GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set);
-    void ConvertYImportedMaterialToSSMaterial(const std::vector<std::shared_ptr<YImportedMaterial>>& imported_materials, std::vector<TRefCountPtr<SMaterial>> out_materials);
+    void ConvertYImportedMaterialToSSMaterial(const std::vector<std::shared_ptr<YImportedMaterial>>& imported_materials, std::vector<TRefCountPtr<SMaterial>>& out_materials);
 
 
 

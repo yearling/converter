@@ -2,6 +2,7 @@
 #include "Utility/YPath.h"
 #include "SObject/SMaterial.h"
 #include "SObject/SObjectManager.h"
+#include "Utility/YJsonHelper.h"
 
 SStaticMesh::SStaticMesh()
 {
@@ -95,10 +96,37 @@ bool SStaticMesh::LoadFromJson(const Json::Value& RootJson)
 }
 
 
-void SStaticMesh::SaveToPackage(const std::string& Path)
+bool SStaticMesh::SaveToJson(Json::Value& root_json)
 {
-	return;
+    const std::string base_path_name = GetName();
+    const std::string static_mesh_model_name_runtime = static_mesh_->model_name + "_ra";
+    root_json["runtime_asset"] = static_mesh_model_name_runtime; //runtime_asset
+    static_mesh_->SaveRuntimeData(static_mesh_model_name_runtime);
+    const std::string static_mesh_model_name_editor = static_mesh_->model_name + "_ea";
+    root_json["editor_asset"] = static_mesh_model_name_editor; //editor_asset
+    static_mesh_->SaveEditorData(static_mesh_model_name_editor);
+
+    Json::Value materials;
+    for (int i = 0; i < (int)materials_.size(); ++i)
+    {
+        Json::Value material_item_json;
+        material_item_json["id"] = i;
+
+        TRefCountPtr<SMaterial>& material = materials_[i];
+        const std::string material_name = material->GetName()+"_mtl";
+        material_item_json["material"] = material_name;
+        //create material json
+        std::string material_json_path = YPath::PathCombine(base_path_name, material_name + json_extension_with_dot);
+        Json::Value material_json_value;
+        material->SaveToJson(material_json_value);
+        YJsonHelper::SaveJsonToFile(material_json_path, material_json_value);
+        materials.append(material_item_json);
+    }
+    root_json["material_slot"] = materials;
+
+    return true;
 }
+
 
 bool SStaticMesh::PostLoadOp()
 {

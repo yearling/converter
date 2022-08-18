@@ -17,6 +17,7 @@ class SMaterial :public SObject
 public:
 	static constexpr  bool IsInstance() { return false; };
 	 bool LoadFromJson(const Json::Value& RootJson) override;
+     bool SaveToJson(Json::Value& root_json) override;
 	 void SaveToPackage(const std::string& Path) override;
 	 bool PostLoadOp() override;
 	 void Update(double deta_time) override;

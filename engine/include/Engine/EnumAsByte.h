@@ -3,6 +3,7 @@
 #pragma once
 #include <type_traits>
 #include <stdint.h>
+#include "YArchive.h"
 
 
 template <bool> struct TEnumAsByte_EnumClass;

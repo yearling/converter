@@ -291,7 +291,8 @@ void YStaticMesh::Render(RenderParam* render_param)
         dc->DrawIndexed(offset.triangle_count*3,offset.offset, 0);
     }
 #endif
-    YLODMesh& lod_mesh = raw_meshes[0];
+    std::unique_ptr<ImportedRawMesh>& lod_mesh_ptr = imported_raw_meshes_[0];
+    ImportedRawMesh& lod_mesh = *(lod_mesh_ptr);
     const bool draw_hard_edge = false;
     if (draw_hard_edge)
     {
@@ -300,9 +301,9 @@ void YStaticMesh::Render(RenderParam* render_param)
             for (int polygon_index : polygon_group.polygons)
             {
                 YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-                YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
-                YMeshWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
-                YMeshWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+                YMeshWedge& vertex_ins_0 = lod_mesh.wedges[polygon.wedge_ids[0]];
+                YMeshWedge& vertex_ins_1 = lod_mesh.wedges[polygon.wedge_ids[1]];
+                YMeshWedge& vertex_ins_2 = lod_mesh.wedges[polygon.wedge_ids[2]];
                 int control_point[3] = { vertex_ins_0.control_point_id, vertex_ins_1.control_point_id, vertex_ins_2.control_point_id };
                 int edge0_index = lod_mesh.GetVertexPairEdge(control_point[0], control_point[1]);
                 int edge1_index = lod_mesh.GetVertexPairEdge(control_point[1], control_point[2]);
@@ -312,9 +313,9 @@ void YStaticMesh::Render(RenderParam* render_param)
                 bool edge1_hard = lod_mesh.edges[edge1_index].edge_hardness;
                 bool edge2_hard = lod_mesh.edges[edge2_index].edge_hardness;
 
-                YVector control_point0 = lod_mesh.vertex_position[control_point[0]].position;
-                YVector control_point1 = lod_mesh.vertex_position[control_point[1]].position;
-                YVector control_point2 = lod_mesh.vertex_position[control_point[2]].position;
+                YVector control_point0 = lod_mesh.control_points[control_point[0]].position;
+                YVector control_point1 = lod_mesh.control_points[control_point[1]].position;
+                YVector control_point2 = lod_mesh.control_points[control_point[2]].position;
                 if (edge0_hard)
                 {
                     g_Canvas->DrawLine(control_point0, control_point1, edge0_hard ? YVector4(1.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
@@ -340,9 +341,9 @@ void YStaticMesh::Render(RenderParam* render_param)
             for (int polygon_index : polygon_group.polygons)
             {
                 YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-                YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
-                YMeshWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
-                YMeshWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+                YMeshWedge& vertex_ins_0 = lod_mesh.wedges[polygon.wedge_ids[0]];
+                YMeshWedge& vertex_ins_1 = lod_mesh.wedges[polygon.wedge_ids[1]];
+                YMeshWedge& vertex_ins_2 = lod_mesh.wedges[polygon.wedge_ids[2]];
                 int control_point[3] = { vertex_ins_0.control_point_id, vertex_ins_1.control_point_id, vertex_ins_2.control_point_id };
                 int edge0_index = lod_mesh.GetVertexPairEdge(control_point[0], control_point[1]);
                 int edge1_index = lod_mesh.GetVertexPairEdge(control_point[1], control_point[2]);
@@ -352,9 +353,9 @@ void YStaticMesh::Render(RenderParam* render_param)
                 bool edge1_seam = lod_mesh.edges[edge1_index].is_uv_seam;
                 bool seam = lod_mesh.edges[edge2_index].is_uv_seam;
 
-                YVector control_point0 = lod_mesh.vertex_position[control_point[0]].position;
-                YVector control_point1 = lod_mesh.vertex_position[control_point[1]].position;
-                YVector control_point2 = lod_mesh.vertex_position[control_point[2]].position;
+                YVector control_point0 = lod_mesh.control_points[control_point[0]].position;
+                YVector control_point1 = lod_mesh.control_points[control_point[1]].position;
+                YVector control_point2 = lod_mesh.control_points[control_point[2]].position;
                 if (edge0_seam)
                 {
                     g_Canvas->DrawLine(control_point0, control_point1, edge0_seam ? YVector4(0.0, 0.0, 0.0, 1.0) : YVector4(0.0, 0.0, 1.0, 1.0));
@@ -383,8 +384,8 @@ void YStaticMesh::Render(RenderParam* render_param)
                 for (int i = 0; i < 3; ++i)
                 {
 
-                    YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[i]];
-                    YVector control_point0 = lod_mesh.vertex_position[vertex_ins_0.control_point_id].position;
+                    YMeshWedge& vertex_ins_0 = lod_mesh.wedges[polygon.wedge_ids[i]];
+                    YVector control_point0 = lod_mesh.control_points[vertex_ins_0.control_point_id].position;
                     YVector normal = vertex_ins_0.normal.GetSafeNormal();
                     YVector tangent = vertex_ins_0.tangent.GetSafeNormal();
                     YVector bitangent = vertex_ins_0.bitangent.GetSafeNormal();
@@ -436,9 +437,9 @@ void YStaticMesh::Render(RenderParam* render_param)
                 for (int polygon_index : polygon_group.polygons)
                 {
                     YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-                    YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
-                    YMeshWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
-                    YMeshWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+                    YMeshWedge& vertex_ins_0 = lod_mesh.wedges[polygon.wedge_ids[0]];
+                    YMeshWedge& vertex_ins_1 = lod_mesh.wedges[polygon.wedge_ids[1]];
+                    YMeshWedge& vertex_ins_2 = lod_mesh.wedges[polygon.wedge_ids[2]];
                     YVector2 uv0 = vertex_ins_0.uvs[uv_index];
                     YVector2 uv1 = vertex_ins_1.uvs[uv_index];
                     YVector2 uv2 = vertex_ins_2.uvs[uv_index];
@@ -868,6 +869,153 @@ bool YStaticMesh::LoadV0(const std::string& file_path)
     else
     {
         ERROR_INFO("static mesh load ", static_mesh_asset_path, " failed!");
+        return false;
+    }
+}
+
+bool YStaticMesh::SaveRuntimeData(const std::string& dir)
+{
+    MemoryFile mem_file(MemoryFile::FT_Write);
+    mem_file << model_name;
+    int lod = lod_render_data_.size();
+    mem_file << lod;
+    for (int i = 0; i < lod; ++i)
+    {
+        std::unique_ptr<StaticVertexRenderData>& render_data = lod_render_data_[i];
+        mem_file << render_data->vertex_info_type;
+
+        if (render_data->vertex_info_type == StaticVertexRenderData::Hi_precision)
+        {
+            HiStaticVertexData* hi_render_data = dynamic_cast<HiStaticVertexData*>(render_data.get());
+            assert(hi_render_data);
+            if (hi_render_data)
+            {
+                mem_file << *hi_render_data;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else if (render_data->vertex_info_type == StaticVertexRenderData::Default)
+        {
+            DefaultStaticVertexData* default = dynamic_cast<DefaultStaticVertexData*>(render_data.get());
+            assert(default);
+            if (default)
+            {
+                mem_file << *default;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            assert(0);
+            return false;
+        }
+    }
+    
+    std::string file_name = dir + SObject::asset_extension_with_dot;
+    YFile file_to_write(file_name, YFile::FileType(YFile::FileType::FT_Write | YFile::FileType::FT_BINARY));
+    if (!file_to_write.WriteFile(&mem_file, true))
+    {
+        ERROR_INFO("static mesh runtime ", model_name, " save failed!");
+        return false;
+    }
+    else
+    {
+        LOG_INFO("static mesh runtime ", model_name, " save success!");
+        return true;
+    }
+}
+
+bool YStaticMesh::LoadRuntimeData(const std::string& file_path)
+{
+    std::string static_mesh_asset_path = file_path + SObject::asset_extension_with_dot;
+    YFile file_to_read(static_mesh_asset_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_BINARY));
+    std::unique_ptr<MemoryFile> mem_file = file_to_read.ReadFile();
+    if (mem_file)
+    {
+        (*mem_file) << model_name;
+        int lod =1;
+        (*mem_file) << lod;
+        lod_render_data_.reserve(lod);
+        for (int i = 0; i < lod; ++i)
+        {
+            TEnumAsByte<StaticVertexRenderData::VertexInfoType>  info_type;
+            (*mem_file) << info_type;
+            if (info_type == StaticVertexRenderData::VertexInfoType::Hi_precision)
+            {
+                std::unique_ptr<HiStaticVertexData> hi = std::make_unique<HiStaticVertexData>();
+                (*mem_file) << (*hi);
+                lod_render_data_.emplace_back(std::move(hi));
+            }
+            else if (info_type == StaticVertexRenderData::Default)
+            {
+                std::unique_ptr<DefaultStaticVertexData> default_render_data = std::make_unique<DefaultStaticVertexData>();
+                (*mem_file) << (*default_render_data);
+                lod_render_data_.emplace_back(std::move(default_render_data));
+            }
+        }
+        LOG_INFO("static mesh runtime ", model_name, " load success!");
+        return true;
+    }
+    else
+    {
+        ERROR_INFO("static mesh runtime data", static_mesh_asset_path, "load failed!");
+        return false;
+    }
+}
+
+bool YStaticMesh::SaveEditorData(const std::string& dir)
+{
+    MemoryFile mem_file(MemoryFile::FT_Write);
+    int lod = imported_raw_meshes_.size();
+    mem_file << lod;
+    for (int i = 0; i < lod; ++i)
+    {
+        std::unique_ptr<ImportedRawMesh>& editor_data = imported_raw_meshes_[i];
+        mem_file << *editor_data;
+    }
+
+    std::string file_name = dir + SObject::asset_extension_with_dot;
+    YFile file_to_write(file_name, YFile::FileType(YFile::FileType::FT_Write | YFile::FileType::FT_BINARY));
+    if (!file_to_write.WriteFile(&mem_file, true))
+    {
+        ERROR_INFO("static mesh editor ", model_name, " save failed!");
+        return false;
+    }
+    else
+    {
+        LOG_INFO("static mesh editor ", model_name, " save success!");
+        return true;
+    }
+}
+
+bool YStaticMesh::LoadEditorData(const std::string& file_path)
+{
+    std::string static_mesh_asset_path = file_path + SObject::asset_extension_with_dot;
+    YFile file_to_read(static_mesh_asset_path, YFile::FileType(YFile::FileType::FT_Read | YFile::FileType::FT_BINARY));
+    std::unique_ptr<MemoryFile> mem_file = file_to_read.ReadFile();
+    if (mem_file)
+    {
+        int lod = 1;
+        (*mem_file) << lod;
+        imported_raw_meshes_.reserve(lod);
+        for (int i = 0; i < lod; ++i)
+        {
+            std::unique_ptr<ImportedRawMesh> raw_mesh = std::make_unique< ImportedRawMesh>();
+            (*mem_file) << (*raw_mesh);
+            imported_raw_meshes_.emplace_back(std::move(raw_mesh));
+        }
+        LOG_INFO("static mesh editor data ", model_name, " load success!");
+        return true;
+    }
+    else
+    {
+        ERROR_INFO("static mesh editor data ", static_mesh_asset_path, " load failed!");
         return false;
     }
 }

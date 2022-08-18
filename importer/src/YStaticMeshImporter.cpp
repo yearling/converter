@@ -522,7 +522,7 @@ bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vecto
     {
         return false;
     }
-    std::shared_ptr<ImportedRawMesh> new_copyed_mesh = std::make_shared<ImportedRawMesh>();
+    std::unique_ptr<ImportedRawMesh> new_copyed_mesh = std::make_unique<ImportedRawMesh>();
     *new_copyed_mesh = *raw_meshes[0];
     LOG_INFO("Bengin merge scene");
     int all_control_point_size = 0;
@@ -561,13 +561,13 @@ bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vecto
     PostProcessRenderMesh process(new_copyed_mesh.get(),import_param_.get());
     //static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
     static_mesh->lod_render_data_.push_back(process.GenerateMediumStaticVertexData());
-
     YLODMesh& raw_mesh = static_mesh->raw_meshes[0];
     raw_mesh.vertex_position = new_copyed_mesh->control_points;
     raw_mesh.vertex_instances = new_copyed_mesh->wedges;
     raw_mesh.polygons = new_copyed_mesh->polygons;
     raw_mesh.edges = new_copyed_mesh->edges;
     raw_mesh.polygon_groups = new_copyed_mesh->polygon_groups;
+    static_mesh->imported_raw_meshes_.emplace_back(std::move(new_copyed_mesh));
     return true;
 }
 

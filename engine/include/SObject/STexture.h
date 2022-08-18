@@ -14,7 +14,7 @@ public:
 	void SaveToPackage(const std::string& Path) override;
 	bool PostLoadOp() override;
 	void Update(double deta_time) override;
-    bool LoadFromMemoryFile(std::unique_ptr<MemoryFile> mem_file) override;
+    bool LoadFromMemoryFile(MemoryFile* mem_file) override;
 	bool LoadFromPackage(const std::string& path) override;
 	TextureType GetTextureType()const;
 	EPixelFormat GetPixelFormat()const;

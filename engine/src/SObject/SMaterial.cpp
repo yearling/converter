@@ -23,6 +23,26 @@ static MaterialDomain MapStringToMaterialDomin(const std::string& name)
 	return MD_Surface;
 }
 
+static std::string MapMaterialDominToString(MaterialDomain material_domain)
+{
+    const std::unordered_map<MaterialDomain, std::string> map_table =
+    {
+        {MD_Surface,"surface"},
+        {MD_DeferredDecal,"deferred_decal"},
+        {MD_LightFunction,"light_function"},
+        {MD_Volume,"volume"},
+        {MD_PostProcess,"post_process"},
+        {MD_UserInterface,"user_interface"}
+    };
+    if (map_table.count(material_domain))
+    {
+        return map_table.at(material_domain);
+    }
+
+    return "surface";
+}
+
+
 static BlendMode MapStringToBlendMode(const std::string& name)
 {
 	const std::unordered_map<std::string, BlendMode> map_table =
@@ -40,6 +60,22 @@ static BlendMode MapStringToBlendMode(const std::string& name)
 	return BM_Opaque;
 }
 
+static std::string MapBlendModeToString(BlendMode blend_mode)
+{
+    const std::unordered_map<BlendMode,std::string> map_table =
+    {
+        {BM_Opaque,"opaque"},
+        {BM_Mask,"mask"},
+        {BM_Translucent,"translucent"},
+        {BM_Addictive,"addictive"}
+    };
+    if (map_table.count(blend_mode))
+    {
+        return map_table.at(blend_mode);
+    }
+
+    return "opaque";
+}
 static ShadingModel MapStringToShadingModel(const std::string& name)
 {
 	const std::unordered_map<std::string, ShadingModel> map_table =
@@ -63,6 +99,31 @@ static ShadingModel MapStringToShadingModel(const std::string& name)
 
 	return SM_Unlit;
 }
+
+static std::string MapShadingModelToString(ShadingModel shade_mode)
+{
+    const std::unordered_map<ShadingModel,std::string> map_table =
+    {
+        {SM_Unlit,"unlit"},
+        {SM_DefaultLit,"lit"},
+        {SM_Subsurface,"subsurface"},
+        {SM_ClearCoat,"clear_coat"},
+        {SM_SubsurfaceProfile,"subsurface_profile"},
+        {SM_TwoSideFoliage,"twosize_foliage"},
+        {SM_Hair,"hair"},
+        {SM_Cloth,"cloth"},
+        {SM_Eye,"eye"},
+        {SM_SingleLayerWater,"single_layer_water"},
+        {SM_ThinTranslucent,"thin_translucent"}
+    };
+    if (map_table.count(shade_mode))
+    {
+        return map_table.at(shade_mode);
+    }
+
+    return "unlit";
+}
+
 
 bool SMaterial::LoadFromJson(const Json::Value& RootJson)
 {
@@ -128,7 +189,7 @@ bool SMaterial::LoadFromJson(const Json::Value& RootJson)
 				float float_value = param_item_json["value"].asFloat();
 				tmp = float_value;
 			}
-			else if (param_item_json["type"].asString() == "texture_2d")
+			else if (param_item_json["type"].asString() == "texture")
 			{
 				tmp = param_item_json["value"].asString();
 			}
@@ -140,13 +201,98 @@ bool SMaterial::LoadFromJson(const Json::Value& RootJson)
 					tmp = vec4;
 				}
 			}
+            else if (param_item_json["type"].asString() == "vector3")
+            {
+                YVector v;
+                if (YJsonHelper::ConvertJsonToVector(param_item_json["value"], v))
+                {
+                    tmp = v;
+                }
+            }
+            else if (param_item_json["type"].asString() == "vector2")
+            {
+                YVector2 v;
+                if (YJsonHelper::ConvertJsonToVector2(param_item_json["value"], v))
+                {
+                    tmp = v;
+                }
+            }
+            if (param_item_json["type"].asString() == "int")
+            {
+                int int_value = param_item_json["value"].asInt();
+                tmp = int_value;
+            }
 			else
 			{
 				assert(0);
 			}
-		}
+            parameters_[name] = tmp;
+        }
 	}
 	return true;
+}
+
+bool SMaterial::SaveToJson(Json::Value& root_json)
+{
+    Json::Value render_state;
+    render_state["material_domain"] = MapMaterialDominToString(render_state_.material_domain);
+    render_state["blend_mode"] = MapBlendModeToString(render_state_.blend_model);
+    render_state["shading_mode"] = MapShadingModelToString(render_state_.shading_model);
+    render_state["two_side"] = render_state_.two_side;
+    root_json["render_state"] = render_state;
+
+    root_json["shader_path"] = shader_path_;
+    
+    Json::Value material_parameters;
+    for (auto& item : parameters_)
+    {
+        Json::Value param_item;
+        param_item["name"] = item.first;
+        size_t variant_index = item.second.index();
+        if (variant_index == 0)
+        {
+            float f = std::get<0>(item.second);
+            param_item["type"] = "float";
+            param_item["value"] = f;
+        }
+        else if (variant_index == 1)
+        {
+            int i = std::get<1>(item.second);
+            param_item["type"] = "int";
+            param_item["value"] = i;
+        }
+        else if (variant_index == 2)
+        {
+            YVector v = std::get<2>(item.second);
+            param_item["type"] = "vector3";
+            param_item["value"] = YJsonHelper::ConvertVectorToJson(v);
+        }
+        else if (variant_index == 3)
+        {
+            YVector4 v4 = std::get<3>(item.second);
+            param_item["type"] = "vector4";
+            param_item["value"] = YJsonHelper::ConvertVector4ToJson(v4);
+        }
+        else if (variant_index == 4)
+        {
+            YVector2 v2 = std::get<4>(item.second);
+            param_item["type"] = "vector2";
+            param_item["value"] = YJsonHelper::ConvertVector2ToJson(v2);
+        }
+        else if (variant_index == 5)
+        {
+            std::string str_texture = std::get<5>(item.second);
+            param_item["type"] = "texture";
+            param_item["value"] = str_texture;
+        }
+        else
+        {
+            assert(0);
+        }
+        material_parameters.append(param_item);
+    }
+    root_json["material_parameters"] = material_parameters;
+    return true;
 }
 
 void SMaterial::SaveToPackage(const std::string& Path)

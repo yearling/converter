@@ -237,7 +237,7 @@ void YPickupShowMove::Update(double delta_time)
     auto func_draw_triangle = [&](int triangle_id,const YVector4& color)
     {
         YEngine* engine = YEngine::GetEngine();
-        YStaticMesh* static_mesh = engine->static_mesh_.get();
+        YStaticMesh* static_mesh = engine->static_mesh_->GetStaticMesh();
         YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
         YMeshPolygon& triangle = lod_mesh.polygons[triangle_id];
         YMeshWedge& wedge0 = lod_mesh.vertex_instances[triangle.wedge_ids[0]];
@@ -254,7 +254,7 @@ void YPickupShowMove::Update(double delta_time)
     if (select_wedge_id != INVALID_ID)
     {
         YEngine* engine = YEngine::GetEngine();
-        YStaticMesh* static_mesh = engine->static_mesh_.get();
+        YStaticMesh* static_mesh = engine->static_mesh_->GetStaticMesh();
         YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
         YMeshWedge& wedge = lod_mesh.vertex_instances[select_wedge_id];
         int triangle_id = wedge.connected_triangles[0];
@@ -361,20 +361,23 @@ void YPickupShowMove::RayCast(int x, int y)
 
     return;
     YEngine* engine = YEngine::GetEngine();
-    YStaticMesh* static_mesh = engine->static_mesh_.get();
-    YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
+    YStaticMesh* static_mesh = engine->static_mesh_->GetStaticMesh();
+
+    std::unique_ptr<ImportedRawMesh>& lod_mesh_ptr = static_mesh->imported_raw_meshes_[0];
+    ImportedRawMesh& lod_mesh = *(lod_mesh_ptr);
+    //YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
     std::vector< HitElement> hit_result;
     for (YMeshPolygonGroup& polygon_group : lod_mesh.polygon_groups)
     {
         for (int polygon_index : polygon_group.polygons)
         {
             YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-            YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
-            YMeshWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
-            YMeshWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
-            YVector p0 = lod_mesh.vertex_position[vertex_ins_0.control_point_id].position;
-            YVector p1 = lod_mesh.vertex_position[vertex_ins_1.control_point_id].position;
-            YVector p2 = lod_mesh.vertex_position[vertex_ins_2.control_point_id].position;
+            YMeshWedge& vertex_ins_0 = lod_mesh.wedges[polygon.wedge_ids[0]];
+            YMeshWedge& vertex_ins_1 = lod_mesh.wedges[polygon.wedge_ids[1]];
+            YMeshWedge& vertex_ins_2 = lod_mesh.wedges[polygon.wedge_ids[2]];
+            YVector p0 = lod_mesh.control_points[vertex_ins_0.control_point_id].position;
+            YVector p1 = lod_mesh.control_points[vertex_ins_1.control_point_id].position;
+            YVector p2 = lod_mesh.control_points[vertex_ins_2.control_point_id].position;
             /* p0 = static_mesh_component->GetTransformToWorld().TransformPosition(p0);
              p1 = static_mesh_component->GetTransformToWorld().TransformPosition(p1);
              p2 = static_mesh_component->GetTransformToWorld().TransformPosition(p2);*/

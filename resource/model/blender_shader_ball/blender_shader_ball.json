@@ -1,5 +1,7 @@
 {
     "model_asset": "blender_shader_ball_mesh",
+    "editor_asset":"blender_shader_ball_ea",
+    "runtime_asset":"blender_shader_ball_ra",
     "material_slot": [
         {
             "id": 0,
