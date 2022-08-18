@@ -12,6 +12,7 @@
 #include "YFbxImporter.h"
 #include "SObject/STexture.h"
 #include <shellapi.h>
+#include "Utility/YJsonHelper.h"
 
 
 GameApplication::GameApplication()
@@ -349,8 +350,13 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/human/samurai-girl/source/Samurai_Girl.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/silk-shirt-suit-retopo-for-ray-ii/source/SilkShirtSuitRetopoForRayII.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/subsurface-scattering-sss-demo-lara/source/sss.fbx";    //skin error
-    ConverteModel(std::vector<std::string>{file_path});
-    
+    //ConverteModel(std::vector<std::string>{file_path});
+   /* const std::string package_path = "/model/Spaceship_05/Spaceship_05.json";
+    TRefCountPtr<SStaticMesh> ss = SObjectManager::ConstructFromPackage<SStaticMesh>(package_path, nullptr);
+    ss->GetStaticMesh()->AllocGpuResource();
+    engine->static_mesh_ = ss;
+    SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
+    SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());*/
     return true;
 }
 
@@ -454,22 +460,32 @@ void GameApplication::ConverteModel(const std::vector<std::string>& file_pathes)
                 {
                     YEngine* engine = YEngine::GetEngine();
                     auto& converted_static_mesh_vec = result.static_meshes;
+                    std::string package_path;
                     for (auto& mesh : converted_static_mesh_vec)
                     {
                         //mesh->SaveToPackage()
                         mesh->GetStaticMesh()->AllocGpuResource();
                         engine->static_mesh_ = mesh; //hold life
-                        std::string test_pic = "/textures/uv4096.png";
-                        TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
-                        if (texture)
-                        {
-                            texture->UploadGPUBuffer();
-                        }
-                        engine->static_mesh_->GetStaticMesh()->diffuse_tex_ = texture;
+                        std::string model_name = mesh->GetStaticMesh()->model_name;
+                        std::string model_base = "model";
+                        std::string model_final_name = YPath::PathCombine(model_base, model_name);
+                        //model_final_name = YPath::PathCombine(model_final_name, model_name);
+                        mesh->SetSavedPath(model_final_name);
+                        Json::Value root;
+                        mesh->SaveToJson(root);
+                        std::string json_path = YPath::PathCombine(model_final_name, model_name+SObject::json_extension_with_dot);
+                        package_path = '/'+ json_path;
+                        YJsonHelper::SaveJsonToFile(json_path, root);
                     }
                     SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
                     SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());
-
+                    {
+                        TRefCountPtr<SStaticMesh> ss = SObjectManager::ConstructFromPackage<SStaticMesh>(package_path,nullptr);
+                        ss->GetStaticMesh()->AllocGpuResource();
+                        engine->static_mesh_ = ss;
+                        SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
+                        SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());
+                    }
                 }
                 else
                 {

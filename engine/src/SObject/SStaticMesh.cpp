@@ -22,33 +22,52 @@ SStaticMesh::~SStaticMesh()
 
 bool SStaticMesh::LoadFromJson(const Json::Value& RootJson)
 {
-	if (!RootJson.isMember("model_asset"))
+	if (!RootJson.isMember("runtime_asset"))
 	{
 		ERROR_INFO("SStaticMesh ", name_, " load failed!,because do not have model asset");
 		return false;
 	}
 	
-	std::string model_asset_path = RootJson["model_asset"].asString();
-	if (!YPath::IsAssetAbsolutePath(model_asset_path))
+	std::string runtime_asset_path = RootJson["runtime_asset"].asString();
+	if (!YPath::IsAssetAbsolutePath(runtime_asset_path))
 	{
-		model_asset_path = YPath::PathCombine(YPath::GetPath(YPath::ConverAssetPathToFilePath(name_)),model_asset_path);
+        runtime_asset_path = YPath::PathCombine(YPath::GetPath(YPath::ConverAssetPathToFilePath(name_)), runtime_asset_path);
 	}
 	else
 	{
-		model_asset_path = YPath::ConverAssetPathToFilePath(model_asset_path);
+        runtime_asset_path = YPath::ConverAssetPathToFilePath(runtime_asset_path);
 	}
 
 	static_mesh_ = std::make_unique<YStaticMesh>();
-	if (static_mesh_->LoadV0(model_asset_path))
+	if (static_mesh_->LoadRuntimeData(runtime_asset_path))
 	{
-		LOG_INFO("Static mesh load success! path: ", model_asset_path);
+		LOG_INFO("Static mesh runtime load success! path: ", runtime_asset_path);
 	}
 	else
 	{
-		LOG_INFO("Static mesh load failed! path: ", model_asset_path);
+		LOG_INFO("Static mesh runtime load failed! path: ", runtime_asset_path);
 		return false;
 	}
 
+    std::string editor_asset_path = RootJson["editor_asset"].asString();
+    if (!YPath::IsAssetAbsolutePath(editor_asset_path))
+    {
+        editor_asset_path = YPath::PathCombine(YPath::GetPath(YPath::ConverAssetPathToFilePath(name_)), editor_asset_path);
+    }
+    else
+    {
+        editor_asset_path = YPath::ConverAssetPathToFilePath(editor_asset_path);
+    }
+
+    if (static_mesh_->LoadEditorData(editor_asset_path))
+    {
+        LOG_INFO("Static mesh runtime editor data load success! path: ", editor_asset_path);
+    }
+    else
+    {
+        LOG_INFO("Static mesh runtime editor data load failed! path: ", editor_asset_path);
+        return false;
+    }
 
 	if (RootJson.isMember("material_slot"))
 	{
@@ -101,10 +120,10 @@ bool SStaticMesh::SaveToJson(Json::Value& root_json)
     const std::string base_path_name = GetName();
     const std::string static_mesh_model_name_runtime = static_mesh_->model_name + "_ra";
     root_json["runtime_asset"] = static_mesh_model_name_runtime; //runtime_asset
-    static_mesh_->SaveRuntimeData(static_mesh_model_name_runtime);
+    static_mesh_->SaveRuntimeData(YPath::PathCombine(base_path_name,static_mesh_model_name_runtime ));
     const std::string static_mesh_model_name_editor = static_mesh_->model_name + "_ea";
     root_json["editor_asset"] = static_mesh_model_name_editor; //editor_asset
-    static_mesh_->SaveEditorData(static_mesh_model_name_editor);
+    static_mesh_->SaveEditorData(YPath::PathCombine(base_path_name, static_mesh_model_name_editor));
 
     Json::Value materials;
     for (int i = 0; i < (int)materials_.size(); ++i)
@@ -147,5 +166,10 @@ void SStaticMesh::Update(double deta_time)
 YStaticMesh* SStaticMesh::GetStaticMesh() const
 {
 	return static_mesh_.get();
+}
+
+void SStaticMesh::SetSavedPath(const std::string new_path)
+{
+    name_ = new_path;
 }
 

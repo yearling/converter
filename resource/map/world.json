@@ -27,6 +27,19 @@
         // ,
         {
             "root_component":
+            {
+                    "type":"StaticMesh",
+                    "model":"/model/Spaceship_05/Spaceship_05",
+                    "local_translation":[ 0.0,0.0,0.0],
+                    "local_rotation":[0.0,0.0,0.0],
+                    "local_scale":[0.1,0.1,0.1]
+            },
+            "name":"Spaceship_05",
+            "id":22
+        }
+        ,
+        {
+            "root_component":
              {
                     "type":"DirectionLight",
                     "strength":1.0,

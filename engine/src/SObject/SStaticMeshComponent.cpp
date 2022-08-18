@@ -84,7 +84,8 @@ void SStaticMeshComponent::UpdateBound()
 {
 	if (static_mesh_)
 	{
-		bounds_ = static_mesh_->GetStaticMesh()->raw_meshes[0].aabb.TransformBy(component_to_world_);
+		//bounds_ = static_mesh_->GetStaticMesh()->raw_meshes[0].aabb.TransformBy(component_to_world_);
+		bounds_ = static_mesh_->GetStaticMesh()->lod_render_data_[0]->aabb.TransformBy(component_to_world_);
 	}
 }
 

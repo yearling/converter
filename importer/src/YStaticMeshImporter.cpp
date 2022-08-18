@@ -561,13 +561,7 @@ bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vecto
     PostProcessRenderMesh process(new_copyed_mesh.get(),import_param_.get());
     //static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
     static_mesh->lod_render_data_.push_back(process.GenerateMediumStaticVertexData());
-    YLODMesh& raw_mesh = static_mesh->raw_meshes[0];
-    raw_mesh.vertex_position = new_copyed_mesh->control_points;
-    raw_mesh.vertex_instances = new_copyed_mesh->wedges;
-    raw_mesh.polygons = new_copyed_mesh->polygons;
-    raw_mesh.edges = new_copyed_mesh->edges;
-    raw_mesh.polygon_groups = new_copyed_mesh->polygon_groups;
-    static_mesh->imported_raw_meshes_.emplace_back(std::move(new_copyed_mesh));
+     static_mesh->imported_raw_meshes_.emplace_back(std::move(new_copyed_mesh));
     return true;
 }
 

@@ -61,7 +61,7 @@ struct FlowFlag
     int wedge_id = -1;
 };
 
-void RecursiveFindGroup(YLODMesh& lod_mesh, int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlag>& around_triangle_ids)
+void RecursiveFindGroup(ImportedRawMesh& lod_mesh, int triangle_id, std::set<int>& out_triangle_group, std::unordered_map<int, FlowFlag>& around_triangle_ids)
 {
     if (around_triangle_ids[triangle_id].visited)
     {
@@ -88,9 +88,9 @@ void RecursiveFindGroup(YLODMesh& lod_mesh, int triangle_id, std::set<int>& out_
         last_id[1] = polygon.wedge_ids[1];
     }
 
-    YMeshWedge& cur_wedge = lod_mesh.vertex_instances[cur_wedge_index];
-    YMeshWedge& wedge1 = lod_mesh.vertex_instances[last_id[0]];
-    YMeshWedge& wedge2 = lod_mesh.vertex_instances[last_id[1]];
+    YMeshWedge& cur_wedge = lod_mesh.wedges[cur_wedge_index];
+    YMeshWedge& wedge1 = lod_mesh.wedges[last_id[0]];
+    YMeshWedge& wedge2 = lod_mesh.wedges[last_id[1]];
     int edge_id01 = lod_mesh.GetVertexPairEdge(cur_wedge.control_point_id, wedge1.control_point_id);
     assert(edge_id01 != -1);
     YMeshEdge& edge_01 = lod_mesh.edges[edge_id01];
@@ -134,18 +134,18 @@ void RecursiveFindGroup(YLODMesh& lod_mesh, int triangle_id, std::set<int>& out_
         }
     }
 }
-std::vector<std::set<int>> GetSplitTriangleGroupBySoftEdge(YLODMesh& lod_mesh, int wedge_index)
+std::vector<std::set<int>> GetSplitTriangleGroupBySoftEdge(ImportedRawMesh& lod_mesh, int wedge_index)
 {
-    YMeshWedge& wedge = lod_mesh.vertex_instances[wedge_index];
+    YMeshWedge& wedge = lod_mesh.wedges[wedge_index];
     int triangle_id = wedge.connected_triangles[0];
     YMeshPolygon& start_triangle = lod_mesh.polygons[triangle_id];
 
-    YMeshControlPoint& control_point_search = lod_mesh.vertex_position[wedge.control_point_id];
+    YMeshControlPoint& control_point_search = lod_mesh.control_points[wedge.control_point_id];
     std::unordered_map<int,FlowFlag> around_triangle_ids;
     for (int wedge_id : control_point_search.wedge_ids)
     {
         FlowFlag tmp_flag;
-        tmp_flag.triangle_id = lod_mesh.vertex_instances[wedge_id].connected_triangles[0];
+        tmp_flag.triangle_id = lod_mesh.wedges[wedge_id].connected_triangles[0];
         tmp_flag.wedge_id = wedge_id;
         tmp_flag.visited = false;
         around_triangle_ids[tmp_flag.triangle_id] = tmp_flag;
@@ -238,15 +238,17 @@ void YPickupShowMove::Update(double delta_time)
     {
         YEngine* engine = YEngine::GetEngine();
         YStaticMesh* static_mesh = engine->static_mesh_->GetStaticMesh();
-        YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
+        //YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
+        std::unique_ptr<ImportedRawMesh>& lod_mesh_ptr = static_mesh->imported_raw_meshes_[0];
+        ImportedRawMesh& lod_mesh = (*lod_mesh_ptr);
         YMeshPolygon& triangle = lod_mesh.polygons[triangle_id];
-        YMeshWedge& wedge0 = lod_mesh.vertex_instances[triangle.wedge_ids[0]];
-        YMeshWedge& wedge1 = lod_mesh.vertex_instances[triangle.wedge_ids[1]];
-        YMeshWedge& wedge2 = lod_mesh.vertex_instances[triangle.wedge_ids[2]];
+        YMeshWedge& wedge0 = lod_mesh.wedges[triangle.wedge_ids[0]];
+        YMeshWedge& wedge1 = lod_mesh.wedges[triangle.wedge_ids[1]];
+        YMeshWedge& wedge2 = lod_mesh.wedges[triangle.wedge_ids[2]];
         int control_point[3] = { wedge0.control_point_id, wedge1.control_point_id,wedge2.control_point_id };
-        YVector triangle_pos[3] = { lod_mesh.vertex_position[control_point[0]].position,
-        lod_mesh.vertex_position[control_point[1]].position ,
-        lod_mesh.vertex_position[control_point[2]].position };
+        YVector triangle_pos[3] = { lod_mesh.control_points[control_point[0]].position,
+        lod_mesh.control_points[control_point[1]].position ,
+        lod_mesh.control_points[control_point[2]].position };
         g_Canvas->DrawLine(triangle_pos[0], triangle_pos[1], color, false);
         g_Canvas->DrawLine(triangle_pos[1], triangle_pos[2], color, false);
         g_Canvas->DrawLine(triangle_pos[2], triangle_pos[0], color, false);
@@ -255,8 +257,9 @@ void YPickupShowMove::Update(double delta_time)
     {
         YEngine* engine = YEngine::GetEngine();
         YStaticMesh* static_mesh = engine->static_mesh_->GetStaticMesh();
-        YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
-        YMeshWedge& wedge = lod_mesh.vertex_instances[select_wedge_id];
+        std::unique_ptr<ImportedRawMesh>& lod_mesh_ptr = static_mesh->imported_raw_meshes_[0];
+        ImportedRawMesh& lod_mesh = (*lod_mesh_ptr);
+        YMeshWedge& wedge = lod_mesh.wedges[select_wedge_id];
         int triangle_id = wedge.connected_triangles[0];
         YMeshPolygon& triangle = lod_mesh.polygons[triangle_id];
         int other_wedge_id0 = -1;
@@ -276,15 +279,15 @@ void YPickupShowMove::Update(double delta_time)
             other_wedge_id0 = triangle.wedge_ids[0];
             other_wedge_id1 = triangle.wedge_ids[1];
         }
-        YMeshWedge& wedge1 = lod_mesh.vertex_instances[other_wedge_id0];
-        YMeshWedge& wedge2 = lod_mesh.vertex_instances[other_wedge_id1];
+        YMeshWedge& wedge1 = lod_mesh.wedges[other_wedge_id0];
+        YMeshWedge& wedge2 = lod_mesh.wedges[other_wedge_id1];
         int control_point[3] = { wedge.control_point_id, wedge1.control_point_id,wedge2.control_point_id };
         //YVector triangle
-        YMeshControlPoint& control_point_search = lod_mesh.vertex_position[wedge.control_point_id];
+        YMeshControlPoint& control_point_search = lod_mesh.control_points[wedge.control_point_id];
         std::vector<int> around_triangle_ids;
         for (int wedge_id : control_point_search.wedge_ids)
         {
-            around_triangle_ids.push_back(lod_mesh.vertex_instances[wedge_id].connected_triangles[0]);
+            around_triangle_ids.push_back(lod_mesh.wedges[wedge_id].connected_triangles[0]);
         }
 
 

@@ -112,28 +112,6 @@ public:
     std::string mesh_name;
 };
 
-struct YLODMesh
-{
-public:
-    YLODMesh();
-    int LOD_index;
-    std::vector<YRawMesh> sub_meshes;
-    std::vector<YMeshControlPoint> vertex_position;
-    std::vector<YMeshWedge> vertex_instances;
-    std::vector< YMeshPolygon> polygons;
-    std::vector< YMeshEdge> edges;
-    std::vector<YMeshPolygonGroup> polygon_groups;
-    std::unordered_map<int, std::shared_ptr<YImportedMaterial>> polygon_group_to_material_name;
-    std::unordered_map<int, std::shared_ptr<YImportedMaterial>> polygon_group_to_material;
-    std::unordered_map<uint64_t, int> edged_vertex_id_to_edge_id;
-    YBox aabb;
-    int GetVertexPairEdge(int vertex_id0, int vertex_id1);
-    int CreateEdge(int vertex_id_0, int vertex_id_1);
-    int CreatePolygon(int polygon_group_id, std::vector<int> vertex_ins_ids, std::vector<int>& out_edges);
-    void ComputeAABB();
-};
-
-
 struct ImportedRawMesh
 {
 public:
@@ -192,9 +170,6 @@ protected:
     static const int version;
     friend  YArchive& operator<<(YArchive& mem_file, ImportedRawMesh& imported_raw_mesh);
 };
-
-YArchive& operator<<(YArchive& mem_file, YLODMesh& lod_mesh);
-YArchive& operator<<(YArchive& mem_file, YRawMesh& raw_mesh);
 
 YArchive& operator<<(YArchive& mem_file, ImportedRawMesh& imported_raw_mesh);
 YArchive& operator<<(YArchive& mem_file, YMeshControlPoint& control_point);

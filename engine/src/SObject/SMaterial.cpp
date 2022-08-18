@@ -168,8 +168,8 @@ bool SMaterial::LoadFromJson(const Json::Value& RootJson)
 	if (RootJson.isMember("material_parameters"))
 	{
 		const Json::Value& paramters_json = RootJson["material_parameters"];
-		assert(paramters_json.isArray());
-		if (!paramters_json.isArray())
+		//assert(paramters_json.isArray());
+		if (!paramters_json.isArray() && paramters_json.isNull())
 		{
 			WARNING_INFO("material ", name_, " material parameters should be an array");
 			return true;

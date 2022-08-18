@@ -124,7 +124,7 @@ public:
     bool LoadRuntimeData(const std::string& file_path);
     bool SaveEditorData(const std::string& dir);
     bool LoadEditorData(const std::string& file_path);
-    std::vector<YLODMesh> raw_meshes;
+    //std::vector<YLODMesh> raw_meshes;
     std::vector<std::unique_ptr<ImportedRawMesh>> imported_raw_meshes_;
     std::vector<std::unique_ptr< StaticVertexRenderData>> lod_render_data_;
 public:

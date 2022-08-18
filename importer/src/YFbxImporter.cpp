@@ -415,26 +415,26 @@ TRefCountPtr<SStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<Fbx
     std::unique_ptr<YStaticMesh> static_mesh = std::make_unique<YStaticMesh>();
     TRefCountPtr<SStaticMesh> ss = new SStaticMesh();
     static_mesh->model_name = mesh_name;
-    if (static_mesh->raw_meshes.size() <= lod_index)
-    {
-        for (int i = 0; i <= lod_index; ++i)
-        {
-            if (static_mesh->raw_meshes.size() <= i)
-            {
-                static_mesh->raw_meshes.push_back(YLODMesh());
-                static_mesh->raw_meshes.back().LOD_index = i;
-            }
-            else
-            {
-                //if (!static_mesh->raw_meshes[i])
-                {
-                    static_mesh->raw_meshes.push_back(YLODMesh());
-                    static_mesh->raw_meshes.back().LOD_index = i;
-                }
-            }
-        }
-    }
-    YLODMesh* raw_mesh = &static_mesh->raw_meshes[lod_index];
+    //if (static_mesh->raw_meshes.size() <= lod_index)
+    //{
+    //    for (int i = 0; i <= lod_index; ++i)
+    //    {
+    //        if (static_mesh->raw_meshes.size() <= i)
+    //        {
+    //            static_mesh->raw_meshes.push_back(YLODMesh());
+    //            static_mesh->raw_meshes.back().LOD_index = i;
+    //        }
+    //        else
+    //        {
+    //            //if (!static_mesh->raw_meshes[i])
+    //            {
+    //                static_mesh->raw_meshes.push_back(YLODMesh());
+    //                static_mesh->raw_meshes.back().LOD_index = i;
+    //            }
+    //        }
+    //    }
+    //}
+    //YLODMesh* raw_mesh = &static_mesh->raw_meshes[lod_index];
     std::vector<std::shared_ptr<YImportedMaterial>> mesh_materials;
     int node_fail_count = 0;
     bool is_all_degenerated = true;

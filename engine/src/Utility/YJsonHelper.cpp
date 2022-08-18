@@ -110,7 +110,7 @@ bool YJsonHelper::SaveJsonToFile(const std::string& path, Json::Value& root)
     YFile file_to_write(path, YFile::FileType(YFile::FT_TXT | YFile::FT_Write));
     MemoryFile mem_file(MemoryFile::FT_Write);
     std::string style_string = root.toStyledString();
-    mem_file << style_string;
+    mem_file.Serialize(style_string.data(),style_string.size());
     if (!file_to_write.WriteFile(&mem_file, true))
     {
         ERROR_INFO("save json ", path , " failed!");

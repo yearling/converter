@@ -11,6 +11,8 @@
 #include "Engine/YRenderScene.h"
 #include "Engine/YPrimitiveElement.h"
 #include "Engine/YCanvas.h"
+#include "SObject/STexture.h"
+#include "SObject/SObjectManager.h"
 
 class YStaticMeshVertexFactory :public DXVertexFactory
 {
@@ -206,7 +208,7 @@ YArchive& operator<<(YArchive& mem_file, StaticVertexRenderData& static_vertex_r
             mem_file << static_vertex_render_data.indices_adjacent_16;
         }
     }
-
+    mem_file << static_vertex_render_data.sections;
     mem_file << static_vertex_render_data.aabb;
     return mem_file;
 }
@@ -230,12 +232,12 @@ void YStaticMesh::Render(CameraBase* camera)
     pixel_shader_->Update();
 
     int triangle_total = 0;
-    for (auto& polygon_group : raw_meshes[0].polygon_groups)
-    {
-        int triangle_count = (int)polygon_group.polygons.size();
-        dc->DrawIndexed(triangle_count * 3, triangle_total, 0);
-        triangle_total += triangle_count * 3;
-    }
+    /* for (auto& polygon_group : raw_meshes[0].polygon_groups)
+     {
+         int triangle_count = (int)polygon_group.polygons.size();
+         dc->DrawIndexed(triangle_count * 3, triangle_total, 0);
+         triangle_total += triangle_count * 3;
+     }*/
 }
 
 
@@ -493,10 +495,10 @@ bool YStaticMesh::AllocGpuResource()
     {
         return true;
     }
-    if (raw_meshes.size() == 0)
+  /*  if (raw_meshes.size() == 0)
     {
         return false;
-    }
+    }*/
 
 #if 0
     std::unique_ptr< YStaticMeshVertexFactory > static_mesh_vertex_factory = std::make_unique<YStaticMeshVertexFactory>(this);
@@ -811,6 +813,14 @@ std::unique_ptr< StaticVertexRenderData>& lod_mesh_render_data = lod_render_data
         sampler_state_ = g_device->GetSamplerState(SF_Tilinear, SA_Wrap);
     }
     vertex_factory_ = std::move(static_mesh_vertex_factory);
+
+    std::string test_pic = "/textures/uv4096.png";
+    TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
+    if (texture)
+    {
+        texture->UploadGPUBuffer();
+    }
+    diffuse_tex_ = texture;
     allocated_gpu_resource = true;
     return true;
 }
@@ -832,7 +842,7 @@ bool YStaticMesh::SaveV0(const std::string& dir)
     MemoryFile mem_file(MemoryFile::FT_Write);
     int version = 0;
     mem_file << version;
-    mem_file << raw_meshes;
+    //mem_file << raw_meshes;
 
 
     std::string file_name = YPath::PathCombine(dir, model_name + ".yasset");
@@ -858,12 +868,12 @@ bool YStaticMesh::LoadV0(const std::string& file_path)
     {
         int version = 0;
         (*mem_file) << version;
-        (*mem_file) << raw_meshes;
+        //(*mem_file) << raw_meshes;
 
-        for (auto& mesh : raw_meshes)
+      /*  for (auto& mesh : raw_meshes)
         {
             mesh.ComputeAABB();
-        }
+        }*/
         return true;
     }
     else

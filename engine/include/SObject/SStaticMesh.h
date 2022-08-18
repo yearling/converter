@@ -19,6 +19,7 @@ public:
 	YStaticMesh* GetStaticMesh() const;
     
     friend class YFbxImporter;
+    void SetSavedPath(const std::string new_path);
 protected:
 	std::unique_ptr<YStaticMesh> static_mesh_;
 	std::vector<TRefCountPtr<SMaterial>> materials_;
