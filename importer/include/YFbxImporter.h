@@ -1,18 +1,20 @@
 ﻿#pragma once
 #include <string>
 #include <memory>
-#include "fbxsdk.h"
 #include <vector>
-#include "Math/YVector.h"
 #include <set>
+#include "fbxsdk.h"
+#include "Math/YVector.h"
 #include "fbxsdk/core/math/fbxaffinematrix.h"
 #include "YFbxUtility.h"
 #include "fbxsdk/scene/shading/fbxsurfacematerial.h"
 #include "Engine/YRawMesh.h"
 #include "Engine/YMaterial.h"
-
 #include "Engine/YStaticMesh.h"
 #include "Engine/YSkeletonMesh.h"
+
+
+
 struct FbxImportParam 
 {
 	bool import_as_skelton = false;
@@ -36,6 +38,7 @@ struct FbxMeshInfo
 	std::string skeleton_name;
 	int skeleton_count;
 };
+
 struct FbxImportSceneInfo
 {
 	double time=0;
@@ -48,7 +51,6 @@ struct FbxImportSceneInfo
 	std::vector<FbxMeshInfo> mesh_infos;
 	std::string model_name;
     std::vector<std::string> material_names;
-   
 };
 
 struct ConvertedResult
@@ -57,6 +59,7 @@ struct ConvertedResult
 	std::vector<std::unique_ptr<YStaticMesh>> static_meshes;
 	std::unique_ptr<YSkeletonMesh> skeleton_mesh;
 };
+
 enum DCCSoftware {
 	E3dsMax,
 	EMaya,
@@ -65,6 +68,7 @@ enum DCCSoftware {
 	EZB,
 	EUnknown
 };
+
 class YFbxImporter {
 public:
 	YFbxImporter();
@@ -123,9 +127,9 @@ protected:
     //获取当前node里所有的FbxMaterial，并保存在out_materials中，key是fbx里的material的index。
        //因为材质是跨mesh的，所以使用imported_material_data来作为manager，使用FbxSurfaceMaterial*作为key来保证相同的fbx材质
        //生成唯一的材质
-    void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YFbxMaterial>>& out_materials, std::vector<std::string>& us_sets);
-    std::shared_ptr<YFbxMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
-    std::shared_ptr<YFbxMaterial> GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set);
+    void FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YImportedMaterial>>& out_materials, std::vector<std::string>& us_sets);
+    std::shared_ptr<YImportedMaterial> FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl);
+    std::shared_ptr<YImportedMaterial> GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set);
 
 
 

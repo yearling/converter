@@ -88,9 +88,9 @@ void RecursiveFindGroup(YLODMesh& lod_mesh, int triangle_id, std::set<int>& out_
         last_id[1] = polygon.wedge_ids[1];
     }
 
-    YMeshVertexWedge& cur_wedge = lod_mesh.vertex_instances[cur_wedge_index];
-    YMeshVertexWedge& wedge1 = lod_mesh.vertex_instances[last_id[0]];
-    YMeshVertexWedge& wedge2 = lod_mesh.vertex_instances[last_id[1]];
+    YMeshWedge& cur_wedge = lod_mesh.vertex_instances[cur_wedge_index];
+    YMeshWedge& wedge1 = lod_mesh.vertex_instances[last_id[0]];
+    YMeshWedge& wedge2 = lod_mesh.vertex_instances[last_id[1]];
     int edge_id01 = lod_mesh.GetVertexPairEdge(cur_wedge.control_point_id, wedge1.control_point_id);
     assert(edge_id01 != -1);
     YMeshEdge& edge_01 = lod_mesh.edges[edge_id01];
@@ -136,7 +136,7 @@ void RecursiveFindGroup(YLODMesh& lod_mesh, int triangle_id, std::set<int>& out_
 }
 std::vector<std::set<int>> GetSplitTriangleGroupBySoftEdge(YLODMesh& lod_mesh, int wedge_index)
 {
-    YMeshVertexWedge& wedge = lod_mesh.vertex_instances[wedge_index];
+    YMeshWedge& wedge = lod_mesh.vertex_instances[wedge_index];
     int triangle_id = wedge.connected_triangles[0];
     YMeshPolygon& start_triangle = lod_mesh.polygons[triangle_id];
 
@@ -240,9 +240,9 @@ void YPickupShowMove::Update(double delta_time)
         YStaticMesh* static_mesh = engine->static_mesh_.get();
         YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
         YMeshPolygon& triangle = lod_mesh.polygons[triangle_id];
-        YMeshVertexWedge& wedge0 = lod_mesh.vertex_instances[triangle.wedge_ids[0]];
-        YMeshVertexWedge& wedge1 = lod_mesh.vertex_instances[triangle.wedge_ids[1]];
-        YMeshVertexWedge& wedge2 = lod_mesh.vertex_instances[triangle.wedge_ids[2]];
+        YMeshWedge& wedge0 = lod_mesh.vertex_instances[triangle.wedge_ids[0]];
+        YMeshWedge& wedge1 = lod_mesh.vertex_instances[triangle.wedge_ids[1]];
+        YMeshWedge& wedge2 = lod_mesh.vertex_instances[triangle.wedge_ids[2]];
         int control_point[3] = { wedge0.control_point_id, wedge1.control_point_id,wedge2.control_point_id };
         YVector triangle_pos[3] = { lod_mesh.vertex_position[control_point[0]].position,
         lod_mesh.vertex_position[control_point[1]].position ,
@@ -256,7 +256,7 @@ void YPickupShowMove::Update(double delta_time)
         YEngine* engine = YEngine::GetEngine();
         YStaticMesh* static_mesh = engine->static_mesh_.get();
         YLODMesh& lod_mesh = static_mesh->raw_meshes[0];
-        YMeshVertexWedge& wedge = lod_mesh.vertex_instances[select_wedge_id];
+        YMeshWedge& wedge = lod_mesh.vertex_instances[select_wedge_id];
         int triangle_id = wedge.connected_triangles[0];
         YMeshPolygon& triangle = lod_mesh.polygons[triangle_id];
         int other_wedge_id0 = -1;
@@ -276,8 +276,8 @@ void YPickupShowMove::Update(double delta_time)
             other_wedge_id0 = triangle.wedge_ids[0];
             other_wedge_id1 = triangle.wedge_ids[1];
         }
-        YMeshVertexWedge& wedge1 = lod_mesh.vertex_instances[other_wedge_id0];
-        YMeshVertexWedge& wedge2 = lod_mesh.vertex_instances[other_wedge_id1];
+        YMeshWedge& wedge1 = lod_mesh.vertex_instances[other_wedge_id0];
+        YMeshWedge& wedge2 = lod_mesh.vertex_instances[other_wedge_id1];
         int control_point[3] = { wedge.control_point_id, wedge1.control_point_id,wedge2.control_point_id };
         //YVector triangle
         YMeshControlPoint& control_point_search = lod_mesh.vertex_position[wedge.control_point_id];
@@ -369,9 +369,9 @@ void YPickupShowMove::RayCast(int x, int y)
         for (int polygon_index : polygon_group.polygons)
         {
             YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-            YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
-            YMeshVertexWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
-            YMeshVertexWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+            YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
+            YMeshWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
+            YMeshWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
             YVector p0 = lod_mesh.vertex_position[vertex_ins_0.control_point_id].position;
             YVector p1 = lod_mesh.vertex_position[vertex_ins_1.control_point_id].position;
             YVector p2 = lod_mesh.vertex_position[vertex_ins_2.control_point_id].position;

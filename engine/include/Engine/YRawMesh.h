@@ -12,27 +12,11 @@
 #include "YPackedNormal.h"
 #include "Math/Vector2DHalf.h"
 
-
-
-/**
-* Returns true if the specified points are about equal
-*/
-inline bool PointsEqual(const YVector& V1, const YVector& V2, float ComparisonThreshold)
-{
-    if (YMath::Abs(V1.x - V2.x) > ComparisonThreshold
-        || YMath::Abs(V1.y - V2.y) > ComparisonThreshold
-        || YMath::Abs(V1.z - V2.z) > ComparisonThreshold)
-    {
-        return false;
-    }
-    return true;
-}
-
 enum NormalCaculateMethod
 {
     ImportNormal = 0,
-    Caculate  = 1,
-    ImportNormalAndTangnet=2,
+    Caculate = 1,
+    ImportNormalAndTangnet = 2,
 };
 
 enum TangentMethod
@@ -41,7 +25,7 @@ enum TangentMethod
     BuildIn = 1
 };
 
-struct YFbxMaterial
+struct YImportedMaterial
 {
     struct ParamTexture
     {
@@ -51,12 +35,10 @@ struct YFbxMaterial
         bool is_normal_map;
     };
 public:
-    YFbxMaterial() {};
+    YImportedMaterial() {};
     std::string name;
     std::unordered_map<std::string, ParamTexture> param_textures;
-
 };
-
 
 struct YMeshControlPoint
 {
@@ -70,34 +52,50 @@ struct YMeshControlPoint
 	void AddWedge(int index);
 };
 
-struct YMeshVertexWedge
+struct YMeshWedge
 {
-	YMeshVertexWedge();
-	/** The vertex this is instancing */
-	int control_point_id = INVALID_ID;
-    YVector position;
-	/** List of connected triangles */
-	std::vector<int> connected_triangles;
+	YMeshWedge();
 
+	int control_point_id = INVALID_ID;
+    YVector position; //copy of control point postion ,for quickly access
 	YVector normal{ 0.0,0.0,1.0 };
 	YVector tangent{ 1.0,0.0,0.0 };
 	YVector bitangent{ 0.0,1.0,0.0 };
 	float binormal_sign{ 0.0 };
 	YVector4 color{ 0.0,0.0,0.0,0.0 };
 	std::vector<YVector2> uvs;
+    float corner_angle = 0.0; // for average normal
+    /** List of connected triangles */
+	std::vector<int> connected_triangles;
+
 	void AddTriangleID(int triangle_id);
-    float corner_angle = 0.0;
+};
+
+struct YMeshEdge
+{
+public:
+    YMeshEdge();
+    /** IDs of the two editable mesh vertices that make up this edge.  The winding direction is not defined. */
+    int control_points_ids[2] = { INVALID_ID,INVALID_ID };
+    /** The triangles that share this edge */
+    std::vector<int> connected_triangles;
+    bool edge_hardness = false;
+    float edge_crease_sharpness = 0;
+    bool is_uv_seam = false;
+
+public:
+    void AddTriangleID(int triangle_id);
 };
 
 struct YMeshPolygon
 {
 	int polygon_group_id = INVALID_ID; //deprecate 
 	std::vector<int> wedge_ids;
-    YVector normal{ 0.0,0.0,1.0 };
-    YVector tangent{ 1.0,0.0,0.0 };
-    YVector bitangent{ 0.0,1.0,0.0 };
-    float bitanget_sign = 1.0;
-    float aera = 0.0f;
+    YVector face_normal{ 0.0,0.0,1.0 };
+    YVector face_tangent{ 1.0,0.0,0.0 };
+    YVector face_bitangent{ 0.0,1.0,0.0 };
+    float face_bitanget_sign = 1.0;
+    float face_aera = 0.0f; // for average normal
 };
 
 struct YMeshPolygonGroup
@@ -105,26 +103,10 @@ struct YMeshPolygonGroup
 	std::vector<int> polygons;
 };
 
-struct YMeshEdge
-{
-
-	YMeshEdge();
-	/** IDs of the two editable mesh vertices that make up this edge.  The winding direction is not defined. */
-    int control_points_ids[2] = { INVALID_ID,INVALID_ID };
-
-	/** The triangles that share this edge */
-	std::vector<int> connected_triangles;
-	bool edge_hardness = false;
-	float edge_crease_sharpness = 0;
-	void AddTriangleID(int triangle_id);
-    bool is_uv_seam = false;
-};
-
 struct YRawMesh
 {
 public:
 	std::string mesh_name;
-    
 };
 
 struct YLODMesh
@@ -134,12 +116,12 @@ public:
 	int LOD_index;
 	std::vector<YRawMesh> sub_meshes;
 	std::vector<YMeshControlPoint> vertex_position;
-	std::vector<YMeshVertexWedge> vertex_instances;
+	std::vector<YMeshWedge> vertex_instances;
 	std::vector< YMeshPolygon> polygons;
 	std::vector< YMeshEdge> edges;
 	std::vector<YMeshPolygonGroup> polygon_groups;
-	std::unordered_map<int,  std::shared_ptr<YFbxMaterial>> polygon_group_to_material_name;
-	std::unordered_map<int,  std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
+	std::unordered_map<int,  std::shared_ptr<YImportedMaterial>> polygon_group_to_material_name;
+	std::unordered_map<int,  std::shared_ptr<YImportedMaterial>> polygon_group_to_material;
     std::unordered_map<uint64_t, int> edged_vertex_id_to_edge_id;
 	YBox aabb;
 	int GetVertexPairEdge(int vertex_id0, int vertex_id1);
@@ -165,15 +147,15 @@ public:
     std::vector< YMeshPolygon> polygons;
     std::vector<YMeshPolygonGroup> polygon_groups;
     // info
-    std::vector<YMeshVertexWedge> wedges;
+    std::vector<YMeshWedge> wedges;
     //material
-    std::vector<std::shared_ptr<YFbxMaterial>> polygon_group_to_material;
+    std::vector<std::shared_ptr<YImportedMaterial>> polygon_group_to_material;
     YBox aabb;
 
 public:
     ImportedRawMesh();
-    int GetVertexPairEdge(int vertex_id0, int vertex_id1)const ;
-    int CreateEdge(int vertex_id_0, int vertex_id_1);
+    int GetVertexPairEdge(int control_point_id0, int control_id1)const ;
+    int CreateEdge(int control_point_id_0, int control_point_id_1);
     int CreatePolygon(int polygon_group_id, std::vector<int> in_wedges, std::vector<int>& out_edges);
     void ComputeAABB();
     void CompressControlPoint();
@@ -185,6 +167,7 @@ public:
     void ComputeUVSeam();
     void CompressMaterials();
     void GenerateLightMapUV();
+    void CompressWedges();
 protected:
     friend struct MikktHelper;
     std::set<int> GetSplitTriangleGroupBySoftEdge( int wedge_index, bool split_uv_seam );
@@ -204,114 +187,6 @@ protected:
 };
 
 
-struct StaticVertexRenderData
-{
-    struct IndexOffsetAndTriangleCount
-    {
-        uint32 offset = -1;
-        uint32 triangle_count = -1;
-        uint32 min_vertex_index = -1;
-        uint32 max_vertex_index = -1;
-    };
-    std::vector<YVector> position;
-    std::vector<uint32> indices_vertex_32;
-    std::vector<uint32> indices_vertex_reversed_32;
-    std::vector<uint32> indices_depth_only_32;
-    std::vector<uint32> indices_depth_only_reversed_32;
-    std::vector<uint32> indices_adjacent_32;
-    std::vector<uint16> indices_vertex_16;
-    std::vector<uint16> indices_vertex_reversed_16;
-    std::vector<uint16> indices_depth_only_16;
-    std::vector<uint16> indices_depth_only_reversed_16;
-    std::vector<uint16> indices_adjacent_16;
-    bool use_32_indices = true;
-    std::vector<IndexOffsetAndTriangleCount> sections;
-    //void GenerateIndexBuffers(const std::vector<std::vector<uint32>>& section_indices);
-    void GenerateIndexBuffers(std::vector<uint32>& indices_32, std::vector<uint16>& indices_16, const std::vector<std::vector<uint32>>& section_indices,bool genereate_section_info = false);
-
-    enum VertexInfoType
-    {
-        Hi_precision,
-        Medium,
-        low
-    };
-    VertexInfoType vertex_info_type;
-    virtual uint32 GetVertexInfoSize();
-    virtual void* GetVertexInfoData();
-};
-struct HiSttaticVertexData:public StaticVertexRenderData
-{
-    HiSttaticVertexData()
-    {
-        vertex_info_type = StaticVertexRenderData::Hi_precision;
-    }
-    struct HiVertexInfo
-    {
-        YVector4 normal;
-        YVector4 tangent;
-        YVector2 uv0;
-        YVector2 uv1;
-        int color;
-    };
-    std::vector<HiVertexInfo> vertex_infos;
-    uint32 GetVertexInfoSize() override;
-    void* GetVertexInfoData() override;
-};
-
-struct MediumStaticVertexData :public StaticVertexRenderData
-{
-    MediumStaticVertexData()
-    {
-        vertex_info_type = StaticVertexRenderData::Medium;
-    }
-    struct MediumVertexInfo
-    {
-        YPackedNormal normal;
-        YPackedNormal tangent;
-        FVector2DHalf uv0;
-        FVector2DHalf uv1;
-    };
-    std::vector<MediumVertexInfo> vertex_infos;
-    uint32 GetVertexInfoSize() override;
-    void* GetVertexInfoData() override;
-};
-
-struct FullStaticVertexData
-{
-    YVector position;
-    YVector normal;
-    YVector4 tangent;
-    YVector2 uv0;
-    YVector2 uv1;
-    YVector4 color;
-    bool operator ==(const FullStaticVertexData& other) const;
-};
-
-struct PostProcessRenderMesh
-{
-public:
-    PostProcessRenderMesh(ImportedRawMesh* raw_mesh);
-    //不在raw mesh中做是为了保存rawmesh的原始结构
-    void PostProcessPipeline();
-    void CompressVertex();
-    void OptimizeIndices();
-    void BuildStaticAdjacencyIndexBuffer();
-    void BuildReverseIndices();
-    void BuildDepthOnlyIndices();
-    void BuildDepthOnlyInverseIndices();
-    std::unique_ptr< HiSttaticVertexData> GenerateHiStaticVertexData();
-    std::unique_ptr< MediumStaticVertexData> GenerateMediumStaticVertexData();
-protected:
-    friend class FStaticMeshNvRenderBuffer;
-    ImportedRawMesh* raw_mesh_;
-    std::vector<FullStaticVertexData> vertex_data_cache;
-    std::vector<std::vector<uint32>> section_indices;
-    std::vector<std::vector<uint32>> reversed_indices;
-    std::vector<std::vector<uint32>> depth_only_indices;
-    std::vector<std::vector<uint32>> depth_only_reversed_indices;
-    std::vector<std::vector<uint32>> adjacency_section_indices;
-
-};
 YArchive& operator<<(YArchive& mem_file,  YLODMesh& lod_mesh);
 
 YArchive& operator<<(YArchive& mem_file,  YRawMesh& raw_mesh);
@@ -322,7 +197,7 @@ YArchive& operator<<(YArchive& mem_file,  YMeshPolygonGroup& mesh_polygon_group)
 
 YArchive& operator<<(YArchive& mem_file,  YMeshPolygon& mesh_polygon);
 
-YArchive& operator<<(YArchive& mem_file,  YMeshVertexWedge& mesh_vertex_instance);
+YArchive& operator<<(YArchive& mem_file,  YMeshWedge& mesh_vertex_instance);
 
 YArchive& operator<<(YArchive& mem_file,  YMeshControlPoint& mesh_vertex);
 

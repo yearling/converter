@@ -434,7 +434,7 @@ std::unique_ptr<YStaticMesh> YFbxImporter::ImportStaticMeshAsSingle(std::vector<
 		}
 	}
 	YLODMesh* raw_mesh = &static_mesh->raw_meshes[lod_index];
-	std::vector<std::shared_ptr<YFbxMaterial>> mesh_materials;
+	std::vector<std::shared_ptr<YImportedMaterial>> mesh_materials;
 	int node_fail_count = 0;
 	bool is_all_degenerated = true;
 	float SqrBoundingBoxThreshold = THRESH_POINTS_ARE_NEAR * THRESH_POINTS_ARE_NEAR;
@@ -488,7 +488,7 @@ void YFbxImporter::CheckSmoothingInfo(FbxMesh* fbx_mesh)
 
 
 
-void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YFbxMaterial>>& out_materials, std::vector<std::string>& us_sets)
+void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unordered_map<int, std::shared_ptr<YImportedMaterial>>& out_materials, std::vector<std::string>& us_sets)
 {
 	if (FbxMesh* mesh_node = fbx_node->GetMesh()) 
 	{
@@ -520,26 +520,26 @@ void YFbxImporter::FindOrImportMaterialsFromNode(FbxNode* fbx_node, std::unorder
 			//only create the material used by mesh element material
 			if (fbx_material && (used_material_indexes.find(material_index) != used_material_indexes.end()))
 			{
-				std::shared_ptr<YFbxMaterial> material = FindExistingMaterialFormFbxMaterial(fbx_material, us_sets);
+				std::shared_ptr<YImportedMaterial> material = FindExistingMaterialFormFbxMaterial(fbx_material, us_sets);
 				out_materials[material_index] = material;
 			}
 		}
 	}
 }
 
-std::shared_ptr<YFbxMaterial> YFbxImporter::FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl)
+std::shared_ptr<YImportedMaterial> YFbxImporter::FindExistingMaterialFormFbxMaterial(const FbxSurfaceMaterial* fbx_materia, std::vector<std::string>& uv_setsl)
 {
 	if (imported_material_data.fbx_material_to_us_material.find(fbx_materia) == imported_material_data.fbx_material_to_us_material.end())
 	{
-        std::shared_ptr<YFbxMaterial> material = GenerateFbxMaterial(fbx_materia,uv_setsl);
+        std::shared_ptr<YImportedMaterial> material = GenerateFbxMaterial(fbx_materia,uv_setsl);
 		imported_material_data.fbx_material_to_us_material[fbx_materia] = material;
 	}
 	return imported_material_data.fbx_material_to_us_material[fbx_materia];
 }
 
-std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set)
+std::shared_ptr<YImportedMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurfaceMaterial* surface_material, const std::vector<std::string>& uv_set)
 {
-    auto func_load_material_property = [](const FbxSurfaceMaterial* fbx_material, const char* material_property, const std::vector<std::string>& uv_set, bool is_normal_map, YFbxMaterial::ParamTexture& param_tex)
+    auto func_load_material_property = [](const FbxSurfaceMaterial* fbx_material, const char* material_property, const std::vector<std::string>& uv_set, bool is_normal_map, YImportedMaterial::ParamTexture& param_tex)
     {
         FbxProperty fbx_property = fbx_material->FindProperty(material_property);
         if (fbx_property.IsValid())
@@ -580,12 +580,12 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurface
         return false;
     };
 
-    std::shared_ptr<YFbxMaterial> material = std::make_shared<YFbxMaterial>();
+    std::shared_ptr<YImportedMaterial> material = std::make_shared<YImportedMaterial>();
     material->name = surface_material->GetName();
 
     //diffuse
     {
-        YFbxMaterial::ParamTexture tmp;
+        YImportedMaterial::ParamTexture tmp;
         tmp.param_name = "diffuse";
         if (func_load_material_property(surface_material, FbxSurfaceMaterial::sDiffuse, uv_set, false, tmp))
         {
@@ -594,7 +594,7 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurface
     }
     //emissive
     {
-        YFbxMaterial::ParamTexture tmp;
+        YImportedMaterial::ParamTexture tmp;
         tmp.param_name = "emissive";
         if (func_load_material_property(surface_material, FbxSurfaceMaterial::sEmissive, uv_set, false, tmp))
         {
@@ -604,7 +604,7 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurface
 
     //specular
     {
-        YFbxMaterial::ParamTexture tmp;
+        YImportedMaterial::ParamTexture tmp;
         tmp.param_name = "specular";
         if (func_load_material_property(surface_material, FbxSurfaceMaterial::sSpecular, uv_set, false, tmp))
         {
@@ -614,7 +614,7 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurface
 
     //roughness
     {
-        YFbxMaterial::ParamTexture tmp;
+        YImportedMaterial::ParamTexture tmp;
         tmp.param_name = "roughness";
         if (func_load_material_property(surface_material, FbxSurfaceMaterial::sSpecularFactor, uv_set, false, tmp))
         {
@@ -624,7 +624,7 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurface
 
     //metallic
     {
-        YFbxMaterial::ParamTexture tmp;
+        YImportedMaterial::ParamTexture tmp;
         tmp.param_name = "metallic";
         if (func_load_material_property(surface_material, FbxSurfaceMaterial::sShininess, uv_set, false, tmp))
         {
@@ -634,7 +634,7 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurface
 
     //normal
     {
-        YFbxMaterial::ParamTexture tmp;
+        YImportedMaterial::ParamTexture tmp;
         tmp.param_name = "normal";
         if (func_load_material_property(surface_material, FbxSurfaceMaterial::sNormalMap, uv_set, true, tmp))
         {
@@ -651,7 +651,7 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurface
 
     //transpaarent
     {
-        YFbxMaterial::ParamTexture tmp;
+        YImportedMaterial::ParamTexture tmp;
         tmp.param_name = "transparent";
         if (func_load_material_property(surface_material, FbxSurfaceMaterial::sTransparentColor, uv_set, false, tmp))
         {
@@ -661,7 +661,7 @@ std::shared_ptr<YFbxMaterial> YFbxImporter::GenerateFbxMaterial(const FbxSurface
 
     //transpaarent
     {
-        YFbxMaterial::ParamTexture tmp;
+        YImportedMaterial::ParamTexture tmp;
         tmp.param_name = "opaque_mask";
         if (func_load_material_property(surface_material, FbxSurfaceMaterial::sTransparencyFactor, uv_set, false, tmp))
         {

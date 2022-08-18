@@ -1,6 +1,7 @@
 #include "MeshUtility/OverlappingCorners.h"
 #include <algorithm>
 #include "Engine/YRawMesh.h"
+#include "MeshUtility/YMeshOperation.h"
 
 YOverlappingCorners::YOverlappingCorners(const std::vector<YVector>& InVertices, const std::vector<uint32>& InIndices, float ComparisonThreshold)
 {

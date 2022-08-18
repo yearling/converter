@@ -32,6 +32,7 @@ struct FCompareIndexAndZ
 
 /**
 * Container to hold overlapping corners. For a vertex, lists all the overlapping vertices
+* 注意：FindIfOverlapping不包括自己，老的ue是包括的，新的不包括了
 */
 struct YOverlappingCorners
 {

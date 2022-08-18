@@ -7,6 +7,7 @@
 #include "Engine/YMaterial.h"
 #include "Engine/YLog.h"
 #include <unordered_set>
+#include "YFbxPostProcess.h"
 
 bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& raw_mesh)
 {
@@ -16,13 +17,13 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
     FbxUVs fbx_uvs(this, fbx_mesh);
 
     int material_count = node->GetMaterialCount();
-    std::unordered_map<int, std::shared_ptr<YFbxMaterial>> materials;
+    std::unordered_map<int, std::shared_ptr<YImportedMaterial>> materials;
     //create material
     {
         FindOrImportMaterialsFromNode(node, materials, fbx_uvs.uv_set);
         if (material_count == 0)
         {
-            materials[0] = std::make_shared<YFbxMaterial>();
+            materials[0] = std::make_shared<YImportedMaterial>();
             material_count = 1;
         }
     }
@@ -298,7 +299,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                 wedges[triangle_cornor_index_0_1_2] = current_wedge_index;
                 const int control_point_index = fbx_mesh->GetPolygonVertex(polygon_index, correct_triangle_cornor_index);
                 control_point_ids[triangle_cornor_index_0_1_2] = control_point_index;
-                YMeshVertexWedge new_wedge;
+                YMeshWedge new_wedge;
                 new_wedge.control_point_id = control_point_index;
                 new_wedge.position = raw_mesh.control_points[control_point_index].position;;
                 raw_mesh.control_points[control_point_index].AddWedge(current_wedge_index);
@@ -308,7 +309,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
                     ERROR_INFO("Cannot create valid vertex instance for mesh ", fbx_mesh->GetName());
                     return false;
                 }
-                YMeshVertexWedge& wedge = raw_mesh.wedges[current_wedge_index];
+                YMeshWedge& wedge = raw_mesh.wedges[current_wedge_index];
 
                 //uv
                 wedge.uvs.resize(fbx_uvs.unique_count, YVector2(0,0));
@@ -403,7 +404,7 @@ bool YFbxImporter::BuildStaticMeshFromGeometry(FbxNode* node, ImportedRawMesh& r
             //Create a polygon with the 3 vertex instances Add it to the material group
             if (!material_to_polygon_group.count(material_index))
             {
-                std::shared_ptr<YFbxMaterial> material = materials[material_index];
+                std::shared_ptr<YImportedMaterial> material = materials[material_index];
                 assert(material);
                 YMeshPolygonGroup tmp_group;
                 int new_polygon_group_id = (int)raw_mesh.polygon_groups.size();
@@ -532,11 +533,11 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
 
     for (std::shared_ptr<ImportedRawMesh>& impored_raw_mesh : raw_meshes)
     {
-        all_control_point_size += impored_raw_mesh->control_points.size();
-        all_wedge_size += impored_raw_mesh->wedges.size();
-        all_polygon_size += impored_raw_mesh->polygons.size();
-        all_edge_size += impored_raw_mesh->edges.size();
-        all_polygon_group_size += impored_raw_mesh->polygon_groups.size();
+        all_control_point_size += (int)impored_raw_mesh->control_points.size();
+        all_wedge_size += (int)impored_raw_mesh->wedges.size();
+        all_polygon_size += (int)impored_raw_mesh->polygons.size();
+        all_edge_size += (int)impored_raw_mesh->edges.size();
+        all_polygon_group_size += (int)impored_raw_mesh->polygon_groups.size();
     }
 
     new_copyed_mesh->control_points.reserve(all_control_point_size);
@@ -605,13 +606,13 @@ bool YFbxImporter::BuildStaicMesh(YLODMesh* raw_mesh, std::vector<std::shared_pt
    /* return true;
 
 
-    std::vector<std::shared_ptr<YFbxMaterial>> all_materials;
+    std::vector<std::shared_ptr<YImportedMaterial>> all_materials;
     for (int mesh_index = 0; mesh_index < (int)raw_meshes.size(); ++mesh_index)
     {
         const ImportedRawMesh& raw_mesh = *raw_meshes[mesh_index];
         for (auto& item : raw_mesh.polygon_group_to_material)
         {
-            std::shared_ptr<YFbxMaterial> material = item.second;
+            std::shared_ptr<YImportedMaterial> material = item.second;
         }
     }*/
 #endif

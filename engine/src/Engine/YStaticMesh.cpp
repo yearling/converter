@@ -209,9 +209,9 @@ void YStaticMesh::Render(RenderParam* render_param)
             for (int polygon_index : polygon_group.polygons)
             {
                 YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-                YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
-                YMeshVertexWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
-                YMeshVertexWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+                YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
+                YMeshWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
+                YMeshWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
                 int control_point[3] = { vertex_ins_0.control_point_id, vertex_ins_1.control_point_id, vertex_ins_2.control_point_id };
                 int edge0_index = lod_mesh.GetVertexPairEdge(control_point[0], control_point[1]);
                 int edge1_index = lod_mesh.GetVertexPairEdge(control_point[1], control_point[2]);
@@ -249,9 +249,9 @@ void YStaticMesh::Render(RenderParam* render_param)
             for (int polygon_index : polygon_group.polygons)
             {
                 YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-                YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
-                YMeshVertexWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
-                YMeshVertexWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+                YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
+                YMeshWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
+                YMeshWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
                 int control_point[3] = { vertex_ins_0.control_point_id, vertex_ins_1.control_point_id, vertex_ins_2.control_point_id };
                 int edge0_index = lod_mesh.GetVertexPairEdge(control_point[0], control_point[1]);
                 int edge1_index = lod_mesh.GetVertexPairEdge(control_point[1], control_point[2]);
@@ -292,7 +292,7 @@ void YStaticMesh::Render(RenderParam* render_param)
                 for (int i = 0; i < 3; ++i)
                 {
 
-                    YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[i]];
+                    YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[i]];
                     YVector control_point0 = lod_mesh.vertex_position[vertex_ins_0.control_point_id].position;
                     YVector normal = vertex_ins_0.normal.GetSafeNormal();
                     YVector tangent = vertex_ins_0.tangent.GetSafeNormal();
@@ -345,9 +345,9 @@ void YStaticMesh::Render(RenderParam* render_param)
                 for (int polygon_index : polygon_group.polygons)
                 {
                     YMeshPolygon& polygon = lod_mesh.polygons[polygon_index];
-                    YMeshVertexWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
-                    YMeshVertexWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
-                    YMeshVertexWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
+                    YMeshWedge& vertex_ins_0 = lod_mesh.vertex_instances[polygon.wedge_ids[0]];
+                    YMeshWedge& vertex_ins_1 = lod_mesh.vertex_instances[polygon.wedge_ids[1]];
+                    YMeshWedge& vertex_ins_2 = lod_mesh.vertex_instances[polygon.wedge_ids[2]];
                     YVector2 uv0 = vertex_ins_0.uvs[uv_index];
                     YVector2 uv1 = vertex_ins_1.uvs[uv_index];
                     YVector2 uv2 = vertex_ins_2.uvs[uv_index];
@@ -364,16 +364,16 @@ void YStaticMesh::Render(RenderParam* render_param)
                         uv1.y -= 1.0f;
                         uv2.y -= 1.0f;
                     }
-                    YVector4 vu0_in_clip_space = YVector4(uv0.x, uv0.y, 0.01, 1.0);
+                    YVector4 vu0_in_clip_space = YVector4(uv0.x, uv0.y, 0.01f, 1.0f);
                     YMatrix  inv_vp = render_param->camera_proxy->inv_view_proj_matrix_;
                     YVector4 uv0_in_world_space_affine = inv_vp.TransformVector4(vu0_in_clip_space);
                     YVector vu0_in_world = uv0_in_world_space_affine.AffineTransform();
 
-                    YVector4 vu1_in_clip_space = YVector4(uv1.x, uv1.y, 0.01, 1.0);
+                    YVector4 vu1_in_clip_space = YVector4(uv1.x, uv1.y, 0.01f, 1.0f);
                     YVector4 uv1_in_world_space_affine = inv_vp.TransformVector4(vu1_in_clip_space);
                     YVector vu1_in_world = uv1_in_world_space_affine.AffineTransform();
 
-                    YVector4 vu2_in_clip_space = YVector4(uv2.x, uv2.y, 0.01, 1.0);
+                    YVector4 vu2_in_clip_space = YVector4(uv2.x, uv2.y, 0.01f, 1.0f);
                     YVector4 uv2_in_world_space_affine = inv_vp.TransformVector4(vu2_in_clip_space);
                     YVector vu2_in_world = uv2_in_world_space_affine.AffineTransform();
 
