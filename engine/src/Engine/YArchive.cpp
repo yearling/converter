@@ -41,7 +41,7 @@ YArchive& operator<<(YArchive& ar, std::string& value)
 	{
 		uint32 str_len = (uint32)value.size();
 		ar << str_len;
-		ar.Serialize(value.data(), sizeof(char*) * value.size());
+		ar.Serialize(value.data(), sizeof(char) * value.size());
 	}
 	return ar;
 }
