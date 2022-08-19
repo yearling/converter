@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 /GR")
 else(MSVC)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 endif(MSVC)
-add_compile_definitions(FBXSDK_SHARED)
+add_compile_definitions(FBXSDK_SHARED _SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../third_party/fbxsdk/include
 					${CMAKE_CURRENT_SOURCE_DIR}/../engine/include
 					${CMAKE_CURRENT_SOURCE_DIR}/../third_party/jsoncpp/include)

@@ -31,4 +31,5 @@ public:
     int current_index = 0;
     std::vector<std::string> static_modle_path;
     void ConverteModel(const std::vector<std::string>& file_pathes);
+    void AutoTest();
 };

@@ -29,10 +29,10 @@
             "root_component":
             {
                     "type":"StaticMesh",
-                    "model":"/model/Spaceship_05/Spaceship_05",
+                    "model":"/model/AH64A/AH64A",
                     "local_translation":[ 0.0,0.0,0.0],
                     "local_rotation":[0.0,0.0,0.0],
-                    "local_scale":[0.1,0.1,0.1]
+                    "local_scale":[1.0,1.0,1.0]
             },
             "name":"Spaceship_05",
             "id":22

@@ -341,7 +341,7 @@ bool YEngine::PreInit()
 }
 bool YEngine::Init()
 {
-	//YSysUtility::AllocWindowsConsole();
+	YSysUtility::AllocWindowsConsole();
 	device_ = D3D11Device::CreateD3D11Device();
 	//inmput manager
 	g_input_manager = new InputManger();

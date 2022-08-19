@@ -561,8 +561,14 @@ bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vecto
     static_mesh->imported_materials_ = new_copyed_mesh->polygon_group_to_material;
 
     PostProcessRenderMesh process(new_copyed_mesh.get(),import_param_.get());
-    //static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
-    static_mesh->lod_render_data_.push_back(process.GenerateMediumStaticVertexData());
+    if(import_param_->generate_hi_mesh_data)
+    { 
+        static_mesh->lod_render_data_.push_back(process.GenerateHiStaticVertexData());
+    }
+    else
+    {
+        static_mesh->lod_render_data_.push_back(process.GenerateMediumStaticVertexData());
+    }
      static_mesh->imported_raw_meshes_.emplace_back(std::move(new_copyed_mesh));
     return true;
 }

@@ -177,6 +177,16 @@ void PostProcessRenderMesh::CompressVertex()
 
 void PostProcessRenderMesh::OptimizeIndices()
 {
+    //这万一比较慢，10w面以上就不要用了，ue里也是10w面
+    int vertex_count = 0;
+    for (std::vector<uint32>& section : section_indices)
+    {
+        vertex_count += section.size();
+    }
+    if (vertex_count > 300000)
+    {
+        return;
+    }
     LOG_INFO("begin optimize indices");
     for (std::vector<uint32>& section_index : section_indices)
     {
@@ -255,7 +265,7 @@ nv::Vertex FStaticMeshNvRenderBuffer::getVertex(unsigned int Index) const
     Vertex.pos.y = Position.y;
     Vertex.pos.z = Position.z;
 
-    const YVector2 UV = post_process_render_mesh_->vertex_data_cache[Index].uv0;
+    const YVector2& UV = post_process_render_mesh_->vertex_data_cache[Index].uv0;
     Vertex.uv.x = UV.x;
     Vertex.uv.y = UV.y;
 

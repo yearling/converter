@@ -34,6 +34,7 @@ struct FbxImportParam
     bool generate_depth_only_indices = true;
     bool generate_reverse_depth_only_indices = true;
     bool generate_adjacency_indices = true;
+    bool generate_hi_mesh_data = false;
 };
 
 struct FbxMeshInfo

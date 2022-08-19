@@ -240,6 +240,17 @@ bool GameApplication::Initial()
           "E:/fbx/static_mesh/cloth/haveto-red-mage-helmet-flow-ver-preview/source/RedMageHelmetFlowVer.fbx",   // good
           "E:/fbx/static_mesh/human/alien-soldier/source/Alien.obj",   // good, 100m vertex 
     };
+    //Json::Value root;
+    //for (std::string file_name : static_modle_path)
+    //{
+    //    Json::Value tmp;
+    //    tmp["path"] = file_name;
+    //    tmp["scale"] = YJsonHelper::ConvertVectorToJson(YVector(1.0, 1.0, 1.0));
+    //    tmp["translation"] = YJsonHelper::ConvertVectorToJson(YVector(0.0, 0.0, 0.0));
+    //    root.append(tmp);
+    //}
+    ////std::string result_json = root.toStyledString();
+    //YJsonHelper::SaveJsonToFile("auto_test.json", root);
 
     std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
     //const std::string file_path = "E:/topo_split/head.fbx";
@@ -253,7 +264,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/bs/animation/man_talking.fbx";
     //const std::string file_path = "E:/fbx/bs/animation/female_talking2.fbx";
     //const std::string file_path = "E:/fbx/EpicCharacter_Run.fbx";
-    const std::string file_path = "E:/fbx/test_case/nija/qq_plane_uv_mirror.fbx";
+    //const std::string file_path = "E:/fbx/test_case/nija/qq_plane_uv_mirror.fbx";
     //const std::string file_path = "E:/fbx/static_mesh/large/Set_02.fbx";
 
     // static mesh
@@ -276,7 +287,7 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/mask/Jonathan_BENAINOUS/source/sci-fi-helmet-blue-neon-jonathan-benainous.fbx";   //花钱买的
     //const std::string file_path = "E:/fbx/static_mesh/car/motorcycle-szh2i2-demo/source/SZH2I2HDAndLDExport.fbx";   // crash
     //const std::string file_path = "E:/fbx/static_mesh/car/oshkosh-m-atv-reinvented/source/Model_1.fbx";   // good for test AA
-    //const std::string file_path = "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx";   // crash
+    const std::string file_path = "E:/fbx/static_mesh/car/ray-ii-szh2i2-merry-christmas-ver/source/MerryChristmas.fbx";   // crash
     //const std::string file_path = "E:/fbx/static_mesh/sword/1788-heavy-cavalry-sword-with-quarter-basket/source/1788_0526sketchfab.obj";    // very good   
     //const std::string file_path = "E:/fbx/static_mesh/style/higokumaru-honkai-impact-3rd/source/Higokumaru.fbx";    // very good   ,二次元 
     //const std::string file_path = "E:/fbx/static_mesh/robot/yellow-heavy-robot-8k-download/source/Mech_non_P.fbx";    // very good ,大机甲 
@@ -350,13 +361,14 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/human/samurai-girl/source/Samurai_Girl.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/silk-shirt-suit-retopo-for-ray-ii/source/SilkShirtSuitRetopoForRayII.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/subsurface-scattering-sss-demo-lara/source/sss.fbx";    //skin error
-    //ConverteModel(std::vector<std::string>{file_path});
+    ConverteModel(std::vector<std::string>{file_path});
    /* const std::string package_path = "/model/Spaceship_05/Spaceship_05.json";
     TRefCountPtr<SStaticMesh> ss = SObjectManager::ConstructFromPackage<SStaticMesh>(package_path, nullptr);
     ss->GetStaticMesh()->AllocGpuResource();
     engine->static_mesh_ = ss;
     SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
     SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());*/
+    //AutoTest();
     return true;
 }
 
@@ -498,6 +510,117 @@ void GameApplication::ConverteModel(const std::vector<std::string>& file_pathes)
             ERROR_INFO("open file ", file_path, "failed!");
         }
     }
+}
+
+void GameApplication::AutoTest()
+{
+    Json::Value files_to_import;
+    if (!YJsonHelper::LoadJsonFromFile("C:/Users/admin/Desktop/converter/auto_test.json", files_to_import))
+    {
+        return;
+    }
+
+    int fbx_to_imported = files_to_import.size();
+    for (int i = 0; i < fbx_to_imported; ++i)
+    {
+        Json::Value& import_item = files_to_import[i];
+        std::string file_path;
+        if (import_item.isMember("path"))
+        {
+            file_path = import_item["path"].asString();
+        }
+
+        YVector scale = YVector(1.0, 1.0, 1.0);
+        if (import_item.isMember("scale"))
+        {
+            YJsonHelper::ConvertJsonToVector(import_item["scale"],scale);
+        }
+
+        YVector translation = YVector(0.0, 0.0, 0.0);
+        if (import_item.isMember("translation"))
+        {
+            YJsonHelper::ConvertJsonToVector(import_item["translation"], translation);
+        }
+        std::unique_ptr<YFbxImporter> static_mesh_importer = std::make_unique<YFbxImporter>();
+        if (static_mesh_importer->ImportFile(file_path))
+        {
+            FbxImportParam importer_param;
+            const FbxImportSceneInfo* scene_info = static_mesh_importer->GetImportedSceneInfo();
+            importer_param.model_name = scene_info->model_name;
+            importer_param.transform_vertex_to_absolute = true;
+            importer_param.import_scaling = YVector(1.0, 1.0, 1.0);
+            if (scene_info->has_skin)
+            {
+                WARNING_INFO(file_path, " is a skeleton mesh, skip");
+                continue;
+                importer_param.import_as_skelton = true;
+                ConvertedResult result;
+                if (static_mesh_importer->ParseFile(importer_param, result))
+                {
+                    //auto& converted_static_mesh_vec = result.static_meshes;
+                    //for (auto& mesh : converted_static_mesh_vec)
+                    //{
+                        //mesh->SaveV0("head");
+                    //}
+                    YEngine* engine = YEngine::GetEngine();
+                    engine->skeleton_mesh_ = std::move(result.skeleton_mesh);
+                    SWorld::GetWorld()->GetMainScene()->skeleton_meshes_.push_back(engine->skeleton_mesh_.get());
+
+                }
+                else
+                {
+                    ERROR_INFO("parse file ", file_path, "failed!");
+                }
+            }
+            else
+            {
+                importer_param.import_as_skelton = false;
+                importer_param.import_scaling = scale;
+                importer_param.import_translation = translation;
+                ConvertedResult result;
+                if (static_mesh_importer->ParseFile(importer_param, result))
+                {
+                    YEngine* engine = YEngine::GetEngine();
+                    auto& converted_static_mesh_vec = result.static_meshes;
+                    std::string package_path;
+                    for (auto& mesh : converted_static_mesh_vec)
+                    {
+                        //mesh->SaveToPackage()
+                        mesh->GetStaticMesh()->AllocGpuResource();
+                        engine->static_mesh_ = mesh; //hold life
+                        std::string model_name = mesh->GetStaticMesh()->model_name;
+                        std::string model_base = "model";
+                        std::string model_final_name = YPath::PathCombine(model_base, model_name);
+                        mesh->SetSavedPath(model_final_name);
+                        Json::Value root;
+                        mesh->SaveToJson(root);
+                        std::string json_path = YPath::PathCombine(model_final_name, model_name + SObject::json_extension_with_dot);
+                        package_path = '/' + json_path;
+                        YJsonHelper::SaveJsonToFile(json_path, root);
+                    }
+                    SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
+                    SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());
+                    {
+                        TRefCountPtr<SStaticMesh> ss = SObjectManager::ConstructFromPackage<SStaticMesh>(package_path, nullptr);
+                        ss->GetStaticMesh()->AllocGpuResource();
+                        engine->static_mesh_ = ss;
+                        SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
+                        SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());
+                    }
+                }
+                else
+                {
+                    ERROR_INFO("parse file ", file_path, "failed!");
+                }
+            }
+        }
+        else
+        {
+            ERROR_INFO("open file ", file_path, "failed!");
+        }
+
+    }
+
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int cmdShow)
