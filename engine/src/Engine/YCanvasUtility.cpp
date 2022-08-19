@@ -8,11 +8,11 @@
 void DrawUtility::DrawGrid()
 {
 	// DrawGrids
-	float xStart = -100.0f;
-	float xEnd = 100.0f;
-	float zStart = -100.0f;
-	float zEnd = 100.0f;
-	float Grid = 10.0f;
+	float xStart = -10000.0f;
+	float xEnd = 10000.0f;
+	float zStart = -10000.0f;
+	float zEnd = 10000.0f;
+	float Grid = 100.0f;
 
 	for (float xCurrent = xStart; xCurrent < xEnd + 1.0f; xCurrent += Grid)
 	{
@@ -22,6 +22,7 @@ void DrawUtility::DrawGrid()
 	{
 		g_Canvas->DrawLine(YVector(xStart, 0, zCurrent), YVector(xEnd, 0, zCurrent), YVector4(1.0f, 1.0f, 1.0f, 0.3f));
 	}
+
 }
 
 void DrawUtility::DrawWorldCoordinate(CameraBase* camera)
