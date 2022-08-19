@@ -511,6 +511,7 @@ bool YFbxImporter::ImportFbxMeshToRawMesh(FbxNode* node, ImportedRawMesh& raw_me
     }
 
     raw_mesh.CompressMaterials();
+    raw_mesh.ComputeAABB();
     bool bIsValidMesh = raw_mesh.Valid();
 
     return bIsValidMesh;
@@ -552,6 +553,7 @@ bool YFbxImporter::BuildStaicMeshRenderData(YStaticMesh* static_mesh, std::vecto
     {
         new_copyed_mesh->Merge(*raw_meshes[mesh_index]);
     }
+
     LOG_INFO("End merge scene");
     new_copyed_mesh->ComputeWedgeNormalAndTangent(ImportNormal, Mikkt, import_param_->remove_degenerate_triangles);
     new_copyed_mesh->GenerateLightMapUV();

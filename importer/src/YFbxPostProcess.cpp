@@ -388,9 +388,9 @@ void PostProcessRenderMesh::BuildDepthOnlyInverseIndices()
         std::vector<uint32>& per_sec = depth_only_indices[i];
         for (int j = 0; j < per_sec.size() / 3; ++j)
         {
-            reversed_indices[i].push_back(per_sec[j * 3 + 2]);
-            reversed_indices[i].push_back(per_sec[j * 3 + 1]);
-            reversed_indices[i].push_back(per_sec[j * 3 + 0]);
+            depth_only_reversed_indices[i].push_back(per_sec[j * 3 + 2]);
+            depth_only_reversed_indices[i].push_back(per_sec[j * 3 + 1]);
+            depth_only_reversed_indices[i].push_back(per_sec[j * 3 + 0]);
         }
     }
     LOG_INFO("end build depth only reversed index");
