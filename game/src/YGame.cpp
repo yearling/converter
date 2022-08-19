@@ -13,6 +13,7 @@
 #include "SObject/STexture.h"
 #include <shellapi.h>
 #include "Utility/YJsonHelper.h"
+#include "YFbxPostProcess.h"
 
 
 GameApplication::GameApplication()
@@ -361,14 +362,20 @@ bool GameApplication::Initial()
     //const std::string file_path = "E:/fbx/static_mesh/human/samurai-girl/source/Samurai_Girl.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/silk-shirt-suit-retopo-for-ray-ii/source/SilkShirtSuitRetopoForRayII.fbx";    //good
     //const std::string file_path = "E:/fbx/static_mesh/human/subsurface-scattering-sss-demo-lara/source/sss.fbx";    //skin error
-    ConverteModel(std::vector<std::string>{file_path});
-   /* const std::string package_path = "/model/Spaceship_05/Spaceship_05.json";
+    //ConverteModel(std::vector<std::string>{file_path});
+    /*
+    const std::string package_path = "/model/MerryChristmas/MerryChristmas.json";
     TRefCountPtr<SStaticMesh> ss = SObjectManager::ConstructFromPackage<SStaticMesh>(package_path, nullptr);
     ss->GetStaticMesh()->AllocGpuResource();
     engine->static_mesh_ = ss;
     SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
-    SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());*/
-    //AutoTest();
+    SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());
+    YStaticMesh* static_mesh = ss->GetStaticMesh();
+    FbxImportParam importer_param;
+    PostProcessRenderMesh post_processor =  PostProcessRenderMesh(static_mesh->imported_raw_meshes_[0].get(),&importer_param);
+    post_processor.PostProcessPipeline();
+    */
+    //AutoTest(false);
     return true;
 }
 
@@ -512,7 +519,7 @@ void GameApplication::ConverteModel(const std::vector<std::string>& file_pathes)
     }
 }
 
-void GameApplication::AutoTest()
+void GameApplication::AutoTest(bool force_update/*=true*/)
 {
     Json::Value files_to_import;
     if (!YJsonHelper::LoadJsonFromFile("C:/Users/admin/Desktop/converter/auto_test.json", files_to_import))
@@ -529,6 +536,17 @@ void GameApplication::AutoTest()
         {
             file_path = import_item["path"].asString();
         }
+
+        std::string model_name = YPath::GetBaseFilename(file_path,true);
+        std::string model_base = "model";
+        std::string model_final_name = YPath::PathCombine(model_base, model_name);
+        model_final_name = YPath::PathCombine(model_final_name,model_name + SObject::json_extension_with_dot);
+        if (!force_update && YPath::FileExists(model_final_name))
+        {
+            LOG_INFO(model_final_name, " exists, skip convert");
+            continue;
+        }
+
 
         YVector scale = YVector(1.0, 1.0, 1.0);
         if (import_item.isMember("scale"))
@@ -598,7 +616,7 @@ void GameApplication::AutoTest()
                         package_path = '/' + json_path;
                         YJsonHelper::SaveJsonToFile(json_path, root);
                     }
-                    SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
+                  /*  SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
                     SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());
                     {
                         TRefCountPtr<SStaticMesh> ss = SObjectManager::ConstructFromPackage<SStaticMesh>(package_path, nullptr);
@@ -606,7 +624,7 @@ void GameApplication::AutoTest()
                         engine->static_mesh_ = ss;
                         SWorld::GetWorld()->GetMainScene()->static_meshes_.clear();
                         SWorld::GetWorld()->GetMainScene()->static_meshes_.push_back(engine->static_mesh_->GetStaticMesh());
-                    }
+                    }*/
                 }
                 else
                 {

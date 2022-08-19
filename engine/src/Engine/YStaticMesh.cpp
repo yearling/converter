@@ -418,7 +418,7 @@ void YStaticMesh::Render(RenderParam* render_param)
         }
     }
 
-    const bool drawUV = true;
+    const bool drawUV = false;
     if (drawUV)
     {
         std::vector<YVector4> uv_colors =

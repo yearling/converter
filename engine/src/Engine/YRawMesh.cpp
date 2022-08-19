@@ -531,7 +531,7 @@ void ImportedRawMesh::ComputeFaceNormalAndTangent(NormalCaculateMethod normal_me
             }
             if (!bValidNTBs)
             {
-                WARNING_INFO(StringFormat("triangle %d has bad NTB", polygon_id));
+                //WARNING_INFO(StringFormat("triangle %d has bad NTB", polygon_id));
             }
             polygon.face_normal = Normal.GetSafeNormal();
             polygon.face_tangent = Tangent.GetSafeNormal();
@@ -624,9 +624,9 @@ void ImportedRawMesh::GenerateLightMapUV()
     LOG_INFO("Begin Generate light map uv");
     if (TellLightMapUVExist())
     {
+        LOG_INFO("mesh has second uv, generate light map uv exit");
         return;
     }
-    LOG_INFO("mesh has second uv, generate light map uv exit");
 
     FLayoutUVRawMeshView raw_mesh_view(this, 0, 1);
     FLayoutUV packer(raw_mesh_view);

@@ -235,7 +235,7 @@ void PostProcessRenderMesh::OptimizeIndices()
 class FStaticMeshNvRenderBuffer : public nv::RenderBuffer
 {
 public:
-    FStaticMeshNvRenderBuffer(PostProcessRenderMesh* in_post_process_render_mesh, int in_section_index);
+    FStaticMeshNvRenderBuffer(PostProcessRenderMesh* in_post_process_render_mesh, const std::vector<YVector>& in_position, const std::vector<YVector2>& in_uv_cache, std::vector<uint32>& in_index);
     /** Retrieve the position and first texture coordinate of the specified index. */
     virtual nv::Vertex getVertex(unsigned int Index) const;
 
@@ -244,13 +244,15 @@ private:
     FStaticMeshNvRenderBuffer(const FStaticMeshNvRenderBuffer&);
     FStaticMeshNvRenderBuffer& operator=(const FStaticMeshNvRenderBuffer&);
     PostProcessRenderMesh* post_process_render_mesh_;
+    const std::vector<YVector>& position_cache;
+    const std::vector<YVector2>& uv_cache;
+    const std::vector<uint32>& index;
     int section_index_;
 };
 
-FStaticMeshNvRenderBuffer::FStaticMeshNvRenderBuffer(PostProcessRenderMesh* in_post_process_render_mesh, int in_secton_index)
-    :post_process_render_mesh_(in_post_process_render_mesh), section_index_(in_secton_index) {
-    std::vector<uint32>& index_ref = post_process_render_mesh_->section_indices[section_index_];
-    mIb = new nv::IndexBuffer((void*)index_ref.data(), nv::IBT_U32, index_ref.size(), false);
+FStaticMeshNvRenderBuffer::FStaticMeshNvRenderBuffer(PostProcessRenderMesh* in_post_process_render_mesh, const std::vector<YVector>& in_position, const std::vector<YVector2>& in_uv_cache, std::vector<uint32>& in_index)
+    :post_process_render_mesh_(in_post_process_render_mesh),position_cache(in_position),uv_cache(in_uv_cache), index(in_index){
+    mIb = new nv::IndexBuffer((void*)index.data(), nv::IBT_U32, index.size(), false);
 }
 
 nv::Vertex FStaticMeshNvRenderBuffer::getVertex(unsigned int Index) const
@@ -258,14 +260,14 @@ nv::Vertex FStaticMeshNvRenderBuffer::getVertex(unsigned int Index) const
     nv::Vertex Vertex;
 
     //check(Index < PositionVertexBuffer.GetNumVertices());
-    assert(Index < post_process_render_mesh_->vertex_data_cache.size());
+    //assert(Index < post_process_render_mesh_->vertex_data_cache.size());
 
-    const YVector& Position = post_process_render_mesh_->vertex_data_cache[Index].position;
+    const YVector& Position = position_cache[Index];
     Vertex.pos.x = Position.x;
     Vertex.pos.y = Position.y;
     Vertex.pos.z = Position.z;
 
-    const YVector2& UV = post_process_render_mesh_->vertex_data_cache[Index].uv0;
+    const YVector2& UV = uv_cache[Index];
     Vertex.uv.x = UV.x;
     Vertex.uv.y = UV.y;
 
@@ -277,9 +279,52 @@ void PostProcessRenderMesh::BuildStaticAdjacencyIndexBuffer()
 {
     LOG_INFO("begin build adjacency index");
     adjacency_section_indices.clear();
-    for (int i = 0; i < section_indices.size(); ++i)
+    std::vector<YVector> position_cache;
+    position_cache.reserve(vertex_data_cache.size());
+    //int count = 1000000;
+    //position_cache.reserve(count);
+    std::vector<YVector2> uv_cache;
+    uv_cache.reserve(vertex_data_cache.size());
+    //uv_cache.reserve(count);
+
+    for (FullStaticVertexData& v : vertex_data_cache)
     {
-        FStaticMeshNvRenderBuffer StaticMeshRenderBuffer(this, i);
+        //position_cache.push_back(YVector(float(i), float(i), float(i)));
+        //uv_cache.push_back(YVector2(float(i),float(i)));
+        position_cache.push_back(v.position);
+        uv_cache.push_back(v.uv0);
+    }
+
+    int index_count = 0;
+    for (std::vector<uint32>& sec : section_indices)
+    {
+        index_count += sec.size();
+    }
+
+
+    std::vector<uint32> one_index;
+    one_index.reserve(index_count);
+   /* one_index.reserve(count*3);
+    for (int i = 0; i < count; ++i)
+    {
+        one_index.push_back(i);
+    }
+    for (int i = 0; i < count; ++i)
+    {
+        one_index.push_back(i);
+    }
+    for (int i = 0; i < count; ++i)
+    {
+        one_index.push_back(i);
+    }*/
+    for (std::vector<uint32>& sec : section_indices)
+    {
+        one_index.insert(one_index.end(), sec.begin(), sec.end());
+    }
+
+    //for (int i = 0; i < section_indices.size(); ++i)
+    {
+        FStaticMeshNvRenderBuffer StaticMeshRenderBuffer(this, position_cache,uv_cache, one_index);
         nv::IndexBuffer* PnAENIndexBuffer = nv::tess::buildTessellationBuffer(&StaticMeshRenderBuffer, nv::DBM_PnAenDominantCorner, true);
         check(PnAENIndexBuffer);
         const int32 IndexCount = (int32)PnAENIndexBuffer->getLength();
@@ -290,7 +335,19 @@ void PostProcessRenderMesh::BuildStaticAdjacencyIndexBuffer()
             new_adj_indices[Index] = (*PnAENIndexBuffer)[Index];
         }
         delete PnAENIndexBuffer;
-        adjacency_section_indices.emplace_back(std::move(new_adj_indices));
+        adjacency_section_indices.clear();
+        adjacency_section_indices.reserve(section_indices.size());
+        int index_offset = 0;
+        for (int i = 0; i < (int)section_indices.size(); ++i)
+        {
+            std::vector<uint32>& sec = section_indices[i];
+            int adj_size = sec.size() * 4;
+            std::vector<uint32> new_adj_buffer;
+            new_adj_buffer.resize(adj_size, -1);
+            memcpy(new_adj_buffer.data(), new_adj_indices.data() + index_offset, sizeof(uint32) * adj_size);
+            index_offset += adj_size;
+            adjacency_section_indices.emplace_back(std::move(new_adj_buffer));
+        }
     }
     LOG_INFO("end build adjacency index");
 }

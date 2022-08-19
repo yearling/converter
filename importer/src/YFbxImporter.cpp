@@ -124,11 +124,35 @@ bool YFbxImporter::ParseFile(const FbxImportParam& import_param, ConvertedResult
     else {
         //import static mesh
         ApplyTransformSettingsToFbxNode(root_node);
+        std::vector<FbxNode*> mesh_nodes;
+        GetMeshArray(root_node, mesh_nodes);
         if (import_param_->combine_mesh) {
             // todo LOD
-            std::vector<FbxNode*> mesh_nodes;
-            GetMeshArray(root_node, mesh_nodes);
-            out_result.static_meshes.emplace_back(ImportStaticMeshAsSingle(mesh_nodes, import_param_->model_name, 0));
+            //out_result.static_meshes.emplace_back(ImportStaticMeshAsSingle(mesh_nodes, import_param_->model_name, 0));
+            TRefCountPtr<SStaticMesh> imported_mesh = ImportStaticMeshAsSingle(mesh_nodes, import_param_->model_name, 0);
+            if (imported_mesh)
+            {
+                out_result.static_meshes.emplace_back(imported_mesh);
+            }
+        }
+        else
+        {
+            for (FbxNode* mesh_node : mesh_nodes)
+            {
+                TRefCountPtr<SStaticMesh> imported_mesh = ImportStaticMeshAsSingle(std::vector<FbxNode*>{mesh_node}, mesh_node->GetName(), 0);
+                if (imported_mesh)
+                {
+                    out_result.static_meshes.emplace_back(imported_mesh);
+                }
+            }
+        }
+        if (out_result.static_meshes.empty())
+        {
+            return false;
+        }
+        else
+        {
+            return true;
         }
     }
     return true;
