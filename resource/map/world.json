@@ -58,7 +58,7 @@
                     "type":"PerspectiveCamera",
                     "fov":60.0,
                     "aspec":1.7777777,
-                    "near_plane":10,
+                    "near_plane":1,
                     "far_plane":100000.0,
                     "local_translation":[ 0.0,5.0,-10.0],
                     "local_rotation":[0.0,0.0,0.0],

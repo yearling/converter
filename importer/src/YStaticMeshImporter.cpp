@@ -21,7 +21,7 @@ bool YFbxImporter::ImportFbxMeshToRawMesh(FbxNode* node, ImportedRawMesh& raw_me
     //create material
     {
         FindOrImportMaterialsFromNode(node, materials, fbx_uvs.uv_set);
-        if (material_count == 0)
+        if (materials.size() == 0)
         {
             materials[0] = std::make_shared<YImportedMaterial>();
             material_count = 1;
