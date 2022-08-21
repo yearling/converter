@@ -51,7 +51,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
 
 
 # 添加编译宏
-add_compile_definitions(FBXSDK_SHARED EDITOR)
+add_compile_definitions(FBXSDK_SHARED EDITOR PLATFORM_WINDOWS=1)
 
 # 添加c++标准
 if(MSVC)
@@ -111,6 +111,7 @@ add_custom_command(
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:${FBX_BIN}/debug/libfbxsdk.dll> $<$<CONFIG:Release>:${FBX_BIN}/release/libfbxsdk.dll> 	$<TARGET_FILE_DIR:editor>
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<$<CONFIG:Debug>:${FREEIMGE_PATH}/lib/FreeImaged.dll> $<$<CONFIG:Release>:${FREEIMGE_PATH}/lib/FreeImage.dll> 	$<TARGET_FILE_DIR:editor>
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../engine/src/Shader/ 	$<TARGET_FILE_DIR:editor>/Shader
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../resource/ 	$<TARGET_FILE_DIR:editor>/
         COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE_DIR:editor>/imgui.ini
 )
 

@@ -217,7 +217,7 @@ bool SMaterial::LoadFromJson(const Json::Value& RootJson)
                     tmp = v;
                 }
             }
-            if (param_item_json["type"].asString() == "int")
+            else if (param_item_json["type"].asString() == "int")
             {
                 int int_value = param_item_json["value"].asInt();
                 tmp = int_value;
