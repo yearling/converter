@@ -67,7 +67,11 @@ bool YApplication::WindowCreate(int width, int height)
 	{
 		WARNING_INFO("register window class failed!");
 	}
+#ifdef EDITOR
+	DWORD WindowsWithTitleAndBoderStyle = WS_OVERLAPPEDWINDOW;
+#else
 	DWORD WindowsWithTitleAndBoderStyle = WS_POPUP | WS_MINIMIZEBOX ;
+#endif
 	DWORD WindowsPOPStyle = WS_POPUP;
 	HWND hwnd = CreateWindowEx(WS_EX_ACCEPTFILES,"D3D11Demo", "SolidAngleEngine", WindowsWithTitleAndBoderStyle, CW_USEDEFAULT, CW_USEDEFAULT,
         width, height,

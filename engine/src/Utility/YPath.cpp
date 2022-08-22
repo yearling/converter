@@ -1,6 +1,7 @@
 #include "Utility/YPath.h"
 #include "Platform/Windows/YSysUtility.h"
 #include "Engine/YLog.h"
+#include <algorithm>
 const std::string YPath::separators = "\\/";
 
 bool YPath::IsAssetAbsolutePath(const std::string& path)
@@ -11,7 +12,7 @@ bool YPath::IsAssetAbsolutePath(const std::string& path)
 	}
 	else
 	{
-		return path[0] == '/';
+		return path[0] == '/' || path[0] == '$';
 	}
 }
 
@@ -44,6 +45,28 @@ std::string YPath::ConverAssetPathToFilePath(const std::string& asset_path)
 	{
 		return asset_path.substr(1);
 	}
+}
+
+std::string YPath::GetEngineResourceDataDirPath()
+{
+    return "/engine/resource";
+}
+
+std::string YPath::PathTolowerCharactor(std::string& s)
+{
+    std::transform(s.begin(), s.end(), s.begin(),
+        // static_cast<int(*)(int)>(std::tolower)         // wrong
+        // [](int c){ return std::tolower(c); }           // wrong
+        // [](char c){ return std::tolower(c); }          // wrong
+
+   
+    [](unsigned char c) { return std::tolower(c); } // correct
+    );
+    return s;
+}
+bool YPath::IsEngineInnerResource(const std::string& path)
+{
+    return path[0] == '$';
 }
 
 std::vector<std::string> YPath::GetFilePathsSeperate(const std::string& path)

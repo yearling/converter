@@ -30,6 +30,7 @@ public:
 	int GetScanWidth() const;
 	int GetMemorySize() const;
 	bool UploadGPUBuffer();
+    static TRefCountPtr<STexture> GenerateDefaultTexture();
 //protected:
 public:
 	TextureType texture_type_ = Texture_Unknown;

@@ -69,4 +69,8 @@ struct YPath
 	// remove '/' at the begin of the path
 	static bool IsAssetExist(const std::string& path);
 	static std::string ConverAssetPathToFilePath(const std::string& asset_path);
+
+    static std::string GetEngineResourceDataDirPath();
+    static std::string PathTolowerCharactor(std::string& in_path);
+    static bool IsEngineInnerResource(const std::string& path);
 };

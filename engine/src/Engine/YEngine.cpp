@@ -488,13 +488,14 @@ void YEngine::Update()
 		render_scene->deta_time = delta_time;
 		render_scene->game_time = game_time;
 		renderer->Render(std::move(render_scene));
-
+#ifndef EDITOR
 		ID3D11RenderTargetView* main_rtv = g_device->GetMainRTV();
 		ID3D11Resource* main_rt_color;
 		main_rtv->GetResource(&main_rt_color);
 		ID3D11Resource* rt_color = dynamic_cast<YForwardRenderer*>(this->GetRender())->GetRTs()->GetColorBuffer();
 		g_device->GetDC()->CopyResource(main_rt_color, rt_color);
 		g_device->Present();
+#endif
 	//	});
 
 	//auto infinit_task = TGraphTask<FNullGraphTask>::CreateTask().ConstructAndHold(ENamedThreads::ActualRenderingThread);

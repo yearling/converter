@@ -353,7 +353,10 @@ bool D3D11Device::Create2DTextureSRV(UINT width, UINT height, DXGI_FORMAT format
 	desc.MipLevels = autogen_mipmap?0:1;
 	desc.SampleDesc.Count = sample_count;
 	desc.SampleDesc.Quality = 0;
-	desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+    if (autogen_mipmap)
+    {
+        desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+    }
 	if (FAILED(hr = d3d_device_->CreateTexture2D(&desc, nullptr, &tex2D))) {
 		ERROR_INFO("create texture2d failed!!");
 		return false;
@@ -372,9 +375,9 @@ bool D3D11Device::Create2DTextureWithSRV(UINT width, UINT height, DXGI_FORMAT fo
 	if (!CreateSRVForTexture2D(format, tex2D, srv)) {
 		return false;
 	}
+	d3d_dc_->UpdateSubresource(tex2D, 0, nullptr, data->pSysMem, data->SysMemPitch, data->SysMemSlicePitch);
 	if (autogen_mipmap)
 	{
-		d3d_dc_->UpdateSubresource(tex2D, 0, nullptr, data->pSysMem, data->SysMemPitch, data->SysMemSlicePitch);
 		d3d_dc_->GenerateMips(srv);
 	}
 	return true;

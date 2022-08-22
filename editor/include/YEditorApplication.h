@@ -25,6 +25,6 @@ public:
 	std::chrono::time_point<std::chrono::high_resolution_clock> game_start_time;
 	std::unique_ptr<IRenderInterface> renderer;
 	std::unique_ptr<Editor> g_editor;
-	const int defaut_windows_width = 1920;
-	const int defaut_windows_height = 1080;
+	const int defaut_windows_width = 3000;
+	const int defaut_windows_height = 2000;
 };

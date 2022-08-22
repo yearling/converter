@@ -815,6 +815,7 @@ std::unique_ptr< StaticVertexRenderData>& lod_mesh_render_data = lod_render_data
     vertex_factory_ = std::move(static_mesh_vertex_factory);
 
     std::string test_pic = "/textures/uv4096.png";
+    //std::string test_pic = "/engine/resource/icons/console_info.png";
     TRefCountPtr<STexture> texture = SObjectManager::ConstructFromPackage<STexture>(test_pic, nullptr);
     if (texture)
     {

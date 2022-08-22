@@ -5,6 +5,7 @@
 #include "imgui.h"
 #include "Math/YVector.h"
 #include "Engine/YLog.h"
+#include "WidgetUtility/ImGuiExtension.h"
 
 Widget_Console::Widget_Console(Editor* editor) :Widget(editor)
 {
@@ -48,12 +49,11 @@ void Widget_Console::UpdateVisible(double delta_time)
 	if (ImGui::Button("Clear")) { Clear(); } ImGui::SameLine();
 
 	// Lambda for info, warning, error filter buttons
-	const auto button_log_type_visibility_toggle = [this](uint32_t index)
+	const auto button_log_type_visibility_toggle = [this](const IconType icon, uint32_t index)
 	{
 		bool& visibility = m_log_type_visibility[index];
 		ImGui::PushStyleColor(ImGuiCol_Button, visibility ? ImGui::GetStyle().Colors[ImGuiCol_Button] : ImGui::GetStyle().Colors[ImGuiCol_FrameBg]);
-		std::string btn_name[3] = { "info","warning","error" };
-		if (ImGui::Button(btn_name[index].c_str()))
+		if (ImGuiEx::ImageButton(icon,15.0f))
 		{
 			visibility = !visibility;
 			m_scroll_to_bottom = true;
@@ -65,10 +65,9 @@ void Widget_Console::UpdateVisible(double delta_time)
 	};
 
 	// Log category visibility buttons
-	button_log_type_visibility_toggle(0);
-	button_log_type_visibility_toggle(1);
-	button_log_type_visibility_toggle(2);
-
+	button_log_type_visibility_toggle(IconType::Console_Info,0);
+	button_log_type_visibility_toggle(IconType::Console_Warning,1);
+	button_log_type_visibility_toggle(IconType::Console_Error,2);
 
 	// Text filter
 	const float label_width = 37.0f; //ImGui::CalcTextSize("Filter", nullptr, true).x;

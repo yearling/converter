@@ -6,6 +6,7 @@
 #include "FreeImage.h"
 #include "Utilities.h"
 #include "Math/YMath.h"
+#include "SObject/SObjectManager.h"
 
 struct FreeImageHelper
 {
@@ -230,7 +231,7 @@ void STexture::SaveToPackage(const std::string& Path)
 
 bool STexture::PostLoadOp()
 {
-	return true;
+    return UploadGPUBuffer();
 }
 
 void STexture::Update(double deta_time)
@@ -292,6 +293,10 @@ bool STexture::LoadFromMemoryFile(MemoryFile* mem_file)
 
 bool STexture::LoadFromPackage(const std::string& path)
 {
+    if (YPath::IsEngineInnerResource(path))
+    {
+        return true;
+    }
 	name_ = path;
 	//todo pose convert texture, now use full name
 	std::string extension = YPath::GetFileExtension(path);
@@ -318,6 +323,18 @@ bool STexture::LoadFromPackage(const std::string& path)
 			ERROR_INFO("load binary package ", path, "failed!, read file error");
 			return false;
 		}
+        else
+        {
+            if (!PostLoadOp())
+            {
+			    ERROR_INFO("load binary package ", path, "failed!, post load op error");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
 	}
 	else {
 		ERROR_INFO("load package ", path, "failed!, file not exist");
@@ -403,7 +420,7 @@ bool STexture::UploadGPUBuffer()
 	}
 	
 	D3D11_SUBRESOURCE_DATA data;
-	data.pSysMem = &data_[0];
+	data.pSysMem = data_.data();
 	data.SysMemPitch = scane_width_;
 	data.SysMemSlicePitch = memory_size_;
 	texture_2d_ = std::make_unique<D3DTexture2D>(TextureUsage::TU_ShaderResource);
@@ -414,5 +431,34 @@ bool STexture::UploadGPUBuffer()
 	}
 	
 	return true;
+}
+
+TRefCountPtr<STexture> STexture::GenerateDefaultTexture()
+{
+    static TRefCountPtr<STexture> default_texture;
+    if (!default_texture)
+    {
+        default_texture = SObjectManager::ConstructFromPackage<STexture>("$deault_texture",nullptr);
+        default_texture->width_ = 4;
+        default_texture->height_ = 4;
+        default_texture->pixel_format_ = PF_B8G8R8A8;
+        default_texture->texture_type_ = Texture2D;
+        default_texture->name_ = "default texture";
+        default_texture->scane_width_ = default_texture->height_ * sizeof(int32);
+        default_texture->memory_size_ = default_texture->width_ * default_texture->height_ * sizeof(int32);
+        std::vector<uint8> value_data;
+        value_data.resize(default_texture->memory_size_, (char)255);
+        D3D11_SUBRESOURCE_DATA data;
+        data.pSysMem = value_data.data();
+        data.SysMemPitch = default_texture->scane_width_;
+        data.SysMemSlicePitch = default_texture->memory_size_;
+        default_texture->texture_2d_ = std::make_unique<D3DTexture2D>(TextureUsage::TU_ShaderResource);
+        if (!g_device->Create2DTextureWithSRV(default_texture->width_, default_texture->height_, DXGI_FORMAT_B8G8R8A8_UNORM, true, 1, &data, default_texture->texture_2d_->d3d_texture2d_, default_texture->texture_2d_->srv_))
+        {
+            ERROR_INFO(default_texture->name_, " Create Texture2d failed!");
+        }
+    }
+    return default_texture;
+  
 }
 
